@@ -13,6 +13,7 @@ find_package(rclcpp REQUIRED)
 find_package(urdf REQUIRED)
 find_package(robot_math REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(realtime_tools REQUIRED)
 
 add_library(controller_interface SHARED
             src/controller_interface.cpp)
@@ -32,6 +33,7 @@ ament_target_dependencies(controller_interface
     "rclcpp"
     "hardware_interface"
     "geometry_msgs"
+    "realtime_tools"
   )
 
   

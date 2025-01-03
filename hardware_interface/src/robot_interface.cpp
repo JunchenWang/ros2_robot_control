@@ -42,7 +42,8 @@ namespace hardware_interface
     }
     void RobotInterface::receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg)
     {
-        state_["force"] = {msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z};
+        real_time_buffer_force_.writeFromNonRT({msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z});
+        //state_["force"] = {msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z};
     }
     std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> RobotInterface::get_all_nodes()
     {

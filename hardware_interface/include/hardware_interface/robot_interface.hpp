@@ -11,6 +11,7 @@
 #include <functional>
 #include "geometry_msgs/msg/wrench.hpp"
 #include "pluginlib/class_loader.hpp"
+#include "realtime_tools/realtime_buffer.h"
 namespace hardware_interface
 {
 
@@ -50,6 +51,7 @@ namespace hardware_interface
         robot_math::Robot robot_;
         std::map<std::string, hardware_interface::HardwareInterface::SharedPtr> components_;
         rclcpp::Subscription<geometry_msgs::msg::Wrench>::SharedPtr wrench_receiver_;
+        realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_force_;
 
     };
 

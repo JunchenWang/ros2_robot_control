@@ -23,6 +23,7 @@ namespace hardwares
         {
             state_["position"] = receive_interface_->getActualQ();
             state_["velocity"] = receive_interface_->getActualQd();
+            state_["force"] = *real_time_buffer_force_.readFromRT();
             auto force = state_["force"];
             std::cerr << "force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
             // Eigen::Matrix4d T;

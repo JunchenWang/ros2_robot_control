@@ -16,6 +16,7 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(ur_rtde REQUIRED)
+find_package(realtime_tools REQUIRED)
 pluginlib_export_plugin_description_file(hardware_interface plugins.xml)
 
 add_library(hardwares 
@@ -39,6 +40,7 @@ ament_target_dependencies(
   "rclcpp_lifecycle"
   "lifecycle_msgs"
   "geometry_msgs"
+  "realtime_tools"
 )
 
 target_link_libraries(hardwares 

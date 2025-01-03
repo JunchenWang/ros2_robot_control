@@ -13,6 +13,7 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(realtime_tools REQUIRED)
 find_package(pluginlib REQUIRED)
 add_library(hardware_interface SHARED
             src/hardware_interface.cpp
@@ -34,6 +35,7 @@ ament_target_dependencies(
   "rclcpp"
   "geometry_msgs"
   "pluginlib"
+  "realtime_tools"
 )
 
 target_compile_definitions(hardware_interface PRIVATE "HARDWARE_INTERFACE_BUILDING_LIBRARY")
