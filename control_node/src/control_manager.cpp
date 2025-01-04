@@ -52,7 +52,11 @@ namespace control_node
                 pos = name.rfind(":");
                 name = name.substr(pos + 1);
                 controller->initialize(name);
-                controller->loarn_interface(&robot_->get_robot_math(), &robot_->get_command_interface(), &robot_->get_state_interface());
+                controller->loarn_interface(&robot_->get_robot_math(), 
+                                            &robot_->get_command_interface(), 
+                                            &robot_->get_state_interface(),
+                                            &robot_->get_loaned_command_interface(),
+                                            &robot_->get_loaned_state_interface());  
                 controllers_.push_back(controller);
                 executor_->add_node(controller->get_node()->get_node_base_interface());
             }

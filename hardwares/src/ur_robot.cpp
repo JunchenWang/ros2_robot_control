@@ -19,13 +19,37 @@ namespace hardwares
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::write(t, period);
+            auto &cmd = command_["velocity"];
+            control_interface_->speedJ(cmd, 1.0, 0.002);
 
         }
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::read(t, period);
-            state_["position"] = receive_interface_->getActualQ();
-            state_["velocity"] = receive_interface_->getActualQd();
+            auto & q = state_["position"];
+            auto & dq = state_["velocity"];
+            auto &force = loaned_state_["ft_sensor"]->at("force");
+            auto pose2 = receive_interface_->getActualTCPPose();
+            std::dynamic_pointer_cast<hardware_interface::FTSensorInterface>(ft_sensor_)->compensate_gravity(pose2);
+        
+            q = receive_interface_->getActualQ();
+            dq = receive_interface_->getActualQd();
+
+
+            // Eigen::Matrix4d T;
+            // forward_kin_general(&robot_, q, T);
+            // auto pose = tform_to_pose(T);
+            // auto pose2 = receive_interface_->getActualTCPPose();
+            // auto diff = std::vector<double>(6);
+            // for (int i = 0; i < 6; i++)
+            // {
+            //     diff[i] = pose[i] - pose2[i];
+            // }
+            
+            
+            // std::cerr << "force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
+            // std::cerr << "diff: " << diff[0] << " " << diff[1] << " " << diff[2] << " " << diff[3] << " " << diff[4] << " " << diff[5] << std::endl;
+
             // state_["force"] = *real_time_buffer_force_.readFromRT();
             //auto force = state_["force"];
             //std::cerr << "force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
@@ -56,7 +80,7 @@ namespace hardwares
                 }
                 try
                 {
-                    // control_interface_ = std::make_shared<ur_rtde::RTDEControlInterface>(robot_ip_);
+                    control_interface_ = std::make_shared<ur_rtde::RTDEControlInterface>(robot_ip_);
                     receive_interface_ = std::make_shared<ur_rtde::RTDEReceiveInterface>(robot_ip_);
                 }
                 catch (std::exception &e)

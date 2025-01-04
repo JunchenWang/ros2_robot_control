@@ -11,4 +11,7 @@
   <class type="controllers::DummyController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a dummy controller plugin.</description>
   </class>
+  <class type="controllers::ForceDragController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a force drag controller plugin.</description>
+  </class>
 </library>

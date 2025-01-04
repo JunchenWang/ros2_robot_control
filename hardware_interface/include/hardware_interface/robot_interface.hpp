@@ -40,6 +40,17 @@ namespace hardware_interface
             ft_sensor_->write_state("force", force);
             //state_["force"] = force;
         }
+        std::map<std::string, hardware_interface::CommandInterface*> &
+        get_loaned_command_interface() 
+        { 
+            return loaned_command_; 
+        }
+        std::map<std::string, const hardware_interface::StateInterface*> &
+        get_loaned_state_interface() 
+        { 
+            return loaned_state_; 
+        }
+        const StateInterface &get_state_interface() { return state_; }
         //void receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg);
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
