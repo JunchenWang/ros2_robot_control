@@ -68,18 +68,18 @@ namespace hardware_interface
         node_->get_parameter_or<std::vector<std::string>>("sensors", sensors, sensors);
         try
         {
-            for(auto & sensor_type_name : sensors)
+            for(auto & sensor_name : sensors)
             {
-                // auto sensor = hardware_loader_->createSharedInstance(sensor_type_name[1]);
-                // int pos = sensor_type_name[1].rfind(":");
-                // auto node_name = sensor_type_name[1].substr(pos + 1);
-                // components_[sensor_type_name[0]] = sensor;
-                // loaned_state_.emplace(sensor_type_name[0], &sensor->get_state_interface());
-                // loaned_command_.emplace(sensor_type_name[0], &sensor->get_command_interface());
-                // if(!sensor->initialize(node_name))
-                // {
-                //     throw std::runtime_error("sensor node initialized fail");
-                // }
+                auto sensor = hardware_loader_->createSharedInstance(sensor_name);
+                int pos = sensor_name.rfind(":");
+                auto node_name = sensor_name.substr(pos + 1);
+                components_[node_name] = sensor;
+                loaned_state_.emplace(node_name, &sensor->get_state_interface());
+                loaned_command_.emplace(node_name, &sensor->get_command_interface());
+                if(!sensor->initialize(node_name))
+                {
+                    throw std::runtime_error("sensor node initialized fail");
+                }
             }
         }
         catch (std::exception &ex)
