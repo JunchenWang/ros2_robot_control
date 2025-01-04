@@ -11,6 +11,7 @@ namespace control_node
           executor_(executor),
           param_listener_(std::make_shared<ParamListener>(this->get_node_parameters_interface())),
           running_(false),
+          finished_(false),
           async_mode_(true)
     {
         params_ = param_listener_->get_params();
@@ -40,7 +41,7 @@ namespace control_node
             int pos = robot_class.rfind(":");
             robot_class = robot_class.substr(pos + 1);
 
-            robot_->initialize(robot_class, robot_description_);
+            robot_->initialize(robot_class, "", rclcpp::NodeOptions().use_intra_process_comms(true));
             auto nodes = robot_->get_all_nodes();
             for (auto &no : nodes)
                 executor_->add_node(no);
@@ -50,8 +51,8 @@ namespace control_node
                 auto controller = controller_loader_->createSharedInstance(name);
                 pos = name.rfind(":");
                 name = name.substr(pos + 1);
-                controller->initialize(name, robot_description_);
-                controller->loarn_interface(&robot_->get_command_interface(), &robot_->get_state_interface());
+                controller->initialize(name);
+                controller->loarn_interface(&robot_->get_robot_math(), &robot_->get_command_interface(), &robot_->get_state_interface());
                 controllers_.push_back(controller);
                 executor_->add_node(controller->get_node()->get_node_base_interface());
             }
@@ -63,6 +64,7 @@ namespace control_node
         }
         service_ = create_service<control_msgs::srv::ControlCommand>("~/control_command",
                                                                      std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
+
     }
 
     ControlManager::~ControlManager()
@@ -73,6 +75,12 @@ namespace control_node
         bool running;
         running_.get(running);
         return running;
+    }
+    bool ControlManager::is_finished()
+    {
+        bool finished;
+        finished_.get(finished);
+        return finished;
     }
     bool ControlManager::deactivate_controller()
     {
@@ -136,10 +144,16 @@ namespace control_node
         response->result = false;
         if (cmd == "activate")
             response->result = activate_controller(request->cmd_params[0]);
-        if (cmd == "stop")
+        else if (cmd == "stop")
         {
             response->result = true;
             running_.set(false);
+        }
+        else if (cmd == "finish")
+        {
+            response->result = true;
+            running_.set(false);
+            finished_.set(true);
         }
     }
     int ControlManager::get_update_rate()
@@ -158,6 +172,7 @@ namespace control_node
         RCLCPP_INFO(get_logger(), "availabel controllers are: %s", ss.str().c_str());
         do
         {
+            read(this->now(), rclcpp::Duration(0, 0));
             while (!activate_controller_mutex_.try_lock())
             {
                 std::this_thread::sleep_for(100ms);
@@ -172,6 +187,7 @@ namespace control_node
             {
                 activate_controller_mutex_.unlock();
             }
+            std::this_thread::sleep_for(1s);
         } while (rclcpp::ok());
         running_.set(true);
     }
@@ -272,7 +288,7 @@ namespace control_node
     {
         if(!rclcpp::ok())
             return;
-            
+
         typedef std::vector<double> state_type;
 
         auto f_external = std::bind(&ControlManager::simulation_external_force, this,

@@ -1,0 +1,22 @@
+control_node:
+  ros__parameters:
+    update_rate: 500
+    lock_memory: true
+    simulation: false
+    sim_real_time: false
+    publish_joint_state: true
+    robot: hardwares::SimulationRobot
+    controllers: 
+      - controllers::DummyController
+      
+SimulationRobot:
+  ros__parameters:
+    end_effector: ""
+    ft_sensor: hardwares::FTDummySensor
+
+FTDummySensor:
+  ros__parameters:
+    mass: 1.0
+    cog: [1.0,2.0,3.0]
+    offset: [1.0,2.0,3.0,4.0,5.0,6.0]
+    pose: [.0, .0, .0, .0, .0, .0]

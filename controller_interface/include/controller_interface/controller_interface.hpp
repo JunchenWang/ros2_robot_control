@@ -24,13 +24,14 @@ namespace controller_interface
     {
       std::copy(s, e, internal_state_.begin());
     }
-    int initialize(const std::string &name, const std::string &description, 
-                   const std::string &name_space = "", const rclcpp::NodeOptions &options = rclcpp::NodeOptions(), 
+    int initialize(const std::string &name,
+                   const std::string &name_space = "", const rclcpp::NodeOptions &options = rclcpp::NodeOptions(),
                    bool lcn_service = false);
 
     void finalize();
 
-    void loarn_interface(hardware_interface::CommandInterface *command,
+    void loarn_interface(const robot_math::Robot *robot,
+                         hardware_interface::CommandInterface *command,
                          const hardware_interface::StateInterface *state);
 
     const rclcpp_lifecycle::State &get_state() { return node_->get_current_state(); }
@@ -66,9 +67,8 @@ namespace controller_interface
 
   protected:
     std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
-    std::string description_;
     std::vector<std::string> joint_names_;
-    robot_math::Robot robot_;
+    const robot_math::Robot *robot_;
     hardware_interface::CommandInterface *command_;
     const hardware_interface::StateInterface *state_;
     std::vector<double> internal_state_; // e.g. integration of state

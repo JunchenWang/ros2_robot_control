@@ -12,7 +12,7 @@ namespace controllers
         void update(const rclcpp::Time &/*t*/, const rclcpp::Duration &/*period*/) override
         {
             std::vector<double> &cmd_torque = (*command_)["torque"];
-            int n = static_cast<int>(robot_.dof);
+            int n = static_cast<int>(robot_->dof);
             for (int i = 0; i < n; i++)
                 cmd_torque[i] = -state_->at("velocity")[i];
             // std::vector<double> q(n), dq(n), ddq(n);

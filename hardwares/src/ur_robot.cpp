@@ -6,7 +6,6 @@
 #include <ur_rtde/rtde_receive_interface.h>
 #include <vector>
 
-
 using namespace robot_math;
 namespace hardwares
 {
@@ -16,16 +15,20 @@ namespace hardwares
         URRobot()
         {
         }
+
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
+            hardware_interface::RobotInterface::write(t, period);
+
         }
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
+            hardware_interface::RobotInterface::read(t, period);
             state_["position"] = receive_interface_->getActualQ();
             state_["velocity"] = receive_interface_->getActualQd();
-            state_["force"] = *real_time_buffer_force_.readFromRT();
-            auto force = state_["force"];
-            std::cerr << "force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
+            // state_["force"] = *real_time_buffer_force_.readFromRT();
+            //auto force = state_["force"];
+            //std::cerr << "force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
             // Eigen::Matrix4d T;
             // forward_kin_general(&robot_, state_["position"], T);
 
@@ -42,7 +45,7 @@ namespace hardwares
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override
         {
-           
+
             if (RobotInterface::on_configure(previous_state) == CallbackReturn::SUCCESS)
             {
                 node_->get_parameter_or<std::string>("robot_ip", robot_ip_, "");
@@ -51,9 +54,9 @@ namespace hardwares
                     RCLCPP_ERROR(node_->get_logger(), "robot_ip is not set");
                     return CallbackReturn::FAILURE;
                 }
-                // control_interface_ = std::make_shared<ur_rtde::RTDEControlInterface>(robot_ip_);
                 try
                 {
+                    // control_interface_ = std::make_shared<ur_rtde::RTDEControlInterface>(robot_ip_);
                     receive_interface_ = std::make_shared<ur_rtde::RTDEReceiveInterface>(robot_ip_);
                 }
                 catch (std::exception &e)
@@ -70,29 +73,36 @@ namespace hardwares
 
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override
         {
+            RobotInterface::on_shutdown(previous_state);
             if (control_interface_)
             {
                 control_interface_->servoStop();
                 control_interface_->speedStop();
                 control_interface_->stopScript();
             }
-
-            RCLCPP_ERROR(node_->get_logger(), "robot is shutting down ");
-            return RobotInterface::on_shutdown(previous_state);
+            return CallbackReturn::SUCCESS;
         }
 
         CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override
         {
-
-            return RobotInterface::on_activate(previous_state);
+            if (RobotInterface::on_activate(previous_state) == CallbackReturn::SUCCESS)
+            {
+                // to do
+                return CallbackReturn::SUCCESS;
+            }
+            return CallbackReturn::FAILURE;
         }
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override
         {
-            control_interface_->servoStop();
-            control_interface_->speedStop();
-            control_interface_->stopScript();
-            return RobotInterface::on_deactivate(previous_state);
+            RobotInterface::on_deactivate(previous_state);
+            if (control_interface_)
+            {
+                control_interface_->servoStop();
+                control_interface_->speedStop();
+                control_interface_->stopScript();
+            }
+            return CallbackReturn::SUCCESS;
         }
 
     protected:

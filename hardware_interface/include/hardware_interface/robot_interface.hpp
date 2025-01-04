@@ -3,6 +3,7 @@
 
 #include "hardware_interface/command_interface.hpp"
 #include "hardware_interface/hardware_interface.hpp"
+#include "hardware_interface/ft_sensor_interface.hpp"
 #include "hardware_interface/state_interface.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -30,28 +31,33 @@ namespace hardware_interface
                             std::function<Eigen::MatrixXd(double)> f_external,
                             std::function<std::vector<double>(double, const std::vector<double> &, const Eigen::MatrixXd &)> controller);
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override;
+        void read(const rclcpp::Time &t, const rclcpp::Duration &period) override;
         // for simulation only
         void write_state(const std::vector<double> &state, const std::vector<double> &force)
         {
             std::copy(state.begin(), state.begin() + dof_, state_["position"].begin());
             std::copy(state.begin() + dof_, state.begin() + 2 * dof_, state_["velocity"].begin());
-            state_["force"] = force;
+            ft_sensor_->write_state("force", force);
+            //state_["force"] = force;
         }
-        void receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg);
+        //void receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg);
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
-
+        const robot_math::Robot &get_robot_math() { return robot_;}
     protected:
         std::unique_ptr<pluginlib::ClassLoader<hardware_interface::HardwareInterface>> hardware_loader_;
         std::vector<std::string> joint_names_;
         int dof_;
         urdf::Model robot_model_;
         robot_math::Robot robot_;
+        std::map<std::string, const hardware_interface::StateInterface*> loaned_state_;
+        std::map<std::string, hardware_interface::CommandInterface*> loaned_command_;
         std::map<std::string, hardware_interface::HardwareInterface::SharedPtr> components_;
-        rclcpp::Subscription<geometry_msgs::msg::Wrench>::SharedPtr wrench_receiver_;
-        realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_force_;
+        std::shared_ptr<hardware_interface::HardwareInterface> ft_sensor_;
+        //rclcpp::Subscription<geometry_msgs::msg::Wrench>::SharedPtr wrench_receiver_;
+        //realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_force_;
 
     };
 

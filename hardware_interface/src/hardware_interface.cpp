@@ -1,19 +1,27 @@
 #include "hardware_interface/hardware_interface.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
+
 namespace hardware_interface
 {
-    HardwareInterface::HardwareInterface()
+    HardwareInterface::HardwareInterface() : is_running_(false)
     {
     }
-
-    int HardwareInterface::initialize(const std::string &name, const std::string &description, const std::string &name_space,
+    HardwareInterface::~HardwareInterface()
+    {
+        if (thread_ && thread_->joinable())
+        {
+            is_running_ = false;
+            thread_->join();
+        }
+        thread_ = nullptr;
+    }
+    int HardwareInterface::initialize(const std::string &name, const std::string &name_space,
                                       const rclcpp::NodeOptions &options,
                                       bool lcn_service)
     {
         rclcpp::NodeOptions node_options(options);
         node_options.allow_undeclared_parameters(true);
         node_options.automatically_declare_parameters_from_overrides(true);
-        description_ = description;
         node_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
             name, name_space, node_options, lcn_service); // disable LifecycleNode service interfaces or, bad_alloc exception occur!
 
@@ -48,6 +56,10 @@ namespace hardware_interface
         node_->shutdown();
     }
 
+    void HardwareInterface::write_state(const std::string &name, const std::vector<double> &s)
+    {
+        state_[name] = s;
+    }
     CallbackReturn HardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
 

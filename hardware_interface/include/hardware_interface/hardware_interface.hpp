@@ -4,7 +4,7 @@
 #include "hardware_interface/state_interface.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
-
+#include "realtime_tools/realtime_buffer.h"
 namespace hardware_interface
 {
     using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
@@ -13,13 +13,16 @@ namespace hardware_interface
     {
     public:
         using SharedPtr = std::shared_ptr<HardwareInterface>;
-        virtual ~HardwareInterface() {}
+        virtual ~HardwareInterface() ;
         HardwareInterface();
-        int initialize(const std::string &name, const std::string &description, const std::string &name_space = "",
+        int initialize(const std::string &name, const std::string &name_space = "",
                        const rclcpp::NodeOptions &options = rclcpp::NodeOptions(),
                        bool lcn_service = false);
 
         void finalize();
+        // for simulation
+        void write_state(const std::string& name, const std::vector<double> &s);
+        
         virtual void read(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) {}
         virtual void write(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) {}
         const rclcpp_lifecycle::State &get_state() { return node_->get_current_state(); }
@@ -42,12 +45,14 @@ namespace hardware_interface
         virtual CallbackReturn on_error(const rclcpp_lifecycle::State &previous_state);
 
     protected:
-        std::string description_;
         std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
         std::vector<std::string> state_names_;
         std::vector<std::string> command_names_;
         CommandInterface command_;
         StateInterface state_;
+        std::unique_ptr<std::thread> thread_;
+        volatile bool is_running_;
+        realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_;
     };
 
 } // namespace hardware

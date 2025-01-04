@@ -1,4 +1,4 @@
-#include "hardware_interface/robot_interface.hpp"
+#include "hardware_interface/ft_sensor_interface.hpp"
 #include <iostream>
 #include <vector>
 #include <termios.h>
@@ -8,11 +8,19 @@
 
 namespace hardwares
 {
-    class FTKunweiSensor : public hardware_interface::HardwareInterface
+    class FTKunweiSensor : public hardware_interface::FTSensorInterface
     {
     public:
-        FTKunweiSensor() : handle_(-1), is_running_(false)
+        FTKunweiSensor() : handle_(-1)
         {
+        }
+        ~FTKunweiSensor()
+        {
+            if (handle_ >= 0)
+            {
+                write_command("\x43\xAA\x0D\x0A");
+                close(handle_);
+            }
         }
         int write_command(const char *writedata)
         {
@@ -27,13 +35,15 @@ namespace hardwares
             }
             return total_len;
         }
-        CallbackReturn on_configure(const rclcpp_lifecycle::State &/*previous_state*/) override
+        CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override
         {
-            publisher_ = node_->create_publisher<geometry_msgs::msg::Wrench>("~/wrench", rclcpp::SensorDataQoS());
-
+            hardware_interface::FTSensorInterface::on_configure(previous_state);
+            //publisher_ = node_->create_publisher<geometry_msgs::msg::Wrench>("~/wrench", rclcpp::SensorDataQoS());
+            std::string device;
+            node_->get_parameter_or<std::string>("device", device, "");
             struct termios OnesensorTermios;
-            if (!description_.empty())
-                handle_ = open(description_.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+            if (!device.empty())
+                handle_ = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
             else
                 handle_ = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NONBLOCK);
             if (handle_ < 0)
@@ -70,12 +80,12 @@ namespace hardwares
                 thread_ = nullptr;
                 write_command("\x43\xAA\x0D\x0A");
             }
-            if(handle_ >= 0)
+            if (handle_ >= 0)
                 close(handle_);
             return CallbackReturn::SUCCESS;
         }
 
-        CallbackReturn on_activate(const rclcpp_lifecycle::State &/*previous_state*/) override
+        CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             if (write_command("\x48\xAA\x0D\x0A") > 0)
             {
@@ -94,11 +104,11 @@ namespace hardwares
                         memset(readdata, 0, 150); // the length//////////////////////////////
                         int max_fd = 0;
                         fd_set readset = {0};
-                        struct timeval tv = {0,0};
+                        struct timeval tv = {0, 0};
                         int i, len;
                         int ReceivedDataLangth;
-                        double Force[6];
-                        while (is_running_)
+                        std::vector<double> force(6);
+                        while (is_running_ && rclcpp::ok())
                         {
                             len = 0;
                             FD_ZERO(&readset);
@@ -137,41 +147,42 @@ namespace hardwares
                                     {
                                         z.m[i] = data[i + 2];
                                     }
-                                    Force[0] = z.n;
+                                    force[0] = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 6];
                                     }
-                                    Force[1] = z.n;
+                                    force[1] = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 10];
                                     }
-                                    Force[2] = z.n;
+                                    force[2] = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 14];
                                     }
-                                    Force[3] = z.n;
+                                    force[3] = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 18];
                                     }
-                                    Force[4] = z.n;
+                                    force[4] = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 22];
                                     }
-                                    Force[5] = z.n;
-                                    //printf("Fx= %2f Kg,Fy= %2f Kg,Fz= %2f Kg,Mx= %2f Kg/M,My= %2f Kg/M,Mz= %2f Kg/M\n", Force[0], Force[1], Force[2], Force[3], Force[4], Force[5]);
-                                    geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
-                                    msg->force.x = Force[0] * 1000;
-                                    msg->force.y = Force[1] * 1000;
-                                    msg->force.z = Force[2] * 1000;
-                                    msg->torque.x = Force[3] * 1000;
-                                    msg->torque.y = Force[4] * 1000;
-                                    msg->torque.z = Force[5] * 1000;
-                                    publisher_->publish(std::move(msg));
+                                    force[5] = 1000 * z.n;
+                                    real_time_buffer_.writeFromNonRT(force);
+                                    // printf("Fx= %2f Kg,Fy= %2f Kg,Fz= %2f Kg,Mx= %2f Kg/M,My= %2f Kg/M,Mz= %2f Kg/M\n", Force[0], Force[1], Force[2], Force[3], Force[4], Force[5]);
+                                    //geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
+                                    // msg->force.x = Force[0] * 1000;
+                                    // msg->force.y = Force[1] * 1000;
+                                    // msg->force.z = Force[2] * 1000;
+                                    // msg->torque.x = Force[3] * 1000;
+                                    // msg->torque.y = Force[4] * 1000;
+                                    // msg->torque.z = Force[5] * 1000;
+                                    //publisher_->publish(std::move(msg));
                                 }
                                 else if ((ReceivedDataLangth >= 28) && (ReceivedDataLangth < 120))
                                 {
@@ -206,7 +217,7 @@ namespace hardwares
                 return CallbackReturn::FAILURE;
         }
 
-        CallbackReturn on_deactivate(const rclcpp_lifecycle::State &/*previous_state*/) override
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             if (thread_ && thread_->joinable())
             {
@@ -217,29 +228,9 @@ namespace hardwares
             write_command("\x43\xAA\x0D\x0A");
             return CallbackReturn::SUCCESS;
         }
-
-        CallbackReturn on_error(const rclcpp_lifecycle::State &previous_state) override
-        {
-            if (previous_state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
-            {
-                if (thread_ && thread_->joinable())
-                {
-                    is_running_ = false;
-                    thread_->join();
-                }
-                thread_ = nullptr;
-                write_command("\x43\xAA\x0D\x0A");
-            }
-            if(handle_ >= 0)
-                close(handle_);
-            return CallbackReturn::SUCCESS;
-        }
-
     protected:
         int handle_;
-        std::unique_ptr<std::thread> thread_;
-        volatile bool is_running_;
-        rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
+        //rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
     };
 
 } // namespace hardwares

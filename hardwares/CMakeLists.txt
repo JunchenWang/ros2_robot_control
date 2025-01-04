@@ -8,22 +8,29 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
-find_package(hardware_interface REQUIRED)
-find_package(urdf REQUIRED)
-find_package(robot_math REQUIRED)
-find_package(pluginlib REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(lifecycle_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(ur_rtde REQUIRED)
-find_package(realtime_tools REQUIRED)
+
+set(THIS_PACKAGE_INCLUDE_DEPENDS
+  "rclcpp_lifecycle"
+  "lifecycle_msgs"
+  "geometry_msgs"
+  "realtime_tools"
+  "urdf"
+  "robot_math"
+  "hardware_interface"
+  "pluginlib"
+)
+
+foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
+  find_package(${Dependency} REQUIRED)
+endforeach()
+
 pluginlib_export_plugin_description_file(hardware_interface plugins.xml)
 
+file(GLOB_RECURSE srcs src/*.cpp)
+
 add_library(hardwares 
-            src/simulation_robot.cpp
-            src/ft_kunwei_sensor.cpp
-            src/ft_ati_sensor.cpp
-            src/ur_robot.cpp)
+            ${srcs})
 
 add_library(hardwares::hardwares ALIAS hardwares)
 target_compile_features(hardwares PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
@@ -33,14 +40,7 @@ target_include_directories(hardwares PUBLIC
 
 ament_target_dependencies(
   hardwares
-  "hardware_interface"
-  "pluginlib"
-  "urdf"
-  "robot_math"
-  "rclcpp_lifecycle"
-  "lifecycle_msgs"
-  "geometry_msgs"
-  "realtime_tools"
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
 target_link_libraries(hardwares 
@@ -63,18 +63,14 @@ install(
 )
 
 
-add_executable(test_hardware src/test_hardware.cpp)
+add_executable(test_hardware test/test_hardware.cpp)
 target_include_directories(test_hardware PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 target_compile_features(test_hardware PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(
   test_hardware
-  "hardware_interface"
-  "pluginlib"
-  # "urdf"
-  # "robot_math"
-  # "rclcpp_lifecycle"
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
   
 )
 

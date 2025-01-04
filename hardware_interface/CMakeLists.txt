@@ -17,7 +17,8 @@ find_package(realtime_tools REQUIRED)
 find_package(pluginlib REQUIRED)
 add_library(hardware_interface SHARED
             src/hardware_interface.cpp
-            src/robot_interface.cpp)
+            src/robot_interface.cpp
+            src/ft_sensor_interface.cpp)
 
 add_library(hardware_interface::hardware_interface ALIAS hardware_interface)
 

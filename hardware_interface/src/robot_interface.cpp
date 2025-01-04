@@ -35,16 +35,18 @@ namespace hardware_interface
             {
                 command_.emplace(name, std::vector<double>(dof_, 0.0));
             }
-            state_.emplace("force", std::vector<double>(6, 0.0));
+            // state_names_.emplace_back("force");
+            // state_.emplace("force", std::vector<double>(6,0));
             return 1;
         }
         return 0;
     }
-    void RobotInterface::receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg)
-    {
-        real_time_buffer_force_.writeFromNonRT({msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z});
-        //state_["force"] = {msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z};
-    }
+    // void RobotInterface::receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg)
+    // {
+    //     //printf(" Received message with address: %p\n",reinterpret_cast<std::uintptr_t>(msg.get()));
+    //     real_time_buffer_force_.writeFromNonRT({msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z});
+    //     //state_["force"] = {msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z};
+    // }
     std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> RobotInterface::get_all_nodes()
     {
         std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> nodes{node_->get_node_base_interface()};
@@ -56,7 +58,10 @@ namespace hardware_interface
     }
     CallbackReturn RobotInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
-         if (!configure_urdf(description_))
+        std::string robot_description;
+        node_->get_parameter_or<std::string>("robot_description", robot_description, "");
+
+         if (!configure_urdf(robot_description))
             return CallbackReturn::FAILURE;
 
         std::string ft_sensor_class;
@@ -65,13 +70,14 @@ namespace hardware_interface
         {
             if (!ft_sensor_class.empty())
             {
-                auto sensor = hardware_loader_->createSharedInstance(ft_sensor_class);
+                ft_sensor_ = hardware_loader_->createSharedInstance(ft_sensor_class);
                 int pos = ft_sensor_class.rfind(":");
                 ft_sensor_class = ft_sensor_class.substr(pos + 1);
-                components_[ft_sensor_class] = sensor;
-                wrench_receiver_ = node_->create_subscription<geometry_msgs::msg::Wrench>(ft_sensor_class+"/wrench", rclcpp::SensorDataQoS(),
-                                                                                  std::bind(&RobotInterface::receive_wrench, this, std::placeholders::_1));
-       
+                components_[ft_sensor_class] = ft_sensor_;
+                loaned_state_.emplace("ft_sensor", &ft_sensor_->get_state_interface());
+                // wrench_receiver_ = node_->create_subscription<geometry_msgs::msg::Wrench>(ft_sensor_class+"/wrench", rclcpp::SensorDataQoS(),
+                //                                                                   std::bind(&RobotInterface::receive_wrench, this, std::placeholders::_1));
+
             }
         }
         catch (pluginlib::PluginlibException &ex)
@@ -81,16 +87,15 @@ namespace hardware_interface
             return CallbackReturn::FAILURE;
         }
         for (auto &c : components_)
-            if (c.second->initialize(c.first, description_) == 0)
+            if (!c.second->initialize(c.first, "", rclcpp::NodeOptions().use_intra_process_comms(true)))
                 return CallbackReturn::FAILURE;
-
         return CallbackReturn::SUCCESS;
     }
 
     CallbackReturn RobotInterface::on_shutdown(const rclcpp_lifecycle::State &previous_state)
     {
         for (auto &c : components_)
-            c.second->get_node()->shutdown();
+            c.second->finalize();
         return CallbackReturn::SUCCESS;
     }
 
@@ -110,11 +115,15 @@ namespace hardware_interface
         return CallbackReturn::SUCCESS;
     }
 
-    void RobotInterface::write(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/)
+    void RobotInterface::write(const rclcpp::Time & t, const rclcpp::Duration & period)
     {
-        state_["position"] = command_["position"];
-        state_["velocity"] = command_["velocity"];
-        state_["torque"] = command_["torque"];
+        for (auto &c : components_)
+            c.second->write(t, period);
+    }
+    void RobotInterface::read(const rclcpp::Time & t, const rclcpp::Duration & period)
+    {
+        for (auto &c : components_)
+            c.second->read(t, period);
     }
     void RobotInterface::robot_dynamics(const std::vector<double> &x, std::vector<double> &dx, double t,
                                         std::function<Eigen::MatrixXd(double)> f_external,

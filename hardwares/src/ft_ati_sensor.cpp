@@ -1,4 +1,4 @@
-#include "hardware_interface/robot_interface.hpp"
+#include "hardware_interface/ft_sensor_interface.hpp"
 #include <iostream>
 #include <vector>
 #include "lifecycle_msgs/msg/state.hpp"
@@ -28,13 +28,19 @@ namespace hardwares
         int32 FTData[6];
     } RESPONSE;
 
-
-
-    class FTATISensor : public hardware_interface::HardwareInterface
+    class FTATISensor : public hardware_interface::FTSensorInterface
     {
     public:
-        FTATISensor() : handle_(-1), is_running_(false)
+        FTATISensor() : handle_(-1)
         {
+        }
+        ~FTATISensor()
+        {
+            if (handle_ >= 0)
+            {
+                stop_sensing();
+                close(handle_);
+            }
         }
         int start_sensing()
         {
@@ -49,9 +55,10 @@ namespace hardwares
             char stoprequest[8] = {0x12, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /* The request data sent to the Net F/T. */
             return sendto(handle_, stoprequest, 8, 0, (struct sockaddr *)&addr_, sizeof(addr_));
         }
-        CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
+        CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override
         {
-            publisher_ = node_->create_publisher<geometry_msgs::msg::Wrench>("~/wrench", rclcpp::SensorDataQoS());
+            hardware_interface::FTSensorInterface::on_configure(previous_state);
+            //publisher_ = node_->create_publisher<geometry_msgs::msg::Wrench>("~/wrench", rclcpp::SensorDataQoS());
             std::string sensor_ip;
             node_->get_parameter_or<std::string>("sensor_ip", sensor_ip, "");
             if (!sensor_ip.empty())
@@ -109,9 +116,9 @@ namespace hardwares
                     {
                         socklen_t len = sizeof(addr_);
                         char readdata[36];
-                        double force[6];
+                        std::vector<double> force(6);
                         RESPONSE resp;
-                        while (is_running_)
+                        while (is_running_ && rclcpp::ok())
                         {
                             int resv_num = recvfrom(handle_, readdata, 36, 0, (struct sockaddr *)&addr_, &len);
 
@@ -125,14 +132,15 @@ namespace hardwares
                                     resp.FTData[i] = ntohl(*(int32 *)&readdata[12 + i * 4]);
                                     force[i] = resp.FTData[i] / 1000000.0f;
                                 }
-                                geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
-                                msg->force.x = force[0];
-                                msg->force.y = force[1];
-                                msg->force.z = force[2];
-                                msg->torque.x = force[3];
-                                msg->torque.y = force[4];
-                                msg->torque.z = force[5];
-                                publisher_->publish(std::move(msg));
+                                real_time_buffer_.writeFromNonRT(force);
+                                //geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
+                                // msg->force.x = force[0];
+                                // msg->force.y = force[1];
+                                // msg->force.z = force[2];
+                                // msg->torque.x = force[3];
+                                // msg->torque.y = force[4];
+                                // msg->torque.z = force[5];
+                                // publisher_->publish(std::move(msg));
                             }
                         }
                     });
@@ -155,29 +163,10 @@ namespace hardwares
             return CallbackReturn::SUCCESS;
         }
 
-        CallbackReturn on_error(const rclcpp_lifecycle::State &previous_state) override
-        {
-            if (previous_state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
-            {
-                if (thread_ && thread_->joinable())
-                {
-                    is_running_ = false;
-                    thread_->join();
-                }
-                thread_ = nullptr;
-                stop_sensing();
-            }
-            if (handle_ >= 0)
-                close(handle_);
-            return CallbackReturn::SUCCESS;
-        }
-
     protected:
         int handle_;
         sockaddr_in addr_;
-        std::unique_ptr<std::thread> thread_;
-        volatile bool is_running_;
-        rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
+        //rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
     };
 
 } // namespace hardwares
