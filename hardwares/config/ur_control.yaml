@@ -13,7 +13,7 @@ URRobot:
   ros__parameters:
     robot_ip: 192.168.31.201
     sensors:
-      - [ft_sensor, hardwares::FTATISensor]
+      - hardwares::FTATISensor
 
 FTATISensor:
   ros__parameters:
