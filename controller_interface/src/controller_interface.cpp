@@ -47,7 +47,7 @@ namespace controller_interface
                                               hardware_interface::CommandInterface *command,
                                               const hardware_interface::StateInterface *state,
                                               std::map<std::string, hardware_interface::CommandInterface*>* loaned_command,
-                                              std::map<std::string, const hardware_interface::StateInterface*>* loaned_state)
+                                              const std::map<std::string, const hardware_interface::StateInterface*>* loaned_state)
     {
         command_ = command;
         state_ = state;

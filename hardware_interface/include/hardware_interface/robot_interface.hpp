@@ -37,7 +37,7 @@ namespace hardware_interface
         {
             std::copy(state.begin(), state.begin() + dof_, state_["position"].begin());
             std::copy(state.begin() + dof_, state.begin() + 2 * dof_, state_["velocity"].begin());
-            ft_sensor_->write_state("force", force);
+            components_["ft_sensor"]->write_state("force", force);
             //state_["force"] = force;
         }
         std::map<std::string, hardware_interface::CommandInterface*> &
@@ -45,7 +45,7 @@ namespace hardware_interface
         { 
             return loaned_command_; 
         }
-        std::map<std::string, const hardware_interface::StateInterface*> &
+        const std::map<std::string, const hardware_interface::StateInterface*> &
         get_loaned_state_interface() 
         { 
             return loaned_state_; 
@@ -66,7 +66,7 @@ namespace hardware_interface
         std::map<std::string, const hardware_interface::StateInterface*> loaned_state_;
         std::map<std::string, hardware_interface::CommandInterface*> loaned_command_;
         std::map<std::string, hardware_interface::HardwareInterface::SharedPtr> components_;
-        std::shared_ptr<hardware_interface::HardwareInterface> ft_sensor_;
+        // std::shared_ptr<hardware_interface::HardwareInterface> ft_sensor_;
         //rclcpp::Subscription<geometry_msgs::msg::Wrench>::SharedPtr wrench_receiver_;
         //realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_force_;
 

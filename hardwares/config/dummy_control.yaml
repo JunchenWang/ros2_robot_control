@@ -12,7 +12,8 @@ control_node:
 SimulationRobot:
   ros__parameters:
     end_effector: ""
-    ft_sensor: hardwares::FTDummySensor
+    sensors:
+      ft_sensor: hardwares::FTDummySensor
 
 FTDummySensor:
   ros__parameters:

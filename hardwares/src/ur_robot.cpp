@@ -30,7 +30,7 @@ namespace hardwares
             auto & dq = state_["velocity"];
             auto &force = loaned_state_["ft_sensor"]->at("force");
             auto pose2 = receive_interface_->getActualTCPPose();
-            std::dynamic_pointer_cast<hardware_interface::FTSensorInterface>(ft_sensor_)->compensate_gravity(pose2);
+            //std::dynamic_pointer_cast<hardware_interface::FTSensorInterface>(ft_sensor_)->compensate_gravity(pose2);
         
             q = receive_interface_->getActualQ();
             dq = receive_interface_->getActualQd();

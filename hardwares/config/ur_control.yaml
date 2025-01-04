@@ -12,7 +12,8 @@ control_node:
 URRobot:
   ros__parameters:
     robot_ip: 192.168.31.201
-    ft_sensor: hardwares::FTATISensor
+    sensors:
+      - [ft_sensor, hardwares::FTATISensor]
 
 FTATISensor:
   ros__parameters:

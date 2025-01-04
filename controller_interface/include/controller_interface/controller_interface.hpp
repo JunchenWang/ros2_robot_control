@@ -34,13 +34,13 @@ namespace controller_interface
                              hardware_interface::CommandInterface *command,
                              const hardware_interface::StateInterface *state,
                              std::map<std::string, hardware_interface::CommandInterface*>* loaned_command,
-                             std::map<std::string, const hardware_interface::StateInterface*>* loaned_state);
+                             const std::map<std::string, const hardware_interface::StateInterface*>* loaned_state);
 
         const rclcpp_lifecycle::State &get_state() { return node_->get_current_state(); }
 
         std::shared_ptr<rclcpp_lifecycle::LifecycleNode> get_node() { return node_; }
 
-        virtual void update(const rclcpp::Time &t, const rclcpp::Duration &period) {};
+        virtual void update(const rclcpp::Time &/*t*/, const rclcpp::Duration &/*period*/) {};
 
         virtual CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state);
 
@@ -70,11 +70,11 @@ namespace controller_interface
     protected:
         std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
         std::vector<std::string> joint_names_;
-        const robot_math::Robot *robot_;
         hardware_interface::CommandInterface *command_;
         const hardware_interface::StateInterface *state_;
+        const robot_math::Robot *robot_;
         std::map<std::string, hardware_interface::CommandInterface*>* loaned_command_;
-        std::map<std::string, const hardware_interface::StateInterface*>* loaned_state_;
+        const std::map<std::string, const hardware_interface::StateInterface*>* loaned_state_;
         std::vector<double> internal_state_; // e.g. integration of state
     };
 

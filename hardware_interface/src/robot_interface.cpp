@@ -64,31 +64,30 @@ namespace hardware_interface
          if (!configure_urdf(robot_description))
             return CallbackReturn::FAILURE;
 
-        std::string ft_sensor_class;
-        node_->get_parameter_or<std::string>("ft_sensor", ft_sensor_class, "");
+        std::vector<std::string> sensors;
+        node_->get_parameter_or<std::vector<std::string>>("sensors", sensors, sensors);
         try
         {
-            if (!ft_sensor_class.empty())
+            for(auto & sensor_type_name : sensors)
             {
-                ft_sensor_ = hardware_loader_->createSharedInstance(ft_sensor_class);
-                int pos = ft_sensor_class.rfind(":");
-                ft_sensor_class = ft_sensor_class.substr(pos + 1);
-                components_[ft_sensor_class] = ft_sensor_;
-                loaned_state_.emplace("ft_sensor", &ft_sensor_->get_state_interface());
-                // wrench_receiver_ = node_->create_subscription<geometry_msgs::msg::Wrench>(ft_sensor_class+"/wrench", rclcpp::SensorDataQoS(),
-                //                                                                   std::bind(&RobotInterface::receive_wrench, this, std::placeholders::_1));
-
+                // auto sensor = hardware_loader_->createSharedInstance(sensor_type_name[1]);
+                // int pos = sensor_type_name[1].rfind(":");
+                // auto node_name = sensor_type_name[1].substr(pos + 1);
+                // components_[sensor_type_name[0]] = sensor;
+                // loaned_state_.emplace(sensor_type_name[0], &sensor->get_state_interface());
+                // loaned_command_.emplace(sensor_type_name[0], &sensor->get_command_interface());
+                // if(!sensor->initialize(node_name))
+                // {
+                //     throw std::runtime_error("sensor node initialized fail");
+                // }
             }
         }
-        catch (pluginlib::PluginlibException &ex)
+        catch (std::exception &ex)
         {
             RCLCPP_INFO(node_->get_logger(), "%s", ex.what());
             components_.clear();
             return CallbackReturn::FAILURE;
         }
-        for (auto &c : components_)
-            if (!c.second->initialize(c.first, "", rclcpp::NodeOptions().use_intra_process_comms(true)))
-                return CallbackReturn::FAILURE;
         return CallbackReturn::SUCCESS;
     }
 
