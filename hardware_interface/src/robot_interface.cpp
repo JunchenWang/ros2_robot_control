@@ -5,7 +5,7 @@ namespace hardware_interface
 
     RobotInterface::RobotInterface() : dof_(0)
     {
-        hardware_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::HardwareInterface>>("hardware_interface", "hardware_interface::HardwareInterface");
+        sensor_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::SensorInterface>>("hardware_interface", "hardware_interface::SensorInterface");
     }
 
     int RobotInterface::configure_urdf(const std::string &robot_description)
@@ -20,13 +20,7 @@ namespace hardware_interface
             }
             dof_ = joint_names_.size();
             RCLCPP_INFO(node_->get_logger(), "DOF: %d", dof_);
-            state_names_.emplace_back("position");
-            state_names_.emplace_back("velocity");
-            state_names_.emplace_back("torque");
-
-            command_names_.emplace_back("position");
-            command_names_.emplace_back("velocity");
-            command_names_.emplace_back("torque");
+            
             for (auto &name : state_names_)
             {
                 state_.emplace(name, std::vector<double>(dof_, 0.0));
@@ -60,25 +54,27 @@ namespace hardware_interface
     {
         std::string robot_description;
         node_->get_parameter_or<std::string>("robot_description", robot_description, "");
-
+        node_->get_parameter_or<std::vector<std::string>>("state_interface", state_names_, std::vector<std::string>());
+        node_->get_parameter_or<std::vector<std::string>>("command_interface", command_names_, std::vector<std::string>());
          if (!configure_urdf(robot_description))
             return CallbackReturn::FAILURE;
 
         std::vector<std::string> sensors;
+        std::string sensor_type;
         node_->get_parameter_or<std::vector<std::string>>("sensors", sensors, sensors);
         try
         {
             for(auto & sensor_name : sensors)
             {
-                auto sensor = hardware_loader_->createSharedInstance(sensor_name);
-                int pos = sensor_name.rfind(":");
-                auto node_name = sensor_name.substr(pos + 1);
-                components_[node_name] = sensor;
-                loaned_state_.emplace(node_name, &sensor->get_state_interface());
-                loaned_command_.emplace(node_name, &sensor->get_command_interface());
-                if(!sensor->initialize(node_name))
+                node_->get_parameter_or<std::string>(sensor_name, sensor_type, sensor_type);
+                RCLCPP_INFO(node_->get_logger(), "found %s : %s", sensor_name.c_str(), sensor_type.c_str());
+                auto sensor = sensor_loader_->createSharedInstance(sensor_type);
+                components_[sensor_name] = sensor;
+                loaned_state_.emplace(sensor_name, &sensor->get_state_interface());
+                //loaned_command_.emplace(sensor_name, &sensor->get_command_interface());
+                if(!sensor->initialize(sensor_name))
                 {
-                    throw std::runtime_error("sensor node initialized fail");
+                    throw std::runtime_error("sensor node initialized failed");
                 }
             }
         }

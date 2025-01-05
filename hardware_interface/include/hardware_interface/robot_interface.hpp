@@ -1,18 +1,13 @@
 #ifndef ROBOT_INTERFACE_HPP
 #define ROBOT_INTERFACE_HPP
 
+#include "pluginlib/class_loader.hpp"
 #include "hardware_interface/command_interface.hpp"
-#include "hardware_interface/hardware_interface.hpp"
-#include "hardware_interface/ft_sensor_interface.hpp"
+#include "hardware_interface/sensor_interface.hpp"
 #include "hardware_interface/state_interface.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "robot_math/robot_math.hpp"
 #include "urdf/model.h"
-#include <functional>
-#include "geometry_msgs/msg/wrench.hpp"
-#include "pluginlib/class_loader.hpp"
-#include "realtime_tools/realtime_buffer.hpp"
+
 namespace hardware_interface
 {
 
@@ -58,11 +53,14 @@ namespace hardware_interface
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
         const robot_math::Robot &get_robot_math() { return robot_;}
     protected:
-        std::unique_ptr<pluginlib::ClassLoader<hardware_interface::HardwareInterface>> hardware_loader_;
+    
+        std::unique_ptr<pluginlib::ClassLoader<hardware_interface::SensorInterface>> sensor_loader_;
         std::vector<std::string> joint_names_;
         int dof_;
         urdf::Model robot_model_;
         robot_math::Robot robot_;
+        std::vector<std::string> state_names_;
+        std::vector<std::string> command_names_;
         std::map<std::string, const hardware_interface::StateInterface*> loaned_state_;
         std::map<std::string, hardware_interface::CommandInterface*> loaned_command_;
         std::map<std::string, hardware_interface::HardwareInterface::SharedPtr> components_;

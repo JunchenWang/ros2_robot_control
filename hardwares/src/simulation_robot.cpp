@@ -22,9 +22,16 @@ namespace hardwares
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::write(t, period);
-            state_["position"] = command_["position"];
-            state_["velocity"] = command_["velocity"];
-            state_["torque"] = command_["torque"];
+            for(auto & state : state_names_)
+            {
+                auto it = command_.find(state);
+                if(it != command_.end())
+                {
+                    state_[state] = it->second;
+                }
+            }
+            // state_["position"] = command_["position"];
+            // state_["velocity"] = command_["velocity"];
         }
     };
 

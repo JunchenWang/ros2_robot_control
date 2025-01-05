@@ -1,4 +1,4 @@
-#include "hardware_interface/ft_sensor_interface.hpp"
+#include "hardware_interface/sensor_interface.hpp"
 #include <iostream>
 #include <vector>
 #include "lifecycle_msgs/msg/state.hpp"
@@ -28,7 +28,7 @@ namespace hardwares
         int32 FTData[6];
     } RESPONSE;
 
-    class FTATISensor : public hardware_interface::FTSensorInterface
+    class FTATISensor : public hardware_interface::SensorInterface
     {
     public:
         FTATISensor() : handle_(-1)
@@ -55,36 +55,38 @@ namespace hardwares
             char stoprequest[8] = {0x12, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /* The request data sent to the Net F/T. */
             return sendto(handle_, stoprequest, 8, 0, (struct sockaddr *)&addr_, sizeof(addr_));
         }
-        CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override
+        CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override
         {
-            hardware_interface::FTSensorInterface::on_configure(previous_state);
-            //publisher_ = node_->create_publisher<geometry_msgs::msg::Wrench>("~/wrench", rclcpp::SensorDataQoS());
-            std::string sensor_ip;
-            node_->get_parameter_or<std::string>("sensor_ip", sensor_ip, "");
-            if (!sensor_ip.empty())
+            if (hardware_interface::SensorInterface::on_configure(previous_state) == CallbackReturn::SUCCESS)
             {
-                handle_ = socket(AF_INET, SOCK_DGRAM, 0); /* Handle to UDP socket used to communicate with Net F/T. */
-                if (handle_ == -1)
+                std::string sensor_ip;
+                node_->get_parameter_or<std::string>("sensor_ip", sensor_ip, "");
+                if (!sensor_ip.empty())
                 {
-                    RCLCPP_WARN(node_->get_logger(), "Open socket failed!");
-                    return CallbackReturn::FAILURE;
+                    handle_ = socket(AF_INET, SOCK_DGRAM, 0); /* Handle to UDP socket used to communicate with Net F/T. */
+                    if (handle_ == -1)
+                    {
+                        RCLCPP_WARN(node_->get_logger(), "Open socket failed!");
+                        return CallbackReturn::FAILURE;
+                    }
+                    struct timeval read_timeout;
+                    read_timeout.tv_sec = 0;
+                    read_timeout.tv_usec = 10;
+                    // non-blocking
+                    if (setsockopt(handle_, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout)))
+                    {
+                        RCLCPP_WARN(node_->get_logger(), "set socket time out in service failed!");
+                        return CallbackReturn::FAILURE;
+                    }
+                    memset(&addr_, 0, sizeof(addr_));
+                    addr_.sin_family = AF_INET;
+                    addr_.sin_port = htons(PORT);
+                    addr_.sin_addr.s_addr = inet_addr(sensor_ip.c_str()); // const char *ip = "192.168.124.12";
+                    return CallbackReturn::SUCCESS;
                 }
-                struct timeval read_timeout;
-                read_timeout.tv_sec = 0;
-                read_timeout.tv_usec = 10;
-                // non-blocking
-                if (setsockopt(handle_, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout)))
-                {
-                    RCLCPP_WARN(node_->get_logger(), "set socket time out in service failed!");
-                    return CallbackReturn::FAILURE;
-                }
-                memset(&addr_, 0, sizeof(addr_));
-                addr_.sin_family = AF_INET;
-                addr_.sin_port = htons(PORT);
-                addr_.sin_addr.s_addr = inet_addr(sensor_ip.c_str()); // const char *ip = "192.168.124.12";
-                return CallbackReturn::SUCCESS;
+                RCLCPP_WARN(node_->get_logger(), "IP empty! ATI sensor unconfiged!");
+                return CallbackReturn::FAILURE;
             }
-            RCLCPP_WARN(node_->get_logger(), "IP empty! ATI sensor unconfiged!");
             return CallbackReturn::FAILURE;
         }
 
@@ -133,14 +135,14 @@ namespace hardwares
                                     force[i] = resp.FTData[i] / 1000000.0f;
                                 }
                                 real_time_buffer_.writeFromNonRT(force);
-                                //geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
-                                // msg->force.x = force[0];
-                                // msg->force.y = force[1];
-                                // msg->force.z = force[2];
-                                // msg->torque.x = force[3];
-                                // msg->torque.y = force[4];
-                                // msg->torque.z = force[5];
-                                // publisher_->publish(std::move(msg));
+                                // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
+                                //  msg->force.x = force[0];
+                                //  msg->force.y = force[1];
+                                //  msg->force.z = force[2];
+                                //  msg->torque.x = force[3];
+                                //  msg->torque.y = force[4];
+                                //  msg->torque.z = force[5];
+                                //  publisher_->publish(std::move(msg));
                             }
                         }
                     });
@@ -166,11 +168,11 @@ namespace hardwares
     protected:
         int handle_;
         sockaddr_in addr_;
-        //rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
+        // rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
     };
 
 } // namespace hardwares
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(hardwares::FTATISensor, hardware_interface::HardwareInterface)
+PLUGINLIB_EXPORT_CLASS(hardwares::FTATISensor, hardware_interface::SensorInterface)

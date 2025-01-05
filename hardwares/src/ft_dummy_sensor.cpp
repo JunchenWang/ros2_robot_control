@@ -1,4 +1,4 @@
-#include "hardware_interface/ft_sensor_interface.hpp"
+#include "hardware_interface/sensor_interface.hpp"
 #include <iostream>
 #include <vector>
 #include "lifecycle_msgs/msg/state.hpp"
@@ -7,7 +7,7 @@
 namespace hardwares
 {
 
-    class FTDummySensor : public hardware_interface::FTSensorInterface
+    class FTDummySensor : public hardware_interface::SensorInterface
     {
     public:
         FTDummySensor()
@@ -74,4 +74,4 @@ namespace hardwares
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(hardwares::FTDummySensor, hardware_interface::HardwareInterface)
+PLUGINLIB_EXPORT_CLASS(hardwares::FTDummySensor, hardware_interface::SensorInterface)

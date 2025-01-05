@@ -3,17 +3,12 @@
 
 namespace hardware_interface
 {
-    HardwareInterface::HardwareInterface() : is_running_(false)
+    HardwareInterface::HardwareInterface() 
     {
     }
     HardwareInterface::~HardwareInterface()
     {
-        if (thread_ && thread_->joinable())
-        {
-            is_running_ = false;
-            thread_->join();
-        }
-        thread_ = nullptr;
+       
     }
     int HardwareInterface::initialize(const std::string &name, const std::string &name_space,
                                       const rclcpp::NodeOptions &options,

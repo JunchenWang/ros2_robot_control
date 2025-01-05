@@ -39,9 +39,9 @@ namespace control_node
         {
             robot_ = robot_loader_->createSharedInstance(robot_class);
             int pos = robot_class.rfind(":");
-            robot_class = robot_class.substr(pos + 1);
+            auto robot_name = robot_class.substr(pos + 1);
 
-            robot_->initialize(robot_class, "", rclcpp::NodeOptions().use_intra_process_comms(true));
+            robot_->initialize(robot_name, "", rclcpp::NodeOptions().use_intra_process_comms(true));
             auto nodes = robot_->get_all_nodes();
             for (auto &no : nodes)
                 executor_->add_node(no);
@@ -213,9 +213,22 @@ namespace control_node
         {
             auto states = std::make_shared<sensor_msgs::msg::JointState>();
             states->name = robot_->get_joint_names();
-            states->position = robot_->get_state_interface().at("position");
-            states->velocity = robot_->get_state_interface().at("velocity");
-            states->effort = robot_->get_state_interface().at("torque");
+            auto & state = robot_->get_state_interface();
+            auto it = state.find("position");
+            if(it != state.end())
+            {
+                states->position = it->second;
+            }
+            it = state.find("velocity");
+            if(it != state.end())
+            {
+                states->velocity = it->second;
+            }
+            it = state.find("torque");
+            if(it != state.end())
+            {
+                states->effort = it->second;
+            }
             states->header.stamp = t;
             if (real_time_publisher_->trylock())
             {

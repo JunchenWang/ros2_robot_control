@@ -1,4 +1,4 @@
-#include "hardware_interface/ft_sensor_interface.hpp"
+#include "hardware_interface/sensor_interface.hpp"
 #include <iostream>
 #include <vector>
 #include <termios.h>
@@ -8,7 +8,7 @@
 
 namespace hardwares
 {
-    class FTKunweiSensor : public hardware_interface::FTSensorInterface
+    class FTKunweiSensor : public hardware_interface::SensorInterface
     {
     public:
         FTKunweiSensor() : handle_(-1)
@@ -35,37 +35,40 @@ namespace hardwares
             }
             return total_len;
         }
-        CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override
+        CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override
         {
-            hardware_interface::FTSensorInterface::on_configure(previous_state);
-            //publisher_ = node_->create_publisher<geometry_msgs::msg::Wrench>("~/wrench", rclcpp::SensorDataQoS());
-            std::string device;
-            node_->get_parameter_or<std::string>("device", device, "");
-            struct termios OnesensorTermios;
-            if (!device.empty())
-                handle_ = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
-            else
-                handle_ = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NONBLOCK);
-            if (handle_ < 0)
+            if (hardware_interface::SensorInterface::on_configure(previous_state) == CallbackReturn::SUCCESS)
             {
-                RCLCPP_WARN(node_->get_logger(), "Open serial port failed! Please check the permission with ls -la /dev/ttyUSB0");
-                return CallbackReturn::FAILURE;
+                std::string device;
+                node_->get_parameter_or<std::string>("device", device, "");
+                struct termios OnesensorTermios;
+                if (!device.empty())
+                    handle_ = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+                else
+                    handle_ = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NONBLOCK);
+                if (handle_ < 0)
+                {
+                    RCLCPP_WARN(node_->get_logger(), "Open serial port failed! Please check the permission with ls -la /dev/ttyUSB0");
+                    return CallbackReturn::FAILURE;
+                }
+                memset(&OnesensorTermios, 0, sizeof(OnesensorTermios));
+                cfmakeraw(&OnesensorTermios);
+                OnesensorTermios.c_cflag = B460800;
+                OnesensorTermios.c_cflag |= CLOCAL | CREAD;
+                OnesensorTermios.c_cflag &= ~CSIZE;
+                OnesensorTermios.c_cflag |= CS8;
+                OnesensorTermios.c_cflag &= ~PARENB;
+                OnesensorTermios.c_cflag &= ~CSTOPB;
+                tcflush(handle_, TCIFLUSH);
+                tcflush(handle_, TCOFLUSH);
+                OnesensorTermios.c_cc[VTIME] = 1;
+                OnesensorTermios.c_cc[VMIN] = 1;
+                tcflush(handle_, TCIFLUSH);
+                tcsetattr(handle_, TCSANOW, &OnesensorTermios);
+                return CallbackReturn::SUCCESS;
             }
-            memset(&OnesensorTermios, 0, sizeof(OnesensorTermios));
-            cfmakeraw(&OnesensorTermios);
-            OnesensorTermios.c_cflag = B460800;
-            OnesensorTermios.c_cflag |= CLOCAL | CREAD;
-            OnesensorTermios.c_cflag &= ~CSIZE;
-            OnesensorTermios.c_cflag |= CS8;
-            OnesensorTermios.c_cflag &= ~PARENB;
-            OnesensorTermios.c_cflag &= ~CSTOPB;
-            tcflush(handle_, TCIFLUSH);
-            tcflush(handle_, TCOFLUSH);
-            OnesensorTermios.c_cc[VTIME] = 1;
-            OnesensorTermios.c_cc[VMIN] = 1;
-            tcflush(handle_, TCIFLUSH);
-            tcsetattr(handle_, TCSANOW, &OnesensorTermios);
-            return CallbackReturn::SUCCESS;
+            // publisher_ = node_->create_publisher<geometry_msgs::msg::Wrench>("~/wrench", rclcpp::SensorDataQoS());
+            return CallbackReturn::FAILURE;
         }
 
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override
@@ -175,14 +178,14 @@ namespace hardwares
                                     force[5] = 1000 * z.n;
                                     real_time_buffer_.writeFromNonRT(force);
                                     // printf("Fx= %2f Kg,Fy= %2f Kg,Fz= %2f Kg,Mx= %2f Kg/M,My= %2f Kg/M,Mz= %2f Kg/M\n", Force[0], Force[1], Force[2], Force[3], Force[4], Force[5]);
-                                    //geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
+                                    // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
                                     // msg->force.x = Force[0] * 1000;
                                     // msg->force.y = Force[1] * 1000;
                                     // msg->force.z = Force[2] * 1000;
                                     // msg->torque.x = Force[3] * 1000;
                                     // msg->torque.y = Force[4] * 1000;
                                     // msg->torque.z = Force[5] * 1000;
-                                    //publisher_->publish(std::move(msg));
+                                    // publisher_->publish(std::move(msg));
                                 }
                                 else if ((ReceivedDataLangth >= 28) && (ReceivedDataLangth < 120))
                                 {
@@ -228,13 +231,14 @@ namespace hardwares
             write_command("\x43\xAA\x0D\x0A");
             return CallbackReturn::SUCCESS;
         }
+
     protected:
         int handle_;
-        //rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
+        // rclcpp::Publisher<geometry_msgs::msg::Wrench>::SharedPtr publisher_;
     };
 
 } // namespace hardwares
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(hardwares::FTKunweiSensor, hardware_interface::HardwareInterface)
+PLUGINLIB_EXPORT_CLASS(hardwares::FTKunweiSensor, hardware_interface::SensorInterface)
