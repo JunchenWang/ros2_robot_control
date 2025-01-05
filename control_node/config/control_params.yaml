@@ -10,3 +10,15 @@ control_node:
       - controllers::TorqueController
       - controllers::ForwardController
       - controllers::RealtimeTestController
+
+SimulationRobot:
+  ros__parameters:
+    end_effector: ""
+    command_interface:
+      - position
+      - velocity
+      - torque
+    state_interface:
+      - position
+      - velocity
+      - torque

@@ -24,6 +24,6 @@ SimulationRobot:
 
 ft_sensor:
   ros__parameters:
-    interface: force
+    state_interface: force
     length: 6
 

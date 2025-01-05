@@ -19,7 +19,7 @@ namespace hardware_interface
         std::unique_ptr<std::thread> thread_;
         volatile bool is_running_;
         realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_;
-        std::string interface_;
+        std::string state_name_;
         // double mass_;
         // std::vector<double> offset_;
         // std::vector<double> cog_;

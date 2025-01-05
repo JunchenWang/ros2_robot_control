@@ -46,14 +46,14 @@ namespace controller_interface
     void ControllerInterface::loarn_interface(const robot_math::Robot *robot,
                                               hardware_interface::CommandInterface *command,
                                               const hardware_interface::StateInterface *state,
-                                              std::map<std::string, hardware_interface::CommandInterface*>* loaned_command,
-                                              const std::map<std::string, const hardware_interface::StateInterface*>* loaned_state)
+                                              std::map<std::string, hardware_interface::CommandInterface*>* com_command,
+                                              const std::map<std::string, const hardware_interface::StateInterface*>* com_state)
     {
         command_ = command;
         state_ = state;
         robot_ = robot;
-        loaned_command_ = loaned_command;
-        loaned_state_ = loaned_state;
+        com_command_ = com_command;
+        com_state_ = com_state;
     }
 
     void ControllerInterface::finalize()

@@ -32,7 +32,7 @@ namespace hardware_interface
         {
             std::copy(state.begin(), state.begin() + dof_, state_["position"].begin());
             std::copy(state.begin() + dof_, state.begin() + 2 * dof_, state_["velocity"].begin());
-            components_["ft_sensor"]->write_state("force", force);
+            //components_["ft_sensor"]->write_state("force", force);
             //state_["force"] = force;
         }
         std::map<std::string, hardware_interface::CommandInterface*> &

@@ -12,7 +12,7 @@ namespace controllers
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
         {
-            auto& force = loaned_state_->at("ft_sensor")->at("force");
+            auto& force = com_state_->at("ft_sensor")->at("force");
             auto &q = state_->at("position");
             //auto& dq = state_->at("velocity");
             Eigen::Vector6d f(force[3], force[4], force[5], force[0], force[1], force[2]);

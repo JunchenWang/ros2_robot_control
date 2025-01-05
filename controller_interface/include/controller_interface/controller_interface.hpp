@@ -33,8 +33,8 @@ namespace controller_interface
         void loarn_interface(const robot_math::Robot *robot,
                              hardware_interface::CommandInterface *command,
                              const hardware_interface::StateInterface *state,
-                             std::map<std::string, hardware_interface::CommandInterface*>* loaned_command,
-                             const std::map<std::string, const hardware_interface::StateInterface*>* loaned_state);
+                             std::map<std::string, hardware_interface::CommandInterface*>* com_command,
+                             const std::map<std::string, const hardware_interface::StateInterface*>* com_state);
 
         const rclcpp_lifecycle::State &get_state() { return node_->get_current_state(); }
 
@@ -70,11 +70,11 @@ namespace controller_interface
     protected:
         std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
         std::vector<std::string> joint_names_;
-        hardware_interface::CommandInterface *command_;
-        const hardware_interface::StateInterface *state_;
+        hardware_interface::CommandInterface *command_;// robot command
+        const hardware_interface::StateInterface *state_;// robot state
         const robot_math::Robot *robot_;
-        std::map<std::string, hardware_interface::CommandInterface*>* loaned_command_;
-        const std::map<std::string, const hardware_interface::StateInterface*>* loaned_state_;
+        std::map<std::string, hardware_interface::CommandInterface*>* com_command_; // components' command
+        const std::map<std::string, const hardware_interface::StateInterface*>* com_state_; // compoents' state
         std::vector<double> internal_state_; // e.g. integration of state
     };
 

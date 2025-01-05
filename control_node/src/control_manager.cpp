@@ -41,7 +41,7 @@ namespace control_node
             int pos = robot_class.rfind(":");
             auto robot_name = robot_class.substr(pos + 1);
 
-            robot_->initialize(robot_name, "", rclcpp::NodeOptions().use_intra_process_comms(true));
+            robot_->initialize(robot_name);
             auto nodes = robot_->get_all_nodes();
             for (auto &no : nodes)
                 executor_->add_node(no);
@@ -176,7 +176,8 @@ namespace control_node
         RCLCPP_INFO(get_logger(), "availabel controllers are: %s", ss.str().c_str());
         do
         {
-            read(this->now(), rclcpp::Duration(0, 0));
+            if(!is_simulation_)
+                read(this->now(), rclcpp::Duration(0, 0));
             while (!activate_controller_mutex_.try_lock())
             {
                 std::this_thread::sleep_for(100ms);

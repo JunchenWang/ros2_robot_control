@@ -20,18 +20,18 @@ namespace hardware_interface
 
     void SensorInterface::read(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/)
     {
-        state_[interface_] = *real_time_buffer_.readFromRT();
+        state_[state_name_] = *real_time_buffer_.readFromRT();
     }
 
     CallbackReturn SensorInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
         int len = 0;
-        node_->get_parameter_or<std::string>("interface", interface_, "");
+        node_->get_parameter_or<std::string>("state_interface", state_name_, "");
         node_->get_parameter_or<int>("length", len, 0);
-        if(!interface_.empty() && len > 0)
+        if(!state_name_.empty() && len > 0)
         {
-            real_time_buffer_.initRT(std::vector<double>(len, 0));
-            state_[interface_] = *real_time_buffer_.readFromNonRT();
+            state_[state_name_] = std::vector<double>(len, 0);
+            real_time_buffer_.initRT(state_[state_name_]);
             return CallbackReturn::SUCCESS;
         }
         return CallbackReturn::FAILURE;
