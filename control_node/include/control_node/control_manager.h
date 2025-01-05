@@ -1,9 +1,9 @@
 #pragma once
 #include "rclcpp/rclcpp.hpp"
 #include "control_node_parameters.hpp"
-#include "realtime_tools/realtime_buffer.h"
-#include "realtime_tools/realtime_publisher.h"
-#include "realtime_tools/realtime_box.h"
+#include "realtime_tools/realtime_buffer.hpp"
+#include "realtime_tools/realtime_publisher.hpp"
+#include "realtime_tools/realtime_box.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "urdf/model.h"
 #include "robot_math/robot_math.hpp"

@@ -12,7 +12,7 @@
 #include <functional>
 #include "geometry_msgs/msg/wrench.hpp"
 #include "pluginlib/class_loader.hpp"
-#include "realtime_tools/realtime_buffer.h"
+#include "realtime_tools/realtime_buffer.hpp"
 namespace hardware_interface
 {
 
