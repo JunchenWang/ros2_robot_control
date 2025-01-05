@@ -10,9 +10,7 @@ namespace control_node
         : rclcpp::Node(node_name, name_space, option),
           executor_(executor),
           param_listener_(std::make_shared<ParamListener>(this->get_node_parameters_interface())),
-          running_(false),
-          finished_(false),
-          async_mode_(true)
+          running_(false)
     {
         params_ = param_listener_->get_params();
         update_rate_ = params_.update_rate;
@@ -52,11 +50,11 @@ namespace control_node
                 pos = name.rfind(":");
                 name = name.substr(pos + 1);
                 controller->initialize(name);
-                controller->loarn_interface(&robot_->get_robot_math(), 
-                                            &robot_->get_command_interface(), 
+                controller->loarn_interface(&robot_->get_robot_math(),
+                                            &robot_->get_command_interface(),
                                             &robot_->get_state_interface(),
                                             &robot_->get_loaned_command_interface(),
-                                            &robot_->get_loaned_state_interface());  
+                                            &robot_->get_loaned_state_interface());
                 controllers_.push_back(controller);
                 executor_->add_node(controller->get_node()->get_node_base_interface());
             }
@@ -68,7 +66,6 @@ namespace control_node
         }
         service_ = create_service<control_msgs::srv::ControlCommand>("~/control_command",
                                                                      std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
-
     }
 
     ControlManager::~ControlManager()
@@ -80,12 +77,7 @@ namespace control_node
         running_.get(running);
         return running;
     }
-    bool ControlManager::is_finished()
-    {
-        bool finished;
-        finished_.get(finished);
-        return finished;
-    }
+
     bool ControlManager::deactivate_controller()
     {
         bool running;
@@ -153,12 +145,6 @@ namespace control_node
             response->result = true;
             running_.set(false);
         }
-        else if (cmd == "finish")
-        {
-            response->result = true;
-            running_.set(false);
-            finished_.set(true);
-        }
     }
     int ControlManager::get_update_rate()
     {
@@ -176,7 +162,7 @@ namespace control_node
         RCLCPP_INFO(get_logger(), "availabel controllers are: %s", ss.str().c_str());
         do
         {
-            if(!is_simulation_)
+            if (!is_simulation_)
                 read(this->now(), rclcpp::Duration(0, 0));
             while (!activate_controller_mutex_.try_lock())
             {
@@ -214,19 +200,19 @@ namespace control_node
         {
             auto states = std::make_shared<sensor_msgs::msg::JointState>();
             states->name = robot_->get_joint_names();
-            auto & state = robot_->get_state_interface();
+            auto &state = robot_->get_state_interface();
             auto it = state.find("position");
-            if(it != state.end())
+            if (it != state.end())
             {
                 states->position = it->second;
             }
             it = state.find("velocity");
-            if(it != state.end())
+            if (it != state.end())
             {
                 states->velocity = it->second;
             }
             it = state.find("torque");
-            if(it != state.end())
+            if (it != state.end())
             {
                 states->effort = it->second;
             }
@@ -304,7 +290,7 @@ namespace control_node
 
     void ControlManager::start_simulation(double time)
     {
-        if(!rclcpp::ok())
+        if (!rclcpp::ok())
             return;
 
         typedef std::vector<double> state_type;
@@ -355,37 +341,29 @@ namespace control_node
     void ControlManager::control_loop()
     {
         // for calculating sleep time
-        if (async_mode_)
+        auto const period = std::chrono::nanoseconds(1'000'000'000 / update_rate_);
+        auto const cm_now = std::chrono::nanoseconds(this->now().nanoseconds());
+        std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>
+            next_iteration_time{cm_now};
+
+        // for calculating the measured period of the loop
+        rclcpp::Time previous_time = this->now();
+        while (rclcpp::ok() && this->is_running())
         {
-            RCLCPP_INFO(this->get_logger(), "enter loop %d", update_rate_);
-            auto const period = std::chrono::nanoseconds(1'000'000'000 / update_rate_);
-            auto const cm_now = std::chrono::nanoseconds(this->now().nanoseconds());
-            std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>
-                next_iteration_time{cm_now};
+            // calculate measured period
+            auto const current_time = this->now();
+            auto const measured_period = current_time - previous_time;
+            previous_time = current_time;
 
-            // for calculating the measured period of the loop
-            rclcpp::Time previous_time = this->now();
-            while (rclcpp::ok() && this->is_running())
-            {
-                // calculate measured period
-                auto const current_time = this->now();
-                auto const measured_period = current_time - previous_time;
-                previous_time = current_time;
+            // execute update loop
+            read(current_time, measured_period);
+            update(current_time, measured_period);
+            write(current_time, measured_period);
 
-                // execute update loop
-                read(current_time, measured_period);
-                update(current_time, measured_period);
-                write(current_time, measured_period);
-
-                // wait until we hit the end of the period
-                next_iteration_time += period;
-                // printf("%.6f\n", measured_period.nanoseconds()/1e9);
-                std::this_thread::sleep_until(next_iteration_time);
-            }
-        }
-        else
-        {
-            // to do
+            // wait until we hit the end of the period
+            next_iteration_time += period;
+            // printf("%.6f\n", measured_period.nanoseconds()/1e9);
+            std::this_thread::sleep_until(next_iteration_time);
         }
     }
 

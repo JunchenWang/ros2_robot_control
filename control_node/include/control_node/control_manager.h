@@ -19,7 +19,10 @@ namespace control_node
     class ControlManager : public rclcpp::Node
     {
     public:
-        ControlManager(std::shared_ptr<rclcpp::Executor> executor, const std::string &node_name, const std::string &name_space, const rclcpp::NodeOptions &option);
+        ControlManager(std::shared_ptr<rclcpp::Executor> executor,
+                       const std::string &node_name,
+                       const std::string &name_space,
+                       const rclcpp::NodeOptions &option);
         ~ControlManager();
         int get_update_rate();
         void wait_for_active_controller();
@@ -27,8 +30,8 @@ namespace control_node
         void prepare_loop();
         void end_loop();
         void command_callback(const std::shared_ptr<control_msgs::srv::ControlCommand::Request> request,
-                                std::shared_ptr<control_msgs::srv::ControlCommand::Response> response);
-        bool activate_controller(const std::string & controller_name);
+                              std::shared_ptr<control_msgs::srv::ControlCommand::Response> response);
+        bool activate_controller(const std::string &controller_name);
         bool deactivate_controller();
         void shutdown_robot();
         void read(const rclcpp::Time &t, const rclcpp::Duration &period);
@@ -40,7 +43,7 @@ namespace control_node
         void simulation_observer(const std::vector<double> &x, double t);
         bool is_simulation();
         bool is_running();
-        bool is_finished();
+
     protected:
         pluginlib::UniquePtr<pluginlib::ClassLoader<hardware_interface::RobotInterface>> robot_loader_;
         pluginlib::UniquePtr<pluginlib::ClassLoader<controller_interface::ControllerInterface>> controller_loader_;
@@ -60,9 +63,7 @@ namespace control_node
         bool is_sim_real_time_;
         bool is_publish_joint_state_;
         realtime_tools::RealtimeBox<bool> running_;
-        realtime_tools::RealtimeBox<bool> finished_;
         rclcpp::Time sim_start_time_;
-        bool async_mode_;
     };
 
 }
