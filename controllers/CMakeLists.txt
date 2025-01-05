@@ -71,7 +71,7 @@ install(
   RUNTIME DESTINATION bin
 )
 
-add_executable(test_controller src/test_controller.cpp)
+add_executable(test_controller test/test_controller.cpp)
 target_include_directories(test_controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)

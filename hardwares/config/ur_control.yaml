@@ -9,16 +9,28 @@ control_node:
     controllers: 
       - controllers::ForceDragController
       
-URRobot:
+ForceDragController:
   ros__parameters:
-    robot_ip: 192.168.31.201
-    sensors:
-      - hardwares::FTATISensor
-
-FTATISensor:
-  ros__parameters:
-    sensor_ip: 192.168.124.12
     mass: 0.967923
     cog: [0.00119462, -0.00020578, -0.0129575]
     offset: [0.303933, 3.52971, 0.327006, 0.0194561, -0.092082, -0.0818083]
     pose: [.0, .0, .0475, .0, .0, .0]
+
+URRobot:
+  ros__parameters:
+    end_effector: ""
+    command_interface:
+      - position
+      - velocity
+    state_interface:
+      - position
+      - velocity
+    sensors: [ft_sensor]
+    ft_sensor: hardwares::FTATISensor
+
+ft_sensor:
+  ros__parameters:
+    sensor_ip: 192.168.124.12
+    state_interface: force
+    length: 6      
+

@@ -12,8 +12,9 @@ namespace hardware_interface
     {
         if (!robot_description.empty() && robot_model_.initString(robot_description))
         {
-
-            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_);
+            std::string end_effector;
+            node_->get_parameter_or<std::string>("end_effector", end_effector, "");
+            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector);
             for (auto &j : joint_names_)
             {
                 RCLCPP_INFO(node_->get_logger(), "%s", j.c_str());

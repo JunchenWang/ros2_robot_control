@@ -8,6 +8,10 @@ namespace controllers
         DummyController() 
         {
         }
+        void update(const rclcpp::Time & t, const rclcpp::Duration & /*period*/) override
+        {
+            command_->at("position") = {std::sin(t.seconds()), 0, 0, 0, 0, 0};
+        }
        
     protected:
       
