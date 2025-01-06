@@ -130,8 +130,7 @@ namespace control_node
         else if (cmd == "stop")
         {
             response->result = true;
-            running_box_.set([=](bool &value)
-                             { value = false; });
+            running_box_ = false;
         }
     }
     int ControlManager::get_update_rate()
@@ -169,8 +168,7 @@ namespace control_node
             std::this_thread::sleep_for(1s);
         } while (rclcpp::ok());
         running_ = true;
-        running_box_.set([=](bool &value)
-                         { value = running_; });
+        running_box_ = true;
     }
 
     void ControlManager::shutdown_robot()
@@ -217,8 +215,8 @@ namespace control_node
 
     void ControlManager::update(const rclcpp::Time &t, const rclcpp::Duration &period)
     {
-        if (active_controller_)
-            active_controller_->update(t, period);
+        
+        active_controller_->update(t, period);
         // for (auto &controller : controllers_)
         // {
         //     if (controller->get_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
@@ -349,7 +347,7 @@ namespace control_node
             read(current_time, measured_period);
             update(current_time, measured_period);
             write(current_time, measured_period);
-            running_box_.try_get([=](const bool &value)
+            running_box_.try_get([=](auto const &value)
                                  { running_ = value; });
             // wait until we hit the end of the period
             next_iteration_time += period;

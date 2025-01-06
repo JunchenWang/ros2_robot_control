@@ -1,5 +1,6 @@
 #include "controller_interface/controller_interface.hpp"
 #include "robot_math/robot_math.hpp"
+#include "realtime_tools/realtime_box.hpp"
 #include <iostream>
 using namespace robot_math;
 namespace controllers
@@ -20,7 +21,6 @@ namespace controllers
             param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node_);
             auto cb = [this](const rclcpp::Parameter &p)
             {
-                std::lock_guard<std::mutex> guard(offset_mutex_);
                 offset_in_box_ = p.as_double_array();
             };
             cb_handle_ = param_subscriber_->add_parameter_callback("offset", cb);
@@ -31,11 +31,7 @@ namespace controllers
         {
             auto &force = com_state_->at("ft_sensor")->at("force");
             auto &q = state_->at("position");
-            if(offset_mutex_.try_lock())
-            {
-                offset_ = offset_in_box_;
-                offset_mutex_.unlock();
-            }
+            offset_in_box_.try_get([=](auto const &value) {offset_ = value;});
             Eigen::MatrixXd J;
             Eigen::Matrix4d T;
             jacobian_matrix(robot_, q, J, T);
@@ -54,9 +50,8 @@ namespace controllers
         double mass_;
         std::vector<double> cog_;
         std::vector<double> offset_;
-        std::vector<double> offset_in_box_;
+        realtime_tools::RealtimeBox<std::vector<double>> offset_in_box_;
         std::vector<double> pose_; // installed pose with respect to the endeffector
-        std::mutex offset_mutex_;
         std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
         std::shared_ptr<rclcpp::ParameterCallbackHandle> cb_handle_;
     };
