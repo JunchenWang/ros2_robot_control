@@ -42,7 +42,7 @@ namespace control_node
         Eigen::MatrixXd simulation_external_force(double t);
         void simulation_observer(const std::vector<double> &x, double t);
         bool is_simulation();
-        bool is_running();
+        //bool is_running();
 
     protected:
         pluginlib::UniquePtr<pluginlib::ClassLoader<hardware_interface::RobotInterface>> robot_loader_;
@@ -60,7 +60,8 @@ namespace control_node
         bool is_simulation_;
         bool is_sim_real_time_;
         bool is_publish_joint_state_;
-        realtime_tools::RealtimeBox<bool> running_;
+        volatile bool running_;
+        realtime_tools::RealtimeBox<bool> running_box_;
         rclcpp::Time sim_start_time_;
     };
 

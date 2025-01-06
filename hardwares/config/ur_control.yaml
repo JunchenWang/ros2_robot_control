@@ -19,10 +19,10 @@ ForceDragController:
 URRobot:
   ros__parameters:
     end_effector: ""
-    command_interface:
+    joint_command_interface:
       - position
       - velocity
-    state_interface:
+    joint_state_interface:
       - position
       - velocity
     sensors: [ft_sensor]

@@ -138,15 +138,15 @@ namespace robot_math
             if (link.first == link_name)
                 break;
         }
-        if(link_name == "") // find the farest link as the end-effector link
+        if (link_name == "") // find the farest link as the end-effector link
         {
             std::queue<urdf::LinkSharedPtr> que;
             que.push(last_link);
-            while(!que.empty())
+            while (!que.empty())
             {
                 last_link = que.front();
                 que.pop();
-                for(auto l : last_link->child_links)
+                for (auto l : last_link->child_links)
                     que.push(l);
             }
         }
@@ -169,7 +169,7 @@ namespace robot_math
         M.set_size(4, 4, n);
         coder::array<double, 2U> com;
         com.set_size(n, 3);
-        
+
         Eigen::Map<Eigen::Matrix4d> base(robot.ME);
         Eigen::Map<Eigen::Matrix4d> TCP(robot.TCP);
         Eigen::Map<Eigen::Vector3d> gravity(robot.gravity);
@@ -402,6 +402,25 @@ namespace robot_math
         return svd.matrixV() * singularValuesInv.asDiagonal() * svd.matrixU().transpose();
     }
 
+    Eigen::Vector6d get_ext_force(const std::vector<double> &force,
+                       double mass,
+                       const std::vector<double> &offset,
+                       const std::vector<double> &cog,
+                       const std::vector<double> &installed_pose,
+                       const Eigen::Matrix4d & robot_T)
+    {
+        Eigen::Matrix4d T = robot_T * pose_to_tform(installed_pose);
+        Eigen::Matrix3d R = T.block(0, 0, 3, 3).transpose();
+
+        Eigen::Vector3d g = R * Eigen::Vector3d(0, 0, -1) * mass;
+        Eigen::Vector3d M = Eigen::Vector3d(cog[0], cog[1], cog[2]).cross(g);
+        return Eigen::Vector6d(force[0] - g(0) - offset[0],
+                               force[1] - g(1) - offset[1],
+                               force[2] - g(2) - offset[2],
+                               force[3] - M(0) - offset[3],
+                               force[4] - M(1) - offset[4],
+                               force[5] - M(2) - offset[5]);
+    }
     void get_ext_force(float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose)
     {
         Eigen::Matrix4d T = pose_to_tform(pose);
@@ -1094,10 +1113,10 @@ namespace robot_math
         dJ.setZero(6, n);
         Eigen::Matrix6d dAdT, AdT;
         Eigen::Matrix4d invT, dInvT, tform;
-        for(int i = n - 1; i >= 0; i--)
+        for (int i = n - 1; i >= 0; i--)
         {
             Eigen::Vector6d Ai(robot->A.at(i, 0), robot->A.at(i, 1), robot->A.at(i, 2),
-                                   robot->A.at(i, 3), robot->A.at(i, 4), robot->A.at(i, 5));
+                               robot->A.at(i, 3), robot->A.at(i, 4), robot->A.at(i, 5));
 
             Eigen::Map<const Eigen::Matrix4d> Mi(robot->M.data() + i * 16);
             derivative_tform_inv(T, dT, dInvT, invT);
@@ -1166,7 +1185,7 @@ namespace robot_math
     }
 
     Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &qd,
-                                                  const std::vector<double> &qdd, const float *rawForce, float mass, const float offset[6], const float cog[3], const Eigen::Matrix3d &mI, double scale)
+                                                     const std::vector<double> &qdd, const float *rawForce, float mass, const float offset[6], const float cog[3], const Eigen::Matrix3d &mI, double scale)
     {
         Eigen::Vector3d com(cog[0], cog[1], cog[2]);
         Eigen::Vector3d Pcom = Tsensor.block(0, 3, 3, 1) + Tsensor.block(0, 0, 3, 3) * com;

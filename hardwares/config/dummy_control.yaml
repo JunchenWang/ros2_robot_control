@@ -12,13 +12,17 @@ control_node:
 SimulationRobot:
   ros__parameters:
     end_effector: ""
-    command_interface:
+    joint_command_interface:
       - position
       - velocity
       - torque
-    state_interface:
+    joint_state_interface:
       - position
       - velocity
+    # command_interface: []
+    # command_length: []
+    # state_interface: []
+    # state_length: []
     sensors: [ft_sensor]
     ft_sensor: hardwares::FTDummySensor
 

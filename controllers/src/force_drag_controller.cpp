@@ -10,26 +10,55 @@ namespace controllers
         ForceDragController()
         {
         }
+        CallbackReturn on_configure(const rclcpp_lifecycle::State &/*previous_state*/) override
+        {
+            node_->get_parameter_or<std::vector<double>>("cog", cog_, {0, 0, 0});
+            node_->get_parameter_or<std::vector<double>>("offset", offset_, {0, 0, 0, 0, 0, 0});
+            node_->get_parameter_or<std::vector<double>>("pose", pose_, {0, 0, 0, 0, 0, 0});
+            node_->get_parameter_or<double>("mass", mass_, 0.0);
+            offset_in_box_ = offset_;
+            param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node_);
+            auto cb = [this](const rclcpp::Parameter &p)
+            {
+                std::lock_guard<std::mutex> guard(offset_mutex_);
+                offset_in_box_ = p.as_double_array();
+            };
+            cb_handle_ = param_subscriber_->add_parameter_callback("offset", cb);
+
+            return CallbackReturn::SUCCESS;
+        }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
         {
-            auto& force = com_state_->at("ft_sensor")->at("force");
+            auto &force = com_state_->at("ft_sensor")->at("force");
             auto &q = state_->at("position");
-            //auto& dq = state_->at("velocity");
-            Eigen::Vector6d f(force[3], force[4], force[5], force[0], force[1], force[2]);
-            f /= 10;
+            if(offset_mutex_.try_lock())
+            {
+                offset_ = offset_in_box_;
+                offset_mutex_.unlock();
+            }
             Eigen::MatrixXd J;
             Eigen::Matrix4d T;
             jacobian_matrix(robot_, q, J, T);
-            Eigen::Vector6d dq = dx_to_dq(J, f, 1e6, 0.1);
-            
-            auto & cmd = command_->at("velocity");
-            cmd = {dq[0], dq[1], dq[2], dq[3], dq[4], dq[5]};
-            //std::cerr << cmd[0] << " " << cmd[1] << " " << cmd[2] << " " << cmd[3] << " " << cmd[4] << " " << cmd[5] << std::endl;
-            //command_->at("position") = (*js)->position;
+            Eigen::Vector6d f = get_ext_force(force, mass_, offset_, cog_, pose_, T); 
+            f /= 10;
 
+            Eigen::Vector6d dq = dx_to_dq(J, f, 1e6, 0.1);
+
+            auto &cmd = command_->at("velocity");
+            cmd = {dq[0], dq[1], dq[2], dq[3], dq[4], dq[5]};
+            // std::cerr << cmd[0] << " " << cmd[1] << " " << cmd[2] << " " << cmd[3] << " " << cmd[4] << " " << cmd[5] << std::endl;
+            // command_->at("position") = (*js)->position;
         }
 
     protected:
+        double mass_;
+        std::vector<double> cog_;
+        std::vector<double> offset_;
+        std::vector<double> offset_in_box_;
+        std::vector<double> pose_; // installed pose with respect to the endeffector
+        std::mutex offset_mutex_;
+        std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
+        std::shared_ptr<rclcpp::ParameterCallbackHandle> cb_handle_;
     };
 
 } // namespace controllers

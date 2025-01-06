@@ -13,7 +13,10 @@ namespace hardware_interface
         if (!robot_description.empty() && robot_model_.initString(robot_description))
         {
             std::string end_effector;
+            std::vector<std::string> joint_state_names, joint_command_names;
             node_->get_parameter_or<std::string>("end_effector", end_effector, "");
+            node_->get_parameter_or<std::vector<std::string>>("joint_state_interface", joint_state_names, std::vector<std::string>());
+            node_->get_parameter_or<std::vector<std::string>>("joint_command_interface", joint_command_names, std::vector<std::string>());
             robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector);
             for (auto &j : joint_names_)
             {
@@ -22,16 +25,14 @@ namespace hardware_interface
             dof_ = joint_names_.size();
             RCLCPP_INFO(node_->get_logger(), "DOF: %d", dof_);
             
-            for (auto &name : state_names_)
+            for (auto &name : joint_state_names)
             {
                 state_.emplace(name, std::vector<double>(dof_, 0.0));
             }
-            for (auto &name : command_names_)
+            for (auto &name : joint_command_names)
             {
                 command_.emplace(name, std::vector<double>(dof_, 0.0));
             }
-            // state_names_.emplace_back("force");
-            // state_.emplace("force", std::vector<double>(6,0));
             return 1;
         }
         return 0;
@@ -55,11 +56,38 @@ namespace hardware_interface
     {
         std::string robot_description;
         node_->get_parameter_or<std::string>("robot_description", robot_description, "");
-        node_->get_parameter_or<std::vector<std::string>>("state_interface", state_names_, std::vector<std::string>());
-        node_->get_parameter_or<std::vector<std::string>>("command_interface", command_names_, std::vector<std::string>());
          if (!configure_urdf(robot_description))
             return CallbackReturn::FAILURE;
 
+        // other state and command on the robot
+        std::vector<std::string> commands, states;
+        std::vector<long int> command_len, state_len;
+        node_->get_parameter_or<std::vector<std::string>>("command_interface", commands, std::vector<std::string>());
+        node_->get_parameter_or<std::vector<long int>>("command_length", command_len, std::vector<long int>());
+        if(commands.size() != command_len.size())
+        {
+            RCLCPP_WARN(node_->get_logger(), "command name and lengh are different!");
+            return CallbackReturn::FAILURE;
+        }
+        
+        for(int i = 0; i < commands.size(); i++)
+        {
+            command_.emplace(std::move(commands[i]), std::vector<double>(command_len[i], 0));
+        }
+        node_->get_parameter_or<std::vector<std::string>>("state_interface", states, std::vector<std::string>());
+        node_->get_parameter_or<std::vector<long int>>("state_length", state_len, std::vector<long int>());
+        if(states.size() != state_len.size())
+        {
+            RCLCPP_WARN(node_->get_logger(), "state name and lengh are different!");
+            return CallbackReturn::FAILURE;
+        }
+            
+        for(int i = 0; i < states.size(); i++)
+        {
+            state_.emplace(std::move(states[i]), std::vector<double>(state_len[i], 0));
+        }
+
+        // sensors mounted on the robot
         std::vector<std::string> sensors;
         std::string sensor_type;
         node_->get_parameter_or<std::vector<std::string>>("sensors", sensors, sensors);

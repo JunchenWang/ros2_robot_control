@@ -93,6 +93,13 @@ namespace robot_math
 	void spatial_twist_to_body(const double T[16], const double Vs[6], double const dVs[16], double Vb[6], double dVb[6]);
 	void swap_order(double *buf, int n);
 
+	Eigen::Vector6d get_ext_force(const std::vector<double>& force, 
+	                   double mass, 
+					   const std::vector<double>& offset, 
+					   const std::vector<double>& cog, 
+					   const std::vector<double> &installed_pose, 
+					   const Eigen::Matrix4d & robot_T);
+
 	void get_ext_force(float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose);
 
 	Eigen::Vector6d twist_estimate(const Eigen::Matrix4d &Td, const Eigen::Matrix4d &Td_pre, double dt);

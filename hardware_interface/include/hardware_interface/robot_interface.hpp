@@ -45,8 +45,6 @@ namespace hardware_interface
         { 
             return loaned_state_; 
         }
-        const StateInterface &get_state_interface() { return state_; }
-        //void receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg);
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override;
@@ -59,14 +57,9 @@ namespace hardware_interface
         int dof_;
         urdf::Model robot_model_;
         robot_math::Robot robot_;
-        std::vector<std::string> state_names_;
-        std::vector<std::string> command_names_;
         std::map<std::string, const hardware_interface::StateInterface*> loaned_state_;
         std::map<std::string, hardware_interface::CommandInterface*> loaned_command_;
         std::map<std::string, hardware_interface::HardwareInterface::SharedPtr> components_;
-        // std::shared_ptr<hardware_interface::HardwareInterface> ft_sensor_;
-        //rclcpp::Subscription<geometry_msgs::msg::Wrench>::SharedPtr wrench_receiver_;
-        //realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_force_;
 
     };
 

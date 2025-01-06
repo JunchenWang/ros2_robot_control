@@ -9,7 +9,8 @@ namespace control_node
                                    const std::string &node_name, const std::string &name_space, const rclcpp::NodeOptions &option)
         : rclcpp::Node(node_name, name_space, option),
           executor_(executor),
-          running_(false)
+          running_(false),
+          running_box_(false)
     {
         update_rate_ = this->get_parameter_or<int>("update_rate", 500);
         is_simulation_ = this->get_parameter_or<bool>("simulation", true);
@@ -69,40 +70,28 @@ namespace control_node
     ControlManager::~ControlManager()
     {
     }
-    bool ControlManager::is_running()
-    {
-        bool running;
-        running_.get(running);
-        return running;
-    }
+    // bool ControlManager::is_running()
+    // {
+    //     bool running;
+    //     running_.get(running);
+    //     return running;
+    // }
 
     bool ControlManager::deactivate_controller()
     {
-        bool running;
-        running_.get(running);
-        if (running)
+        std::lock_guard<std::mutex> guard(activate_controller_mutex_);
+        if (active_controller_)
         {
-            RCLCPP_INFO(get_logger(), "cannot deactivate controller while running");
-            return false;
-        }
-        else
-        {
-            std::lock_guard<std::mutex> guard(activate_controller_mutex_);
-            if (active_controller_)
-            {
-                auto state = active_controller_->get_node()->deactivate();
-                if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
-                    return false;
-                active_controller_ = nullptr;
-            }
+            auto state = active_controller_->get_node()->deactivate();
+            if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
+                return false;
+            active_controller_ = nullptr;
         }
         return true;
     }
     bool ControlManager::activate_controller(const std::string &controller_name)
     {
-        bool running;
-        running_.get(running);
-        if (running)
+        if (running_)
         {
             RCLCPP_INFO(get_logger(), "cannot activate controller while running, stop running first");
             return false;
@@ -141,7 +130,8 @@ namespace control_node
         else if (cmd == "stop")
         {
             response->result = true;
-            running_.set(false);
+            running_box_.set([=](bool &value)
+                             { value = false; });
         }
     }
     int ControlManager::get_update_rate()
@@ -178,7 +168,9 @@ namespace control_node
             }
             std::this_thread::sleep_for(1s);
         } while (rclcpp::ok());
-        running_.set(true);
+        running_ = true;
+        running_box_.set([=](bool &value)
+                         { value = running_; });
     }
 
     void ControlManager::shutdown_robot()
@@ -317,7 +309,7 @@ namespace control_node
         state_type x0(2 * robot_->get_dof(), 0);
         sim_start_time_ = this->now();
         integrate_adaptive(make_controlled(1.0e-10, 1.0e-6, error_stepper_type()), dynamics, x0, 0.0, time, 0.001, observer);
-        running_.set(false);
+        running_ = false;
         // size_t steps = integrate_adaptive(runge_kutta4<std::vector<double>>(), dynamics, x0, 0.0, time, 0.01, observer);
     }
 
@@ -346,7 +338,7 @@ namespace control_node
 
         // for calculating the measured period of the loop
         rclcpp::Time previous_time = this->now();
-        while (rclcpp::ok() && this->is_running())
+        while (rclcpp::ok() && running_)
         {
             // calculate measured period
             auto const current_time = this->now();
@@ -357,7 +349,8 @@ namespace control_node
             read(current_time, measured_period);
             update(current_time, measured_period);
             write(current_time, measured_period);
-
+            running_box_.try_get([=](const bool &value)
+                                 { running_ = value; });
             // wait until we hit the end of the period
             next_iteration_time += period;
             // printf("%.6f\n", measured_period.nanoseconds()/1e9);
