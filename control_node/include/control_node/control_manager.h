@@ -1,18 +1,18 @@
 #pragma once
 #include "rclcpp/rclcpp.hpp"
-#include "control_node_parameters.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_box.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "urdf/model.h"
 #include "robot_math/robot_math.hpp"
-#include <functional>
-#include <chrono>
 #include "hardware_interface/robot_interface.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include <pluginlib/class_loader.hpp>
 #include "control_msgs/srv/control_command.hpp"
+#include <functional>
+#include <chrono>
+
 namespace control_node
 {
 
@@ -52,9 +52,7 @@ namespace control_node
         std::shared_ptr<controller_interface::ControllerInterface> active_controller_;
         std::shared_ptr<rclcpp::Executor> executor_;
         int update_rate_;
-        Params params_;
         std::string robot_description_;
-        std::shared_ptr<ParamListener> param_listener_;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
         std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::msg::JointState>> real_time_publisher_;
         rclcpp::Service<control_msgs::srv::ControlCommand>::SharedPtr service_;

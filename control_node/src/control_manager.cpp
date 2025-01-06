@@ -9,11 +9,9 @@ namespace control_node
                                    const std::string &node_name, const std::string &name_space, const rclcpp::NodeOptions &option)
         : rclcpp::Node(node_name, name_space, option),
           executor_(executor),
-          param_listener_(std::make_shared<ParamListener>(this->get_node_parameters_interface())),
           running_(false)
     {
-        params_ = param_listener_->get_params();
-        update_rate_ = params_.update_rate;
+        update_rate_ = this->get_parameter_or<int>("update_rate", 500);
         is_simulation_ = this->get_parameter_or<bool>("simulation", true);
         is_sim_real_time_ = this->get_parameter_or<bool>("sim_real_time", true);
         is_publish_joint_state_ = this->get_parameter_or<bool>("publish_joint_state", true);

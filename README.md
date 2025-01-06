@@ -7,7 +7,6 @@ This is our lab code repository for robot control using ros2. Of course you have
 Please clone the following packages into the src folder of your ros2's workspace. (e.g., ~/ros2_ws)
 
 1. franka_description (https://github.com/frankaemika/franka_description.git)
-2. realtime-tools (https://github.com/ros-controls/realtime_tools.git)
 
 # build from source
 

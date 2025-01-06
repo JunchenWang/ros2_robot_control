@@ -15,7 +15,9 @@ namespace hardwares
         URRobot()
         {
         }
-
+        ~URRobot()
+        {
+        }
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::write(t, period);
@@ -30,11 +32,9 @@ namespace hardwares
             auto & dq = state_["velocity"];
             auto &force = loaned_state_["ft_sensor"]->at("force");
             auto pose2 = receive_interface_->getActualTCPPose();
-            //std::dynamic_pointer_cast<hardware_interface::FTSensorInterface>(ft_sensor_)->compensate_gravity(pose2);
-        
+           
             q = receive_interface_->getActualQ();
             dq = receive_interface_->getActualQd();
-
 
             // Eigen::Matrix4d T;
             // forward_kin_general(&robot_, q, T);

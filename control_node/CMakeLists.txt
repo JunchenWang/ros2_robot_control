@@ -17,7 +17,8 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "rclcpp_action"
   "rcpputils"
   "realtime_tools"
-  "generate_parameter_library"
+  "rclcpp_lifecycle"
+  # "generate_parameter_library"
   "sensor_msgs"
   "urdf"
   "std_msgs"
@@ -40,9 +41,9 @@ find_package(Boost 1.83.0 COMPONENTS odeint)
 
 # include_directories(${Boost_INCLUDE_DIRS}) 
 
-generate_parameter_library(control_node_parameters
-  src/control_node_parameters.yaml
-)
+# generate_parameter_library(control_node_parameters
+#   src/control_node_parameters.yaml
+# )
 
 add_executable(control_node 
               src/control_node.cpp
@@ -56,7 +57,6 @@ target_compile_features(control_node PUBLIC c_std_99 cxx_std_17)  # Require C99 
 ament_target_dependencies(control_node PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 target_link_libraries(control_node PUBLIC
-                      control_node_parameters
                       ${Boost_LIBRARIES}
 )
 
