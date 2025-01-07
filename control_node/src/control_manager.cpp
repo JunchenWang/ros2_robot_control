@@ -366,9 +366,13 @@ namespace control_node
     {
         if (rclcpp::ok())
         {
-            active_controller_->get_node()->deactivate();
-            active_controller_ = nullptr;
-            active_controller_box_.set(nullptr);
+            active_controller_box_.set([=](auto & value) {
+                if (value)
+                {
+                    value->get_node()->deactivate();
+                    value = nullptr;
+                }
+            });
             robot_->get_node()->deactivate();
         }
     }
