@@ -65,6 +65,13 @@ namespace control_node
         }
         service_ = create_service<control_msgs::srv::ControlCommand>("~/control_command",
                                                                      std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
+        
+        auto stop_callback = [=] (const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+                              std::shared_ptr<std_srvs::srv::Empty::Response> response)
+                              {
+                                    running_box_ = false;
+                              };
+        stop_service_ = create_service<std_srvs::srv::Empty>("~/stop",  stop_callback);
     }
 
     ControlManager::~ControlManager()
@@ -73,16 +80,16 @@ namespace control_node
     bool ControlManager::activate_controller(const std::string &controller_name)
     {
         bool running = false;
-        active_controller_box_.get([=,&running](auto const &value) {
+        active_controller_box_.get([=, &running](auto const &value)
+                                   {
             if (value)
-                running = true;
-        });
-        if(running)
+                running = true; });
+        if (running)
         {
             RCLCPP_WARN(get_logger(), "controller is running, please stop first!");
             return false;
         }
-        
+
         for (auto &controller : controllers_)
         {
             if (controller->get_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE && controller->get_node()->get_name() == controller_name)
@@ -107,8 +114,7 @@ namespace control_node
                         ret = false;
                     } 
                     else
-                        RCLCPP_INFO(get_logger(), "controller %s is activated!", controller->get_node()->get_name());
-                    });
+                        RCLCPP_INFO(get_logger(), "controller %s is activated!", controller->get_node()->get_name()); });
                 return ret;
             }
         }
@@ -122,12 +128,8 @@ namespace control_node
         response->result = false;
         if (cmd == "activate")
             response->result = activate_controller(request->cmd_params[0]);
-        else if (cmd == "stop")
-        {
-            response->result = true;
-            running_box_ = false;
-        }
     }
+    
     int ControlManager::get_update_rate()
     {
         return update_rate_;
@@ -269,7 +271,6 @@ namespace control_node
         state_type x0(2 * robot_->get_dof(), 0);
         sim_start_time_ = this->now();
         integrate_adaptive(make_controlled(1.0e-10, 1.0e-6, error_stepper_type()), dynamics, x0, 0.0, time, 0.001, observer);
-        running_ = false;
         // size_t steps = integrate_adaptive(runge_kutta4<std::vector<double>>(), dynamics, x0, 0.0, time, 0.01, observer);
     }
 
@@ -296,9 +297,8 @@ namespace control_node
         std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>
             next_iteration_time{cm_now};
 
-        // for calculating the measured period of the loop
         rclcpp::Time previous_time = this->now();
-        while (rclcpp::ok() && running_ && !robot_->is_stop()) // give robot a change to stop running 
+        while (rclcpp::ok() && running_ && !robot_->is_stop()) // give robot a change to stop running
         {
             // calculate measured period
             auto const current_time = this->now();
@@ -309,11 +309,12 @@ namespace control_node
             read(current_time, measured_period);
             update(current_time, measured_period);
             write(current_time, measured_period);
+            // get running state from box
             running_box_.try_get([=](auto const &value)
                                  { running_ = value; });
+
             // wait until we hit the end of the period
             next_iteration_time += period;
-            // printf("%.6f\n", measured_period.nanoseconds()/1e9);
             std::this_thread::sleep_until(next_iteration_time);
         }
     }
@@ -356,13 +357,13 @@ namespace control_node
     {
         if (rclcpp::ok())
         {
-            active_controller_box_.set([=](auto & value) {
+            active_controller_box_.set([=](auto &value)
+                                       {
                 if (value)
                 {
                     value->get_node()->deactivate();
                     value = nullptr;
-                }
-            });
+                } });
             robot_->get_node()->deactivate();
         }
     }

@@ -41,10 +41,11 @@ int main(int argc, char **argv)
 
     // /etc/security/limits.conf --> @realtime soft memlock 102400000 or, the bad_alloc exception occurs
     const bool lock_memory = cm->get_parameter_or<bool>("lock_memory", true);
-    std::string message;
-    if (lock_memory && !realtime_tools::lock_memory(message))
+    if (lock_memory)
     {
-        RCLCPP_WARN(cm->get_logger(), "Unable to lock the memory : '%s'", message.c_str());
+        auto ret = realtime_tools::lock_memory();
+        if(!ret.first)
+            RCLCPP_WARN(cm->get_logger(), "Unable to lock the memory : '%s'", ret.second.c_str());
     }
 
     const int cpu_affinity = cm->get_parameter_or<int>("cpu_affinity", -1);

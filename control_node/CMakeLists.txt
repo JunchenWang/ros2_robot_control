@@ -14,11 +14,8 @@ find_package(ament_cmake REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   "rclcpp"
-  "rclcpp_action"
-  "rcpputils"
   "realtime_tools"
   "rclcpp_lifecycle"
-  # "generate_parameter_library"
   "sensor_msgs"
   "urdf"
   "std_msgs"

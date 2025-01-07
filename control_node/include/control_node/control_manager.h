@@ -4,6 +4,7 @@
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_box.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_srvs/srv/empty.hpp"
 #include "urdf/model.h"
 #include "robot_math/robot_math.hpp"
 #include "hardware_interface/robot_interface.hpp"
@@ -54,10 +55,11 @@ namespace control_node
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
         std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::msg::JointState>> real_time_publisher_;
         rclcpp::Service<control_msgs::srv::ControlCommand>::SharedPtr service_;
+        rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stop_service_;
         bool is_simulation_;
         bool is_sim_real_time_;
         bool is_publish_joint_state_;
-        volatile bool running_;
+        bool running_;
         realtime_tools::RealtimeBox<bool> running_box_;
         rclcpp::Time sim_start_time_;
     };
