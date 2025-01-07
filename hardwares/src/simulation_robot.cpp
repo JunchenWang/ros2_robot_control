@@ -22,6 +22,11 @@ namespace hardwares
             if(it != command_.end())
             {
                 state_["position"] = it->second;
+                it = command_.find("velocity");
+                if(it != command_.end())
+                {
+                    state_["velocity"] = it->second;
+                }
             }
             else
             {
