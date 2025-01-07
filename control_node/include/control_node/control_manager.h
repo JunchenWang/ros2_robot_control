@@ -25,14 +25,12 @@ namespace control_node
                        const rclcpp::NodeOptions &option);
         ~ControlManager();
         int get_update_rate();
-        void wait_for_active_controller();
         void control_loop();
         void prepare_loop();
         void end_loop();
         void command_callback(const std::shared_ptr<control_msgs::srv::ControlCommand::Request> request,
                               std::shared_ptr<control_msgs::srv::ControlCommand::Response> response);
         bool activate_controller(const std::string &controller_name);
-        bool deactivate_controller();
         void shutdown_robot();
         void read(const rclcpp::Time &t, const rclcpp::Duration &period);
         void update(const rclcpp::Time &t, const rclcpp::Duration &period);
@@ -42,7 +40,6 @@ namespace control_node
         Eigen::MatrixXd simulation_external_force(double t);
         void simulation_observer(const std::vector<double> &x, double t);
         bool is_simulation();
-        //bool is_running();
 
     protected:
         pluginlib::UniquePtr<pluginlib::ClassLoader<hardware_interface::RobotInterface>> robot_loader_;
@@ -50,13 +47,13 @@ namespace control_node
         std::shared_ptr<hardware_interface::RobotInterface> robot_;
         std::vector<controller_interface::ControllerInterface::SharedPtr> controllers_;
         std::shared_ptr<controller_interface::ControllerInterface> active_controller_;
+        realtime_tools::RealtimeBox<controller_interface::ControllerInterface::SharedPtr> active_controller_box_;
         std::shared_ptr<rclcpp::Executor> executor_;
         int update_rate_;
         std::string robot_description_;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
         std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::msg::JointState>> real_time_publisher_;
         rclcpp::Service<control_msgs::srv::ControlCommand>::SharedPtr service_;
-        std::mutex activate_controller_mutex_;
         bool is_simulation_;
         bool is_sim_real_time_;
         bool is_publish_joint_state_;

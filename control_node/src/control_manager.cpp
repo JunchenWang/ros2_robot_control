@@ -77,18 +77,18 @@ namespace control_node
     //     return running;
     // }
 
-    bool ControlManager::deactivate_controller()
-    {
-        std::lock_guard<std::mutex> guard(activate_controller_mutex_);
-        if (active_controller_)
-        {
-            auto state = active_controller_->get_node()->deactivate();
-            if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
-                return false;
-            active_controller_ = nullptr;
-        }
-        return true;
-    }
+    // bool ControlManager::deactivate_controller()
+    // {
+    //     std::lock_guard<std::mutex> guard(activate_controller_mutex_);
+    //     if (active_controller_)
+    //     {
+    //         auto state = active_controller_->get_node()->deactivate();
+    //         if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
+    //             return false;
+    //         active_controller_ = nullptr;
+    //     }
+    //     return true;
+    // }
     bool ControlManager::activate_controller(const std::string &controller_name)
     {
         if (running_)
@@ -100,21 +100,26 @@ namespace control_node
         {
             if (controller->get_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE && controller->get_node()->get_name() == controller_name)
             {
-                std::lock_guard<std::mutex> guard(activate_controller_mutex_);
-                if (active_controller_)
-                {
-                    auto state = active_controller_->get_node()->deactivate();
-                    if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
-                        return false;
-                }
-                active_controller_ = controller;
-                auto state = active_controller_->get_node()->activate();
-                if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
-                {
-                    active_controller_ = nullptr;
-                    return false;
-                }
-                return true;
+                bool ret = true;
+                active_controller_box_.set([=, &ret, &controller](auto &value)
+                                           {
+                    if (value)
+                    {
+                        auto state = value->get_node()->deactivate();
+                        if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
+                        {
+                            ret = false;
+                            return;
+                        }
+                    }
+                    value = controller;
+                    auto state = value->get_node()->activate();
+                    if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+                    {
+                        value = nullptr;
+                        ret = false;
+                    } });
+                return ret;
             }
         }
         return false;
@@ -136,39 +141,6 @@ namespace control_node
     int ControlManager::get_update_rate()
     {
         return update_rate_;
-    }
-
-    void ControlManager::wait_for_active_controller()
-    {
-        RCLCPP_INFO(get_logger(), "waiting for controller to be activated...");
-        std::stringstream ss;
-        for (auto &controller : controllers_)
-        {
-            ss << controller->get_node()->get_name() << " ";
-        }
-        RCLCPP_INFO(get_logger(), "availabel controllers are: %s", ss.str().c_str());
-        do
-        {
-            if (!is_simulation_)
-                read(this->now(), rclcpp::Duration(0, 0));
-            while (!activate_controller_mutex_.try_lock())
-            {
-                std::this_thread::sleep_for(100ms);
-            }
-            if (active_controller_)
-            {
-                RCLCPP_INFO(get_logger(), "%s controller activated", active_controller_->get_node()->get_name());
-                activate_controller_mutex_.unlock();
-                break;
-            }
-            else
-            {
-                activate_controller_mutex_.unlock();
-            }
-            std::this_thread::sleep_for(1s);
-        } while (rclcpp::ok());
-        running_ = true;
-        running_box_ = true;
     }
 
     void ControlManager::shutdown_robot()
@@ -215,7 +187,7 @@ namespace control_node
 
     void ControlManager::update(const rclcpp::Time &t, const rclcpp::Duration &period)
     {
-        
+
         active_controller_->update(t, period);
         // for (auto &controller : controllers_)
         // {
@@ -367,7 +339,26 @@ namespace control_node
         if (rclcpp::ok())
         {
             robot_->get_node()->activate();
-            wait_for_active_controller();
+            RCLCPP_INFO(get_logger(), "waiting for controller to be activated...");
+            std::stringstream ss;
+            for (auto &controller : controllers_)
+            {
+                ss << controller->get_node()->get_name() << " ";
+            }
+            RCLCPP_INFO(get_logger(), "availabel controllers are: %s", ss.str().c_str());
+            do
+            {
+                if (!is_simulation_)
+                    read(this->now(), rclcpp::Duration(0, 0));
+                while (!active_controller_box_.try_get([=](auto const &value)
+                                                       { active_controller_ = value; }))
+                {
+                    std::this_thread::sleep_for(100ms);
+                }
+                std::this_thread::sleep_for(1s);
+            } while (rclcpp::ok() && !active_controller_);
+            running_ = true;
+            running_box_ = true;
         }
     }
 
@@ -375,7 +366,9 @@ namespace control_node
     {
         if (rclcpp::ok())
         {
-            deactivate_controller();
+            active_controller_->get_node()->deactivate();
+            active_controller_ = nullptr;
+            active_controller_box_.set(nullptr);
             robot_->get_node()->deactivate();
         }
     }
