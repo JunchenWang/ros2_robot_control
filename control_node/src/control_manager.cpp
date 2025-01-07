@@ -70,32 +70,19 @@ namespace control_node
     ControlManager::~ControlManager()
     {
     }
-    // bool ControlManager::is_running()
-    // {
-    //     bool running;
-    //     running_.get(running);
-    //     return running;
-    // }
-
-    // bool ControlManager::deactivate_controller()
-    // {
-    //     std::lock_guard<std::mutex> guard(activate_controller_mutex_);
-    //     if (active_controller_)
-    //     {
-    //         auto state = active_controller_->get_node()->deactivate();
-    //         if (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
-    //             return false;
-    //         active_controller_ = nullptr;
-    //     }
-    //     return true;
-    // }
     bool ControlManager::activate_controller(const std::string &controller_name)
     {
-        if (running_)
+        bool running = false;
+        active_controller_box_.get([=,&running](auto const &value) {
+            if (value)
+                running = true;
+        });
+        if(running)
         {
-            RCLCPP_INFO(get_logger(), "cannot activate controller while running, stop running first");
+            RCLCPP_WARN(get_logger(), "controller is running, please stop first!");
             return false;
         }
+        
         for (auto &controller : controllers_)
         {
             if (controller->get_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE && controller->get_node()->get_name() == controller_name)
@@ -118,7 +105,10 @@ namespace control_node
                     {
                         value = nullptr;
                         ret = false;
-                    } });
+                    } 
+                    else
+                        RCLCPP_INFO(get_logger(), "controller %s is activated!", controller->get_node()->get_name());
+                    });
                 return ret;
             }
         }
@@ -308,7 +298,7 @@ namespace control_node
 
         // for calculating the measured period of the loop
         rclcpp::Time previous_time = this->now();
-        while (rclcpp::ok() && running_)
+        while (rclcpp::ok() && running_ && !robot_->is_stop()) // give robot a change to stop running 
         {
             // calculate measured period
             auto const current_time = this->now();
