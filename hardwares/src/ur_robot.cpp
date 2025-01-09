@@ -12,7 +12,7 @@ namespace hardwares
     class URRobot : public hardware_interface::RobotInterface
     {
     public:
-        URRobot()
+        URRobot() : pre_dq_(6)
         {
         }
         ~URRobot()
@@ -20,22 +20,44 @@ namespace hardwares
         }
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
+            //RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
             hardware_interface::RobotInterface::write(t, period);
             auto &cmd = command_["velocity"];
-            control_interface_->speedJ(cmd, 1.0, 0.002);
+            // std::cerr << "cmd: " << cmd[0] << " " << cmd[1] << " " << cmd[2] << " " << cmd[3] << " " << cmd[4] << " " << cmd[5] << std::endl;
+            control_interface_->speedJ(cmd, 1.5, 0.002);
 
+        }
+        bool is_stop() override
+        {
+            return (bool)state_["io"][0];
         }
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::read(t, period);
             auto & q = state_["position"];
             auto & dq = state_["velocity"];
+            auto & ddq = state_["acceleration"];
+            auto dt = period.seconds();
+           
             auto &force = loaned_state_["ft_sensor"]->at("force");
             auto pose2 = receive_interface_->getActualTCPPose();
            
             q = receive_interface_->getActualQ();
             dq = receive_interface_->getActualQd();
-
+            state_["io"][0] = receive_interface_->getDigitalOutState(0);
+            state_["io"][1] = receive_interface_->getDigitalOutState(1);
+            if(dt > 1e-5)
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    ddq[i] = (dq[i] - pre_dq_[i]) / dt;
+                    pre_dq_[i] = dq[i];
+                }
+            }
+            else
+            {
+                std::fill(ddq.begin(), ddq.end(), 0);
+            }
             // Eigen::Matrix4d T;
             // forward_kin_general(&robot_, q, T);
             // auto pose = tform_to_pose(T);
@@ -112,6 +134,7 @@ namespace hardwares
             if (RobotInterface::on_activate(previous_state) == CallbackReturn::SUCCESS)
             {
                 // to do
+                std::fill(pre_dq_.begin(), pre_dq_.end(), 0);
                 return CallbackReturn::SUCCESS;
             }
             return CallbackReturn::FAILURE;
@@ -124,13 +147,14 @@ namespace hardwares
             {
                 control_interface_->servoStop();
                 control_interface_->speedStop();
-                control_interface_->stopScript();
+                //control_interface_->stopScript();
             }
             return CallbackReturn::SUCCESS;
         }
 
     protected:
         std::string robot_ip_;
+        std::vector<double> pre_dq_;
         std::shared_ptr<ur_rtde::RTDEControlInterface> control_interface_;
         std::shared_ptr<ur_rtde::RTDEReceiveInterface> receive_interface_;
     };

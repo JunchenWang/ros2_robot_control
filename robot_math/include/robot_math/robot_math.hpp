@@ -30,7 +30,7 @@ namespace robot_math
 		double gravity[3];
 		double TCP[16];
 	};
-	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, const std::string &link_name = "");
+	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name);
 	void print_robot(const Robot &robot);
 	void print_code_array(const coder::array<double, 3> &array);
     // pose: first three are position
@@ -139,7 +139,7 @@ namespace robot_math
 	void gravity_and_inertia_compensation(const Robot &robot, const std::vector<double> &q, const std::vector<double> &qd, const std::vector<double> &qdd, double _T[16], double _Tcb[16], double _Tcs[16], float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose, const double _G[36]);
 	
 	Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &qd,
-												  const std::vector<double> &qdd, const float *rawForce, float mass, const float offset[6], const float cog[3], const Eigen::Matrix3d &mI, double scale = 1.0);
+												  const std::vector<double> &qdd, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale = 1.0);
 
 	template <class T, int m, int n>
 	coder::array<T, 1> &coder_array_1d_wrapper(Eigen::Matrix<T, m, n> &M)

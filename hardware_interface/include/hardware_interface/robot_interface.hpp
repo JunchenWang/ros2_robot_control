@@ -55,6 +55,7 @@ namespace hardware_interface
     
         std::unique_ptr<pluginlib::ClassLoader<hardware_interface::SensorInterface>> sensor_loader_;
         std::vector<std::string> joint_names_;
+        std::string end_effector_;
         int dof_;
         urdf::Model robot_model_;
         robot_math::Robot robot_;

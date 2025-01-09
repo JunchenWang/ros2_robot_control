@@ -11,13 +11,14 @@ control_node:
       
 ForceDragController:
   ros__parameters:
-    mass: 0.967923
-    cog: [0.00119462, -0.00020578, -0.0129575]
-    offset: [0.303933, 3.52971, 0.327006, 0.0194561, -0.092082, -0.0818083]
+    mass: 4.69166
+    cog: [0.0188323, 0.00468353, 0.0435661]
+    offset: [0.750243, 3.435, 1.0287, -0.067, -0.148, -0.086]
     pose: [.0, .0, .0475, .0, .0, .0]
 
 URRobot:
   ros__parameters:
+    robot_ip: 192.168.31.201
     end_effector: ""
     joint_command_interface:
       - position
@@ -25,6 +26,12 @@ URRobot:
     joint_state_interface:
       - position
       - velocity
+      - acceleration
+    # command_interface: []
+    # command_length: []
+    state_interface: [io]
+    state_length: [6]
+
     sensors: [ft_sensor]
     ft_sensor: hardwares::FTATISensor
 

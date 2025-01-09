@@ -12,37 +12,35 @@ namespace hardware_interface
     {
         if (!robot_description.empty() && robot_model_.initString(robot_description))
         {
-            std::string end_effector;
             std::vector<std::string> joint_state_names, joint_command_names;
-            node_->get_parameter_or<std::string>("end_effector", end_effector, "");
+            node_->get_parameter_or<std::string>("end_effector", end_effector_, "");
             node_->get_parameter_or<std::vector<std::string>>("joint_state_interface", joint_state_names, std::vector<std::string>());
             node_->get_parameter_or<std::vector<std::string>>("joint_command_interface", joint_command_names, std::vector<std::string>());
-            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector);
+            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector_);
+            RCLCPP_INFO(node_->get_logger(), "set end_effector to be %s", end_effector_.c_str());
+            dof_ = joint_names_.size();
+            std::stringstream ss;
+            ss << "dof: " << dof_ << " ";
             for (auto &j : joint_names_)
             {
-                RCLCPP_INFO(node_->get_logger(), "%s", j.c_str());
+                ss << j << " ";
             }
-            dof_ = joint_names_.size();
-            RCLCPP_INFO(node_->get_logger(), "DOF: %d", dof_);
+            RCLCPP_INFO(node_->get_logger(), "joint name in order: %s", ss.str().c_str());
+            
             
             for (auto &name : joint_state_names)
             {
-                state_.emplace(name, std::vector<double>(dof_, 0.0));
+                state_.emplace(std::move(name), std::vector<double>(dof_, 0.0));
             }
             for (auto &name : joint_command_names)
             {
-                command_.emplace(name, std::vector<double>(dof_, 0.0));
+                command_.emplace(std::move(name), std::vector<double>(dof_, 0.0));
             }
             return 1;
         }
         return 0;
     }
-    // void RobotInterface::receive_wrench(const geometry_msgs::msg::Wrench::UniquePtr &msg)
-    // {
-    //     //printf(" Received message with address: %p\n",reinterpret_cast<std::uintptr_t>(msg.get()));
-    //     real_time_buffer_force_.writeFromNonRT({msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z});
-    //     //state_["force"] = {msg->force.x, msg->force.y, msg->force.z, msg->torque.x, msg->torque.y, msg->torque.z};
-    // }
+
     std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> RobotInterface::get_all_nodes()
     {
         std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> nodes{node_->get_node_base_interface()};
@@ -78,7 +76,7 @@ namespace hardware_interface
         node_->get_parameter_or<std::vector<long int>>("state_length", state_len, std::vector<long int>());
         if(states.size() != state_len.size())
         {
-            RCLCPP_WARN(node_->get_logger(), "state name and lengh are different!");
+            RCLCPP_WARN(node_->get_logger(), "state name and length are different!");
             return CallbackReturn::FAILURE;
         }
             
@@ -95,7 +93,7 @@ namespace hardware_interface
         {
             for(auto & sensor_name : sensors)
             {
-                node_->get_parameter_or<std::string>(sensor_name, sensor_type, sensor_type);
+                node_->get_parameter_or<std::string>(sensor_name, sensor_type, "");
                 RCLCPP_INFO(node_->get_logger(), "found %s : %s", sensor_name.c_str(), sensor_type.c_str());
                 auto sensor = sensor_loader_->createSharedInstance(sensor_type);
                 components_[sensor_name] = sensor;

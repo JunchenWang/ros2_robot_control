@@ -43,7 +43,7 @@ namespace controller_interface
         return 0;
     }
 
-    void ControllerInterface::loarn_interface(const robot_math::Robot *robot,
+    void ControllerInterface::loan_interface(const robot_math::Robot *robot,
                                               hardware_interface::CommandInterface *command,
                                               const hardware_interface::StateInterface *state,
                                               std::map<std::string, hardware_interface::CommandInterface*>* com_command,

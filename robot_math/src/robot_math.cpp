@@ -125,7 +125,7 @@ namespace robot_math
         }
     }
 
-    Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, const std::string &link_name)
+    Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names,  std::string &link_name)
     {
         urdf::Model urdf_model;
         Robot robot;
@@ -138,7 +138,7 @@ namespace robot_math
             if (link.first == link_name)
                 break;
         }
-        if (link_name == "") // find the farest link as the end-effector link
+        if (link_name != last_link->name) // find the farest link as the end-effector link
         {
             std::queue<urdf::LinkSharedPtr> que;
             que.push(last_link);
@@ -149,6 +149,7 @@ namespace robot_math
                 for (auto l : last_link->child_links)
                     que.push(l);
             }
+            link_name = last_link->name;
         }
         bodies.push_back(last_link);
         while (last_link = last_link->getParent())
@@ -414,12 +415,12 @@ namespace robot_math
 
         Eigen::Vector3d g = R * Eigen::Vector3d(0, 0, -1) * mass;
         Eigen::Vector3d M = Eigen::Vector3d(cog[0], cog[1], cog[2]).cross(g);
-        return Eigen::Vector6d(force[0] - g(0) - offset[0],
-                               force[1] - g(1) - offset[1],
-                               force[2] - g(2) - offset[2],
-                               force[3] - M(0) - offset[3],
+        return Eigen::Vector6d(force[3] - M(0) - offset[3],
                                force[4] - M(1) - offset[4],
-                               force[5] - M(2) - offset[5]);
+                               force[5] - M(2) - offset[5],
+                               force[0] - g(0) - offset[0],
+                               force[1] - g(1) - offset[1],
+                               force[2] - g(2) - offset[2]);
     }
     void get_ext_force(float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose)
     {
@@ -1185,7 +1186,7 @@ namespace robot_math
     }
 
     Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &qd,
-                                                     const std::vector<double> &qdd, const float *rawForce, float mass, const float offset[6], const float cog[3], const Eigen::Matrix3d &mI, double scale)
+                                                     const std::vector<double> &qdd, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale)
     {
         Eigen::Vector3d com(cog[0], cog[1], cog[2]);
         Eigen::Vector3d Pcom = Tsensor.block(0, 3, 3, 1) + Tsensor.block(0, 0, 3, 3) * com;

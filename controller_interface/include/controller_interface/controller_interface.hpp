@@ -30,7 +30,7 @@ namespace controller_interface
 
         void finalize();
 
-        void loarn_interface(const robot_math::Robot *robot,
+        void loan_interface(const robot_math::Robot *robot,
                              hardware_interface::CommandInterface *command,
                              const hardware_interface::StateInterface *state,
                              std::map<std::string, hardware_interface::CommandInterface*>* com_command,
@@ -54,22 +54,9 @@ namespace controller_interface
 
         virtual CallbackReturn on_error(const rclcpp_lifecycle::State &previous_state);
 
-        template <typename ParameterT>
-        auto auto_declare(const std::string &name, const ParameterT &default_value)
-        {
-            if (!node_->has_parameter(name))
-            {
-                return node_->declare_parameter<ParameterT>(name, default_value);
-            }
-            else
-            {
-                return node_->get_parameter(name).get_value<ParameterT>();
-            }
-        }
 
     protected:
         std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
-        std::vector<std::string> joint_names_;
         hardware_interface::CommandInterface *command_;// robot command
         const hardware_interface::StateInterface *state_;// robot state
         const robot_math::Robot *robot_;
