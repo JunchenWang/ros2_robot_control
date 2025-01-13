@@ -13,6 +13,7 @@ namespace controllers
     public:
         ForceDragController() : f_tol_{1, 1, 1, 1, 1, 1}
         {
+            
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
@@ -34,50 +35,34 @@ namespace controllers
             int dof = state_->at("position").size();
             dq_filtered_ = std::vector<double>(dof, 0);
             ddq_filtered_ = std::vector<double>(dof, 0);
-
+            node_->get_parameter_or<std::vector<double>>("M", M_, {1, 1, 1, 1, 1, 1});
+            node_->get_parameter_or<std::vector<double>>("B", B_, {1, 1, 1, 1, 1, 1});
             node_->get_parameter_or<std::vector<double>>("cog", cog_, {0, 0, 0});
             node_->get_parameter_or<std::vector<double>>("offset", offset_, {0, 0, 0, 0, 0, 0});
             node_->get_parameter_or<std::vector<double>>("pose", sensor_pose_, {0, 0, 0, 0, 0, 0});
             node_->get_parameter_or<double>("mass", mass_, 0.0);
-
-            // 声明并初始化参数 mw, bw
-            node_->declare_parameter<double>("mw", 0.1);
-            node_->declare_parameter<double>("bw", 4);
-
-            // 声明并初始化参数 mv, bv
-            node_->declare_parameter<double>("mv", 1);
-            node_->declare_parameter<double>("bv", 30);
-
-            // 获取参数值
-            mw_ = node_->get_parameter("mw").as_double();
-            bw_ = node_->get_parameter("bw").as_double();
-            mv_ = node_->get_parameter("mv").as_double();
-            bv_ = node_->get_parameter("bv").as_double();
-
-            node_->add_on_set_parameters_callback(
-                [&](std::vector<rclcpp::Parameter> parameters) -> SetParametersResult
-                {
-                    for (const auto &parameter : parameters)
-                    {
-                        if (parameter.get_name() == "offset")
-                            offset_in_box_ = parameter.as_double_array();
-                        else if (parameter.get_name() == "mw")
-                        {
-                            coeff_in_box_.set({parameter.as_double(), bw_, mv_, bv_});
-                            std::cerr << "mw: " << parameter.as_double() << std::endl;
-                        }
-                        else if (parameter.get_name() == "bw")
-                            coeff_in_box_.set({mw_, parameter.as_double(), mv_, bv_});
-                        else if (parameter.get_name() == "mv")
-                            coeff_in_box_.set({mw_, bw_, parameter.as_double(), bv_});
-                        else if (parameter.get_name() == "bv")
-                            coeff_in_box_.set({mw_, bw_, mv_, parameter.as_double()});
-                    }
-                    return SetParametersResult();
-                });
+            param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node_);
+            cb_handles_.clear();
+            // Set a callback for this node's integer parameter, "an_int_param"
+            cb_handles_.push_back(param_subscriber_->add_parameter_callback("offset", [this](const rclcpp::Parameter &p)
+            {
+                offset_in_box_ = p.as_double_array();
+                RCLCPP_INFO(node_->get_logger(), "change offset");
+            }));
+            cb_handles_.push_back(param_subscriber_->add_parameter_callback("M", [this](const rclcpp::Parameter &p)
+            {
+                M_in_box_ = p.as_double_array();
+                RCLCPP_INFO(node_->get_logger(), "change M");
+            }));
+            cb_handles_.push_back(param_subscriber_->add_parameter_callback("B", [this](const rclcpp::Parameter &p)
+            {
+                B_in_box_ = p.as_double_array();
+                RCLCPP_INFO(node_->get_logger(), "change B");
+            }));
 
             offset_in_box_ = offset_;
-            coeff_in_box_ = {mw_, bw_, mv_, bv_};
+            M_in_box_ = M_;
+            B_in_box_ = B_;
 
             Tsensor_ = pose_to_tform(sensor_pose_);
             f_filter_ = std::make_shared<MovingFilter<double>>(dof);
@@ -96,13 +81,13 @@ namespace controllers
             auto &cmd = command_->at("velocity");
             offset_in_box_.try_get([=](auto const &value)
                                    { offset_ = value; });
-            coeff_in_box_.try_get([=](auto const &value)
-                                  { mw_ = value[0], bw_ = value[1], mv_ = value[2], bv_ = value[3]; });
+            M_in_box_.try_get([=](auto const &value)
+                              { M_ = value; });
+            B_in_box_.try_get([=](auto const &value)
+                              { B_ = value; });
 
-            Mw_ = mw_ * Eigen::Matrix3d::Identity();
-            Bw_ = bw_ * Eigen::Matrix3d::Identity();
-            Mv_ = mv_ * Eigen::Matrix3d::Identity();
-            Bv_ = bv_ * Eigen::Matrix3d::Identity();
+            Eigen::Map<Eigen::Vector6d> M(&M_[0]);
+            Eigen::Map<Eigen::Vector6d> B(&B_[0]);
 
             dq_filter_->filtering(&dq[0], &dq_filtered_[0]);
             // for (int i = 0; i < 6; i++)
@@ -117,11 +102,10 @@ namespace controllers
             {
                 offset_in_box_.try_set([=](auto &value)
                                        {
-                                            std::cerr << "haha\n";
+                                           std::cerr << "haha\n";
                                            std::vector<double> c = {f(3), f(4), f(5), f(0), f(1), f(2)};
                                            for (int i = 0; i < 6; i++)
-                                               value[i] += c[i];
-                                       });
+                                               value[i] += c[i]; });
             }
             // std::cerr << f(0) << f(1) << f(2) << f(3) << f(4) << f(5) << std::endl;
             // Eigen::Matrix3d mI = Eigen::Matrix3d::Zero();
@@ -147,9 +131,7 @@ namespace controllers
             auto dqf = Eigen::Map<Eigen::Vector6d>(&dq_filtered_[0]);
             V_ = J_ * dqf;
             // 根据期望的导纳模型计算工具速度旋量的导数
-            Eigen::Vector6d dV;
-            dV.head(3) = (f.head(3) - Bw_ * V_.head(3)).cwiseQuotient(Mw_.diagonal());
-            dV.tail(3) = (f.tail(3) - Bv_ * V_.tail(3)).cwiseQuotient(Mv_.diagonal());
+            Eigen::Vector6d dV = ((f - (B.array() * V_.array()).matrix()).array() / M.array()).matrix();
             V_ = V_ + dV * period.seconds();
 
             Eigen::Map<Eigen::Vector6d> dq_command(&cmd[0]);
@@ -160,18 +142,23 @@ namespace controllers
         double mass_;
         std::vector<double> cog_;
         std::vector<double> offset_;
+        realtime_tools::RealtimeBox<std::vector<double>> offset_in_box_;
         std::vector<double> sensor_pose_; // 传感器相对于法兰的位姿
         Eigen::Matrix4d T_;
         Eigen::Matrix4d Tsensor_;
         Eigen::MatrixXd J_;
         Eigen::Vector6d V_;
-        double mw_, bw_, mv_, bv_;
-        Eigen::Matrix3d Mw_, Bw_, Mv_, Bv_;
-        realtime_tools::RealtimeBox<std::vector<double>> offset_in_box_;
-        realtime_tools::RealtimeBox<std::vector<double>> coeff_in_box_;
+        std::vector<double> M_;
+        realtime_tools::RealtimeBox<std::vector<double>> M_in_box_;
+        std::vector<double> B_;
+        realtime_tools::RealtimeBox<std::vector<double>> B_in_box_;
+
         std::shared_ptr<MovingFilter<double>> f_filter_, dq_filter_, ddq_filter_;
         std::vector<double> dq_filtered_, ddq_filtered_;
         std::vector<double> f_tol_;
+
+        std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
+        std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> cb_handles_;
     };
 
 } // namespace controllers
