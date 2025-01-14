@@ -1,22 +1,18 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>controllers</name>
+  <name>robot_msgs</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="wangjunchen@buaa.edu.cn">wjc</maintainer>
+  <maintainer email="buaalh@buaa.edu.cn">eric</maintainer>
   <license>Apache-2.0</license>
 
-  <buildtool_depend>ament_cmake_ros</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>controller_interface</depend>
-  <depend>hardware_interface</depend>
-  <depend>realtime_tools</depend>
-  <depend>robot_math</depend>
-  <depend>urdf</depend>
-  <depend>pluginlib</depend>
-  <depend>ros2_utility</depend>
-  <depend>robot_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>rosidl_default_generators</depend>
+  <depend>std_msgs</depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

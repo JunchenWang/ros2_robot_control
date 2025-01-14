@@ -5,8 +5,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-
-
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   "rclcpp_lifecycle"
   "ament_cmake"
@@ -19,7 +17,13 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "std_msgs"
   "robot_math"
   "pluginlib"
+  "robot_msgs"
+  "ros2_utility"
+  "tf2_ros"
+  "visualization_msgs"
+  "geometry_msgs"
 )
+
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
@@ -73,6 +77,8 @@ install(
 )
 
 add_executable(test_controller test/test_controller.cpp)
+add_executable(debug_all test/debug_all.cpp)
+
 target_include_directories(test_controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
@@ -83,7 +89,12 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-install(TARGETS test_controller
+ament_target_dependencies(
+  debug_all
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+install(TARGETS test_controller debug_all
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
