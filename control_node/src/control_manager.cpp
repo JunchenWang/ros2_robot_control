@@ -324,7 +324,7 @@ namespace control_node
         auto state = robot_->get_state();
         while (rclcpp::ok() && state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
         {
-            RCLCPP_WARN(this->get_logger(), "robot is not configued!");
+            RCLCPP_WARN(this->get_logger(), "robot is not configured!");
             std::this_thread::sleep_for(1s);
         }
         if (rclcpp::ok())

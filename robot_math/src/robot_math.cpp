@@ -403,6 +403,7 @@ namespace robot_math
         return svd.matrixV() * singularValuesInv.asDiagonal() * svd.matrixU().transpose();
     }
 
+    // 前三个是力矩，后三个是力
     Eigen::Vector6d get_ext_force(const std::vector<double> &force,
                        double mass,
                        const std::vector<double> &offset,

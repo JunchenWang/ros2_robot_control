@@ -14,4 +14,10 @@
   <class type="controllers::ForceDragController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a force drag controller plugin.</description>
   </class>
+  <class type="controllers::ForceDragDevController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a force drag dev controller plugin.</description>
+  </class>
+  <class type="controllers::AdmittanceController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is an admittance controller plugin.</description>
+  </class>
 </library>
