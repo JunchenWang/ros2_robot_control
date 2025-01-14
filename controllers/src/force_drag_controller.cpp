@@ -74,7 +74,7 @@ namespace controllers
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration &period) override
         {
             auto const &force = com_state_->at("ft_sensor")->at("force");
-            // std::cerr << "raw force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
+            std::cerr << "raw force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
             auto const &q = state_->at("position");
             auto const &dq = state_->at("velocity");
             auto const &io = state_->at("io");

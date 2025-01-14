@@ -27,15 +27,19 @@ SimulationRobot:
     joint_state_interface:
       - position
       - velocity
+    state_interface: [io]
+    state_length: [6]
     # command_interface: []
     # command_length: []
     # state_interface: []
     # state_length: []
     sensors: [ft_sensor]
-    ft_sensor: hardwares::FTDummySensor
+    ft_sensor: hardwares::FTSRSensor
 
 ft_sensor:
   ros__parameters:
     state_interface: force
     length: 6
+    sensor_ip: 192.168.110.101
+    sensor_port: 4008
 

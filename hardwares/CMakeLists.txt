@@ -27,7 +27,7 @@ endforeach()
 
 pluginlib_export_plugin_description_file(hardware_interface plugins.xml)
 
-file(GLOB_RECURSE srcs src/*.cpp)
+file(GLOB_RECURSE srcs src/*.cpp src/sr/*.cpp)
 
 add_library(hardwares 
             ${srcs})
