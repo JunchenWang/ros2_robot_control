@@ -40,6 +40,15 @@ def generate_launch_description():
                     "view_robot.rviz"
                 ]
             )
+    
+    b211_rviz_file = PathJoinSubstitution(
+            [
+                FindPackageShare("hardwares"), 
+                "config",
+                "ur5e@B211",
+                "view_robot.rviz"
+            ]
+        )
 
     robot_xacro_filepath = PathJoinSubstitution(
                 [
@@ -101,7 +110,7 @@ def generate_launch_description():
                 package="rviz2",
                 executable="rviz2",
                 name="rviz2",
-                arguments=["--display-config", rviz_file],
+                arguments=["--display-config", b211_rviz_file],
             )
     
     control_node = Node(

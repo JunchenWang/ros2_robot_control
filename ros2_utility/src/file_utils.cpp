@@ -1,4 +1,4 @@
-#include "file_utils.hpp"
+#include "ros2_utility/file_utils.hpp"
 
 using namespace std;
 
@@ -121,4 +121,13 @@ map<string, vector<double>> FileUtils::parseFile(const string &filePath)
 
     file.close();
     return data;
+}
+
+// 获取用户home路径
+std::string FileUtils::getHomeDirectory() {
+    const char* home_dir = getenv("HOME");
+    if (!home_dir) {
+        throw std::runtime_error("Error: HOME environment variable not set");
+    }
+    return std::string(home_dir);
 }

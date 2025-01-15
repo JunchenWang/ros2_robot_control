@@ -336,7 +336,7 @@ namespace control_node
             {
                 ss << controller->get_node()->get_name() << " ";
             }
-            RCLCPP_INFO(get_logger(), "availabel controllers are: %s", ss.str().c_str());
+            RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
             do
             {
                 if (!is_simulation_)

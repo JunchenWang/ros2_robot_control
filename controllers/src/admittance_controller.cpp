@@ -3,6 +3,9 @@
 #include "realtime_tools/realtime_box.hpp"
 #include "robot_math/MovingFilter.h"
 #include "robot_math/robot_math.hpp"
+#include "ros2_utility/data_logger.hpp"
+#include "ros2_utility/file_utils.hpp"
+#include "ros2_utility/ros2_visual_tools.hpp"
 
 #include <iostream>
 using namespace robot_math;
@@ -126,8 +129,24 @@ namespace controllers
             pedd_.setZero();
 
             inv_flag_ = 0;
-
             command_->at("mode")[0] = 0;
+
+            data_logger_ = new DataLogger(
+                {
+                    DATA_WRAPPER(Ftcp_),
+                    DATA_WRAPPER(Fext_),
+                },
+                {
+                    CONFIG_WRAPPER(mr_),
+                    CONFIG_WRAPPER(br_),
+                    CONFIG_WRAPPER(kr_),
+                    CONFIG_WRAPPER(mp_),
+                    CONFIG_WRAPPER(bp_),
+                    CONFIG_WRAPPER(kp_),
+                },
+                1000);
+
+            visual_tools_ = new ROS2VisualTools(node_);
 
             return CallbackReturn::SUCCESS;
         }
@@ -135,6 +154,9 @@ namespace controllers
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
             command_->at("mode")[0] = 0;
+            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "adm_ctrl");
+            delete data_logger_;
+            delete visual_tools_;
             return CallbackReturn::SUCCESS;
         }
 
@@ -228,6 +250,10 @@ namespace controllers
                                                 value[i] += c[i]; });
             }
             prev_io1_ = io[1];
+            data_logger_->record();
+            Eigen::Matrix4d Tatcp = pose_to_tform(state_->at("pose")) * Tcp_;
+            visual_tools_->broadcastTransform(Tatcp, "base", "end_effector");
+            visual_tools_->publishMarker(Tatcp.block(0, 3, 3, 1), "base", 0.15);
         }
 
     protected:
@@ -247,6 +273,8 @@ namespace controllers
         Eigen::Matrix4d Tcp_, Tsensor_, Tdtcp_, Tref_;
         Eigen::Vector6d Ftcp_, Vdtcp_, Fext_;
         bool prev_io1_;
+        ROS2VisualTools *visual_tools_;
+        DataLogger *data_logger_;
     };
 }
 #include <pluginlib/class_list_macros.hpp>

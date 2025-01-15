@@ -8,13 +8,14 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <eigen3/Eigen/Dense>
 #include "robot_math/robot_math.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 // ROS2VisualTools类，封装了TF广播和Marker发布功能
 class ROS2VisualTools
 {
 public:
     // 构造函数，初始化ROS2节点和发布器
-    explicit ROS2VisualTools(rclcpp::Node* node);
+    ROS2VisualTools(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node);
 
     // 广播TF变换，更新坐标系之间的转换关系
     // @param transform_matrix 4×4齐次变换矩阵

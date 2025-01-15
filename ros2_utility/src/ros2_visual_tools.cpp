@@ -1,11 +1,11 @@
-#include "ros2_visual_tools.hpp"
+#include "ros2_utility/ros2_visual_tools.hpp"
 
 using namespace Eigen;
 using namespace std;
 
 // 构造函数，初始化ROS2节点和所需的发布器
 // @param node 共享指针，指向ROS2节点
-ROS2VisualTools::ROS2VisualTools(rclcpp::Node* node)
+ROS2VisualTools::ROS2VisualTools(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node)
 {
     // 创建一个发布器，用于发布Marker信息，主题名称为"visualization_marker"
     marker_pub_ = node->create_publisher<visualization_msgs::msg::Marker>("visualization_marker", 10);

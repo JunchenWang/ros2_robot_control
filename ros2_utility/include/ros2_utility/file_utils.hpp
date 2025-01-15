@@ -28,6 +28,9 @@ public:
 
     // 解析文件，将数据存入map
     static map<string, vector<double>> parseFile(const string& filename);
+
+    // 获取用户home路径
+    static string getHomeDirectory();
 };
 
 #endif // FILE_UTILS

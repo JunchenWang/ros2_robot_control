@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(robot_math REQUIRED)
 find_package(robot_msgs REQUIRED)
 find_package(urdf REQUIRED)
@@ -32,12 +33,13 @@ target_compile_features(ros2_utility PUBLIC c_std_99 cxx_std_17)
 # 设置动态链接库头文件的包含路径
 target_include_directories(ros2_utility PUBLIC
     ${EIGEN3_INCLUDE_DIR} # 添加 Eigen3 的头文件路径
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ros2_utility>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
 ament_target_dependencies(ros2_utility
     rclcpp
+    rclcpp_lifecycle
     robot_math
     urdf
     tf2_ros
