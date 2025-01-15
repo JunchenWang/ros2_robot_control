@@ -8,6 +8,7 @@ endif()
 # 数学包所需的依赖
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(robot_math REQUIRED)
@@ -40,6 +41,7 @@ target_include_directories(ros2_utility PUBLIC
 ament_target_dependencies(ros2_utility
     rclcpp
     rclcpp_lifecycle
+    ament_index_cpp
     robot_math
     urdf
     tf2_ros

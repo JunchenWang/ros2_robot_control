@@ -20,11 +20,12 @@ public:
     DebugAll() : Node("test_node")
     {
         // test_onlinetrajplanner();
-        test_transforminterpolator1();
+        // test_transforminterpolator1();
         // test_transforminterpolator2();
         // test_slidingwindow();
         // test_fileutils();
         // test_datalogger();
+        test_editYAML();
         vec_pub1_ = this->create_publisher<robot_msgs::msg::VectorData>("plot1", 10);
         vec_pub2_ = this->create_publisher<robot_msgs::msg::VectorData>("plot2", 10);
         test_publisher();
@@ -298,13 +299,22 @@ public:
             // 使用Eigen::Vector6d生成数据
             Eigen::Vector6d data6d = Eigen::Vector6d::Random();
             // 将 Eigen::Vector6d 转换为 std::vector<double>
-            vector<double> data_vector(data6d.data(), data6d.data() + data6d.size());    
+            vector<double> data_vector(data6d.data(), data6d.data() + data6d.size());
             msg.data = data_vector;
             msg.name = "data2";
             vec_pub2_->publish(msg);
             rclcpp::spin_some(this->get_node_base_interface()); // 处理ROS2回调
             rate.sleep();
         }
+    }
+
+    // 测试修改 YAML 文件
+    void test_editYAML()
+    {
+        string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
+        FileUtils::modifyYamlValue(yaml_file_path, "mass", {2.5});
+        FileUtils::modifyYamlValue(yaml_file_path, "cog", {3, 1, 2});
+        FileUtils::modifyYamlValue(yaml_file_path, "offset", {1.2, 4.6, 6, 8, 9, 12.5});
     }
     unique_ptr<TransformInterpolator> interpolator_;
     DataLogger *data_logger_;

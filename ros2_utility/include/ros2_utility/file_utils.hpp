@@ -1,6 +1,7 @@
 #ifndef FILE_UTILS
 #define FILE_UTILS
 
+#include "ament_index_cpp/get_package_share_directory.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -31,6 +32,12 @@ public:
 
     // 获取用户home路径
     static string getHomeDirectory();
+
+    // 获取工作空间指定功能包目录
+    static string getPackageDirectory(const std::string &packageName, const std::string &folderName = "ros2_robot_control");
+
+    // 修改 YAML 文件键值
+    static void modifyYamlValue(const std::string &filePath, const std::string &key, const std::vector<double> &newValues);
 };
 
 #endif // FILE_UTILS

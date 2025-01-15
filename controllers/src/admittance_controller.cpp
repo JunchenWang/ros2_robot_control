@@ -248,6 +248,8 @@ namespace controllers
                                                                      Fext_(0), Fext_(1), Fext_(2)};
                                             for (int i = 0; i < 6; i++)
                                                 value[i] += c[i]; });
+                string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
+                FileUtils::modifyYamlValue(yaml_file_path, "offset", offset_);
             }
             prev_io1_ = io[1];
             data_logger_->record();

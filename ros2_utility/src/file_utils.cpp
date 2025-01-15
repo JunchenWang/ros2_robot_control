@@ -26,11 +26,11 @@ bool FileUtils::readToVector(const string &file_path, vector<vector<double>> &da
     vector<double> temp;
     while (fin >> v)
     {
-        temp.push_back(v); // 逐个读取数据并存入 temp
+        temp.push_back(v);             // 逐个读取数据并存入 temp
         if (temp.size() == read_count) // 每次读取指定数量的数据
         {
             data.push_back(temp); // 将当前的数据组加入到 data 中
-            temp.clear(); // 清空当前组，准备读取下一组
+            temp.clear();         // 清空当前组，准备读取下一组
         }
     }
 
@@ -49,7 +49,7 @@ bool FileUtils::readForceSensorCalibration(const string &file_path, float &mass,
     }
 
     // 从文件中读取质心位置和偏移量
-    fin >> mass >> cog[0] >> cog[1] >> cog[2]; // 读取质心位置
+    fin >> mass >> cog[0] >> cog[1] >> cog[2];                                         // 读取质心位置
     fin >> offset[0] >> offset[1] >> offset[2] >> offset[3] >> offset[4] >> offset[5]; // 读取传感器偏移量
 
     fin.close();
@@ -124,10 +124,101 @@ map<string, vector<double>> FileUtils::parseFile(const string &filePath)
 }
 
 // 获取用户home路径
-std::string FileUtils::getHomeDirectory() {
-    const char* home_dir = getenv("HOME");
-    if (!home_dir) {
-        throw std::runtime_error("Error: HOME environment variable not set");
+string FileUtils::getHomeDirectory()
+{
+    const char *home_dir = getenv("HOME");
+    if (!home_dir)
+    {
+        throw runtime_error("Error: HOME environment variable not set");
     }
-    return std::string(home_dir);
+    return string(home_dir);
+}
+
+// 获取工作空间指定功能包目录
+string FileUtils::getPackageDirectory(const std::string &packageName, const std::string &folderName)
+{
+    // 获取ROS2包的共享目录路径
+    string package_share_directory = ament_index_cpp::get_package_share_directory(packageName);
+    // 推导出工作空间的根目录
+    string workspace_directory = package_share_directory + "/../../../../";
+    return workspace_directory + "src/" + folderName + "/" + packageName;
+}
+
+// 修改 YAML 文件指定节点的值
+void FileUtils::modifyYamlValue(const std::string &filePath, const std::string &key, const std::vector<double> &newValues)
+{
+    std::ifstream inputFile(filePath);
+    if (!inputFile)
+    {
+        std::cerr << "Error: Unable to open file for reading - " << filePath << std::endl;
+        return;
+    }
+
+    std::vector<std::string> fileContent;
+    std::string line;
+    bool keyFound = false;
+
+    while (std::getline(inputFile, line))
+    {
+        // 去除前后的空格，判断是否为目标key
+        size_t keyPos = line.find(key + ":");
+        if (keyPos != std::string::npos)
+        {
+            keyFound = true;
+
+            // 保留缩进
+            std::string indentation = line.substr(0, keyPos);
+
+            // 构造新的值
+            std::ostringstream newLine;
+            newLine << indentation << key << ": ";
+            if (newValues.size() == 1)
+            {
+                newLine << newValues[0]; // 单个值，不加方括号
+            }
+            else
+            {
+                newLine << "[";
+                for (size_t i = 0; i < newValues.size(); ++i)
+                {
+                    newLine << newValues[i];
+                    if (i < newValues.size() - 1)
+                    {
+                        newLine << ", ";
+                    }
+                }
+                newLine << "]";
+            }
+            fileContent.push_back(newLine.str());
+
+            // 跳过当前行的原始值
+            continue;
+        }
+
+        fileContent.push_back(line); // 保留其他行
+    }
+
+    inputFile.close();
+
+    if (!keyFound)
+    {
+        std::cerr << "Error: Key not found in file - " << key << std::endl;
+        return;
+    }
+
+    // 写回文件
+    std::ofstream outputFile(filePath);
+    if (!outputFile)
+    {
+        std::cerr << "Error: Unable to open file for writing - " << filePath << std::endl;
+        return;
+    }
+
+    for (const auto &contentLine : fileContent)
+    {
+        outputFile << contentLine << "\n";
+    }
+
+    outputFile.close();
+    std::cout << "Successfully updated the YAML file." << std::endl;
 }
