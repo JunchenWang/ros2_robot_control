@@ -26,8 +26,7 @@ namespace hardware_interface
                 ss << j << " ";
             }
             RCLCPP_INFO(node_->get_logger(), "joint name in order: %s", ss.str().c_str());
-            
-            
+
             for (auto &name : joint_state_names)
             {
                 state_.get<double>().emplace(std::move(name), std::vector<double>(dof_, 0.0));
@@ -57,7 +56,7 @@ namespace hardware_interface
 
         std::string robot_description;
         node_->get_parameter_or<std::string>("robot_description", robot_description, "");
-         if (!configure_urdf(robot_description))
+        if (!configure_urdf(robot_description))
             return CallbackReturn::FAILURE;
 
         // sensors mounted on the robot
@@ -69,15 +68,15 @@ namespace hardware_interface
         node_->get_parameter_or<std::vector<std::string>>("sensors", sensors, sensors);
         try
         {
-            for(auto & sensor_name : sensors)
+            for (auto &sensor_name : sensors)
             {
                 node_->get_parameter_or<std::string>(sensor_name, sensor_type, "");
                 RCLCPP_INFO(node_->get_logger(), "found %s : %s", sensor_name.c_str(), sensor_type.c_str());
                 auto sensor = sensor_loader_->createSharedInstance(sensor_type);
                 components_.emplace(sensor_name, sensor);
                 com_state_.emplace(sensor_name, &sensor->get_state_interface());
-                //loaned_command_.emplace(sensor_name, &sensor->get_command_interface());
-                if(!sensor->initialize(sensor_name))
+                // loaned_command_.emplace(sensor_name, &sensor->get_command_interface());
+                if (!sensor->initialize(sensor_name))
                 {
                     throw std::runtime_error("sensor node initialized failed");
                 }
@@ -115,12 +114,12 @@ namespace hardware_interface
         return CallbackReturn::SUCCESS;
     }
 
-    void RobotInterface::write(const rclcpp::Time & t, const rclcpp::Duration & period)
+    void RobotInterface::write(const rclcpp::Time &t, const rclcpp::Duration &period)
     {
         for (auto &c : components_)
             c.second->write(t, period);
     }
-    void RobotInterface::read(const rclcpp::Time & t, const rclcpp::Duration & period)
+    void RobotInterface::read(const rclcpp::Time &t, const rclcpp::Duration &period)
     {
         for (auto &c : components_)
             c.second->read(t, period);

@@ -5,8 +5,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-
-
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   "rclcpp_lifecycle"
   "ament_cmake"
@@ -19,7 +17,13 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "std_msgs"
   "robot_math"
   "pluginlib"
+  "control_msgs"
+  "ros2_utility"
+  "tf2_ros"
+  "visualization_msgs"
+  "geometry_msgs"
 )
+
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
@@ -37,13 +41,14 @@ endforeach()
 
 pluginlib_export_plugin_description_file(controller_interface plugins.xml)
 
-
 add_library(controllers 
             src/torque_controller.cpp
             src/forward_controller.cpp
             src/realtime_test_controller.cpp
             src/dummy_controller.cpp
-            src/force_drag_controller.cpp)
+            src/force_drag_controller.cpp
+            src/force_drag_dev_controller.cpp
+            src/admittance_controller.cpp)
 
 add_library(controllers::controllers ALIAS controllers)
 target_compile_features(controllers PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
@@ -72,6 +77,8 @@ install(
 )
 
 add_executable(test_controller test/test_controller.cpp)
+add_executable(debug_all test/debug_all.cpp)
+
 target_include_directories(test_controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
@@ -82,7 +89,12 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-install(TARGETS test_controller
+ament_target_dependencies(
+  debug_all
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+install(TARGETS test_controller debug_all
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

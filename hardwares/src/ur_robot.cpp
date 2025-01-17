@@ -20,12 +20,21 @@ namespace hardwares
         }
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
-            //RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
+            // RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
             hardware_interface::RobotInterface::write(t, period);
-            auto &cmd = command_.get<double>("velocity");
-            // std::cerr << "cmd: " << cmd[0] << " " << cmd[1] << " " << cmd[2] << " " << cmd[3] << " " << cmd[4] << " " << cmd[5] << std::endl;
-            control_interface_->speedJ(cmd, 1.5, 0.002);
-
+            int mode = command_.get<int>("mode")[0];
+            switch (mode)
+            {
+            case 1:
+                control_interface_->servoJ(command_.get<double>("position"), 1, 1, 0.002, 0.05, 1000);
+                break;
+            case 2:
+                control_interface_->servoL(command_.get<double>("pose"), 1, 1, 0.002, 0.05, 1000);
+                break;
+            case 3:
+                control_interface_->speedJ(command_.get<double>("velocity"), 1.5, 0.002);
+                break;
+            }
         }
         bool is_stop() override
         {
@@ -34,20 +43,22 @@ namespace hardwares
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::read(t, period);
-            auto & q = state_.get<double>("position");
-            auto & dq = state_.get<double>("velocity");
-            auto & ddq = state_.get<double>("acceleration");
-            auto & io = state_.get<bool>("io");
+            auto &q = state_.get<double>("position");
+            auto &io_state = state_.get<bool>("io");
+            auto &dq = state_.get<double>("velocity");
+            auto &ddq = state_.get<double>("acceleration");
+            auto &pose = state_.get<double>("pose");
+            auto &force = com_state_["ft_sensor"]->get<double>("force");
+
             auto dt = period.seconds();
-           
-            //auto const &force = com_state_["ft_sensor"]->get<double>("force");
-            // auto pose2 = receive_interface_->getActualTCPPose();
-           
+
             q = receive_interface_->getActualQ();
             dq = receive_interface_->getActualQd();
-            io[0] = receive_interface_->getDigitalOutState(0);
-            io[1] = receive_interface_->getDigitalOutState(1);
-            if(dt > 0.5 / update_rate_)
+            pose = receive_interface_->getActualTCPPose();
+
+            io_state[0] = receive_interface_->getDigitalOutState(0);
+            io_state[1] = receive_interface_->getDigitalOutState(1);
+            if (dt > 0.5 / update_rate_)
             {
                 for (int i = 0; i < 6; i++)
                 {
@@ -59,36 +70,7 @@ namespace hardwares
             {
                 std::fill(ddq.begin(), ddq.end(), 0);
             }
-            // Eigen::Matrix4d T;
-            // forward_kin_general(&robot_, q, T);
-            // auto pose = tform_to_pose(T);
-            // auto pose2 = receive_interface_->getActualTCPPose();
-            // auto diff = std::vector<double>(6);
-            // for (int i = 0; i < 6; i++)
-            // {
-            //     diff[i] = pose[i] - pose2[i];
-            // }
-            
-            
-            // std::cerr << "force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
-            // std::cerr << "diff: " << diff[0] << " " << diff[1] << " " << diff[2] << " " << diff[3] << " " << diff[4] << " " << diff[5] << std::endl;
-
-            // state_["force"] = *real_time_buffer_force_.readFromRT();
-            //auto force = state_["force"];
-            //std::cerr << "force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
-            // Eigen::Matrix4d T;
-            // forward_kin_general(&robot_, state_["position"], T);
-
-            // auto pose = tform_to_pose(T);
-            // auto pose2 = receive_interface_->getActualTCPPose();
-            // auto diff = std::vector<double>(6);
-            // for (int i = 0; i < 6; i++)
-            // {
-            //     diff[i] = pose[i] - pose2[i];
-            // }
-            // std::cerr << "diff: " << diff[0] << " " << diff[1] << " " << diff[2] << " " << diff[3] << " " << diff[4] << " " << diff[5] << std::endl;
-            // std::cerr << "pose: " << pose[0] << " " << pose[1] << " " << pose[2] << " " << pose[3] << " " << pose[4] << " " << pose[5] << std::endl;
-            // std::cerr << "pose2: " << pose2[0] << " " << pose2[1] << " " << pose2[2] << " " << pose2[3] << " " << pose2[4] << " " << pose2[5] << std::endl;
+            // std::cerr << "ddq:" << ddq[0] << " " << ddq[1] << " " << ddq[2] << " " << ddq[3] << " " << ddq[4] << " " << ddq[5] << std::endl;
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override
         {
@@ -148,7 +130,7 @@ namespace hardwares
             {
                 control_interface_->servoStop();
                 control_interface_->speedStop();
-                //control_interface_->stopScript();
+                // control_interface_->stopScript();
             }
             return CallbackReturn::SUCCESS;
         }
