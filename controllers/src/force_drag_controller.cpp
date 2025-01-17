@@ -32,7 +32,7 @@ namespace controllers
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            int dof = state_->at("position").size();
+            int dof = state_->get<double>("position").size();
             dq_filtered_ = std::vector<double>(dof, 0);
             ddq_filtered_ = std::vector<double>(dof, 0);
             node_->get_parameter_or<std::vector<double>>("M", M_, {1, 1, 1, 1, 1, 1});
@@ -73,12 +73,12 @@ namespace controllers
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration &period) override
         {
-            auto const &force = com_state_->at("ft_sensor")->at("force");
+            auto const &force = com_state_->at("ft_sensor")->get<double>("force");
             std::cerr << "raw force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
-            auto const &q = state_->at("position");
-            auto const &dq = state_->at("velocity");
-            auto const &io = state_->at("io");
-            auto &cmd = command_->at("velocity");
+            auto const &q = state_->get<double>("position");
+            auto const &dq = state_->get<double>("velocity");
+            auto const &io = state_->get<double>("io");
+            auto &cmd = command_->get<double>("velocity");
             offset_in_box_.try_get([=](auto const &value)
                                    { offset_ = value; });
             M_in_box_.try_get([=](auto const &value)

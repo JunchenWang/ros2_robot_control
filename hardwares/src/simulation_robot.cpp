@@ -18,25 +18,27 @@ namespace hardwares
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::write(t, period);
-            auto it = command_.find("position");
-            if(it != command_.end())
+            auto &cmd = command_.get<double>();
+            auto &state = state_.get<double>();
+            auto it = cmd.find("position");
+            if(it != cmd.end())
             {
-                state_["position"] = it->second;
-                it = command_.find("velocity");
-                if(it != command_.end())
+                state["position"] = it->second;
+                it = cmd.find("velocity");
+                if(it != cmd.end())
                 {
-                    state_["velocity"] = it->second;
+                    state["velocity"] = it->second;
                 }
             }
             else
             {
-                it = command_.find("velocity");
-                if(it != command_.end())
+                it = cmd.find("velocity");
+                if(it != cmd.end())
                 {
-                    auto &p = state_["position"];
+                    auto &p = state["position"];
                     for(int i = 0; i < dof_; i++)
                        p[i] += it->second[i] * period.seconds();
-                    state_["velocity"] = it->second;
+                    state["velocity"] = it->second;
                 }
             }
             // for(auto & state : state_names_)

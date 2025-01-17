@@ -22,30 +22,31 @@ namespace hardwares
         {
             //RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
             hardware_interface::RobotInterface::write(t, period);
-            auto &cmd = command_["velocity"];
+            auto &cmd = command_.get<double>("velocity");
             // std::cerr << "cmd: " << cmd[0] << " " << cmd[1] << " " << cmd[2] << " " << cmd[3] << " " << cmd[4] << " " << cmd[5] << std::endl;
             control_interface_->speedJ(cmd, 1.5, 0.002);
 
         }
         bool is_stop() override
         {
-            return (bool)state_["io"][0];
+            return state_.get<bool>("io")[0];
         }
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::read(t, period);
-            auto & q = state_["position"];
-            auto & dq = state_["velocity"];
-            auto & ddq = state_["acceleration"];
+            auto & q = state_.get<double>("position");
+            auto & dq = state_.get<double>("velocity");
+            auto & ddq = state_.get<double>("acceleration");
+            auto & io = state_.get<bool>("io");
             auto dt = period.seconds();
            
-            auto &force = loaned_state_["ft_sensor"]->at("force");
+            auto const &force = com_state_["ft_sensor"]->get<double>("force");
             auto pose2 = receive_interface_->getActualTCPPose();
            
             q = receive_interface_->getActualQ();
             dq = receive_interface_->getActualQd();
-            state_["io"][0] = receive_interface_->getDigitalOutState(0);
-            state_["io"][1] = receive_interface_->getDigitalOutState(1);
+            io[0] = receive_interface_->getDigitalOutState(0);
+            io[1] = receive_interface_->getDigitalOutState(1);
             if(dt > 1e-5)
             {
                 for (int i = 0; i < 6; i++)

@@ -47,7 +47,7 @@ namespace hardwares
                         // msg->torque.z = 6;
                         //printf("Published message with address: %p\n",reinterpret_cast<std::uintptr_t>(msg.get()));
                         //publisher_->publish(std::move(msg));
-                        real_time_buffer_.writeFromNonRT({std::sin(t), std::cos(t), 3,4,5,6});
+                        real_time_buffer_double_.writeFromNonRT({std::sin(t), std::cos(t), 3,4,5,6});
                         loop_rate.sleep();
                     }
                 });

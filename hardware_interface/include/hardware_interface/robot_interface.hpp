@@ -17,10 +17,9 @@ namespace hardware_interface
         ~RobotInterface() {}
         RobotInterface();
         int configure_urdf(const std::string &robot_description);
-        const std::vector<std::string> &get_joint_names() { return joint_names_; }
-        int get_dof() { return dof_; }
-        const urdf::Model &get_urdf_model() { return robot_model_; }
-        const robot_math::Robot &get_robot_model() { return robot_; }
+        const std::vector<std::string> &get_joint_names() const { return joint_names_; }
+        int get_dof() const { return dof_; }
+        const urdf::Model &get_urdf_model() const { return robot_model_; }
         virtual bool is_stop() {return false;};
         std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> get_all_nodes();
         void robot_dynamics(const std::vector<double> &x, std::vector<double> &dx, double t,
@@ -31,26 +30,26 @@ namespace hardware_interface
         // for simulation only
         void write_state(const std::vector<double> &state, const std::vector<double> &force)
         {
-            std::copy(state.begin(), state.begin() + dof_, state_["position"].begin());
-            std::copy(state.begin() + dof_, state.begin() + 2 * dof_, state_["velocity"].begin());
+            std::copy(state.begin(), state.begin() + dof_, state_.get<double>("position").begin());
+            std::copy(state.begin() + dof_, state.begin() + 2 * dof_, state_.get<double>("velocity").begin());
             //components_["ft_sensor"]->write_state("force", force);
             //state_["force"] = force;
         }
         std::map<std::string, hardware_interface::CommandInterface*> &
-        get_loaned_command_interface() 
+        get_com_command_interface() 
         { 
-            return loaned_command_; 
+            return com_command_; 
         }
         const std::map<std::string, const hardware_interface::StateInterface*> &
-        get_loaned_state_interface() 
+        get_com_state_interface()  const
         { 
-            return loaned_state_; 
+            return com_state_; 
         }
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
-        const robot_math::Robot &get_robot_math() { return robot_;}
+        const robot_math::Robot &get_robot_math()  const { return robot_;}
     protected:
     
         std::unique_ptr<pluginlib::ClassLoader<hardware_interface::SensorInterface>> sensor_loader_;
@@ -59,8 +58,8 @@ namespace hardware_interface
         int dof_;
         urdf::Model robot_model_;
         robot_math::Robot robot_;
-        std::map<std::string, const hardware_interface::StateInterface*> loaned_state_;
-        std::map<std::string, hardware_interface::CommandInterface*> loaned_command_;
+        std::map<std::string, const hardware_interface::StateInterface*> com_state_;
+        std::map<std::string, hardware_interface::CommandInterface*> com_command_;
         std::map<std::string, hardware_interface::HardwareInterface::SharedPtr> components_;
 
     };

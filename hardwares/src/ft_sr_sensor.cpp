@@ -22,7 +22,7 @@ namespace hardwares
 
         bool on_receive_data(float fx, float fy, float fz, float mx, float my, float mz)
         {
-             real_time_buffer_.writeFromNonRT({fx, fy, fz, mx, my, mz});
+             real_time_buffer_double_.writeFromNonRT({fx, fy, fz, mx, my, mz});
             //std::cerr << "FTSR Sensor: " << fx << " " << fy << " " << fz << " " << mx << " " << my << " " << mz << std::endl;
             return true;
         }

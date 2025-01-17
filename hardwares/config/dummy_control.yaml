@@ -29,12 +29,13 @@ SimulationRobot:
       - velocity
     state_interface: [io]
     state_length: [6]
+    state_type: [int]
     # command_interface: []
     # command_length: []
     # state_interface: []
     # state_length: []
     sensors: [ft_sensor]
-    ft_sensor: hardwares::FTSRSensor
+    ft_sensor: hardwares::FTDummySensor
 
 ft_sensor:
   ros__parameters:
