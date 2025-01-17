@@ -7,8 +7,16 @@ control_node:
     publish_joint_state: true
     robot: hardwares::SimulationRobot
     controllers: 
-      - controllers::DummyController
-      
+      - controllers::ForceDragController
+
+ForceDragController:
+  ros__parameters:
+    mass: 4.69166
+    cog: [0.0188323, 0.00468353, 0.0435661]
+    offset: [0.750243, 3.435, 1.0287, -0.067, -0.148, -0.086]
+    pose: [.0, .0, .0475, .0, .0, .0]
+    M: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]   
+    B: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 SimulationRobot:
   ros__parameters:
     end_effector: ""
@@ -19,6 +27,9 @@ SimulationRobot:
     joint_state_interface:
       - position
       - velocity
+    state_interface: [io]
+    state_length: [6]
+    state_type: [int]
     # command_interface: []
     # command_length: []
     # state_interface: []
@@ -30,4 +41,6 @@ ft_sensor:
   ros__parameters:
     state_interface: force
     length: 6
+    sensor_ip: 192.168.110.101
+    sensor_port: 4008
 

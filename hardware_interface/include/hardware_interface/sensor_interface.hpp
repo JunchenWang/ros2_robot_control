@@ -4,6 +4,7 @@
 #include "hardware_interface/hardware_interface.hpp"
 #include "robot_math/robot_math.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
+#include <atomic>
 namespace hardware_interface
 {
 
@@ -14,17 +15,14 @@ namespace hardware_interface
         SensorInterface();
         void read(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override;
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
-        //void compensate_gravity(const std::vector<double> &pose);
     protected:
         std::unique_ptr<std::thread> thread_;
-        volatile bool is_running_;
-        realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_;
+        std::atomic_bool is_running_;
+        //volatile bool is_running_;
+        realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_double_;
+        realtime_tools::RealtimeBuffer<std::vector<int>> real_time_buffer_int_;
+        realtime_tools::RealtimeBuffer<std::vector<bool>> real_time_buffer_bool_;
         std::string state_name_;
-        // double mass_;
-        // std::vector<double> offset_;
-        // std::vector<double> cog_;
-        // std::vector<double> pose_;
-
     };
 
 } // namespace hardware

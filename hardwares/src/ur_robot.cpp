@@ -38,7 +38,7 @@ namespace hardwares
         }
         bool is_stop() override
         {
-            return (bool)state_["io"][0];
+            return state_.get<bool>("io")[0];
         }
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {

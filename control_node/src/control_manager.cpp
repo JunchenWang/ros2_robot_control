@@ -51,8 +51,8 @@ namespace control_node
                 controller->loan_interface(&robot_->get_robot_math(),
                                             &robot_->get_command_interface(),
                                             &robot_->get_state_interface(),
-                                            &robot_->get_loaned_command_interface(),
-                                            &robot_->get_loaned_state_interface());
+                                            &robot_->get_com_command_interface(),
+                                            &robot_->get_com_state_interface());
                 controller->initialize(name);
                 controllers_.push_back(controller);
                 executor_->add_node(controller->get_node()->get_node_base_interface());
@@ -66,8 +66,8 @@ namespace control_node
         service_ = create_service<control_msgs::srv::ControlCommand>("~/control_command",
                                                                      std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
         
-        auto stop_callback = [=] (const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-                              std::shared_ptr<std_srvs::srv::Empty::Response> response)
+        auto stop_callback = [=] (const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
+                              std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/)
                               {
                                     running_box_ = false;
                               };
@@ -150,28 +150,28 @@ namespace control_node
         robot_->read(t, period);
         if (is_publish_joint_state_)
         {
-            auto states = std::make_shared<sensor_msgs::msg::JointState>();
-            states->name = robot_->get_joint_names();
-            auto &state = robot_->get_state_interface();
+            auto joint_state = std::make_shared<sensor_msgs::msg::JointState>();
+            joint_state->name = robot_->get_joint_names();
+            auto &state = robot_->get_state_interface().get<double>();
             auto it = state.find("position");
             if (it != state.end())
             {
-                states->position = it->second;
+                joint_state->position = it->second;
             }
             it = state.find("velocity");
             if (it != state.end())
             {
-                states->velocity = it->second;
+                joint_state->velocity = it->second;
             }
             it = state.find("torque");
             if (it != state.end())
             {
-                states->effort = it->second;
+                joint_state->effort = it->second;
             }
-            states->header.stamp = t;
+            joint_state->header.stamp = t;
             if (real_time_publisher_->trylock())
             {
-                real_time_publisher_->msg_ = *states;
+                real_time_publisher_->msg_ = *joint_state;
                 real_time_publisher_->unlockAndPublish();
             }
         }
@@ -217,7 +217,7 @@ namespace control_node
         states->name = robot_->get_joint_names();
         std::copy(x.begin(), x.begin() + n, std::back_inserter(states->position));
         std::copy(x.begin() + n, x.begin() + 2 * n, std::back_inserter(states->velocity));
-        states->effort = robot_->get_command_interface().at("torque");
+        states->effort = robot_->get_command_interface().get<double>("torque");
         auto time = sim_start_time_ + rclcpp::Duration::from_seconds(t); //(std::chrono::duration<double>(t));
         // auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(t));
         states->header.stamp = time; // rclcpp::Time(nano_time.count());//this->now(); // ;
@@ -285,7 +285,7 @@ namespace control_node
         auto period = rclcpp::Duration(std::chrono::duration<double>(0.0));
         active_controller_->write_state(x.begin() + 2 * n, x.end());
         active_controller_->update(time, period);
-        auto cmd = robot_->get_command_interface().at("torque");
+        auto cmd = robot_->get_command_interface().get<double>("torque");
         cmd.insert(cmd.end(), active_controller_->get_internal_state().begin(), active_controller_->get_internal_state().end());
         return cmd;
     }

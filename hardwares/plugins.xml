@@ -14,4 +14,7 @@
   <class type="hardwares::FTDummySensor" base_class_type="hardware_interface::SensorInterface">
     <description>This is dummy sensor plugin.</description>
   </class>
+    <class type="hardwares::FTSRSensor" base_class_type="hardware_interface::SensorInterface">
+    <description>This is SR sensor plugin.</description>
+  </class>
 </library>

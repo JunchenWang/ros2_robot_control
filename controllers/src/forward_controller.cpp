@@ -16,7 +16,7 @@ namespace controllers
             if (is_new_cmd_available_)
             {
                 auto js = real_time_buffer_.readFromRT();
-                command_->at("position") = (*js)->position;
+                command_->get<double>("position") = (*js)->position;
 
                 is_new_cmd_available_ = false;
             }

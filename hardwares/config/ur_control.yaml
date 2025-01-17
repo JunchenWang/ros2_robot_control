@@ -49,7 +49,7 @@ URRobot:
     command_length: [1]
     state_interface: [io]
     state_length: [6]
-
+    state_type: [int]
     sensors: [ft_sensor]
     ft_sensor: hardwares::FTATISensor
 

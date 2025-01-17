@@ -53,7 +53,7 @@ namespace hardware_interface
 
     void HardwareInterface::write_state(const std::string &name, const std::vector<double> &s)
     {
-        state_[name] = s;
+        state_.get<double>(name) = s;
     }
     CallbackReturn HardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
