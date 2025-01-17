@@ -36,22 +36,22 @@ URRobot:
   ros__parameters:
     robot_ip: 192.168.124.201
     end_effector: ""
+    # joint interface:
     joint_command_interface:
       - position # servoJ
       - velocity # speedJ
-      - pose # servoL
     joint_state_interface:
       - position
       - velocity
       - acceleration
-      - pose
-    command_interface: [mode]
-    command_length: [1]
-    command_type: [int]
-
-    state_interface: [io]
-    state_length: [6]
-    state_type: [bool]
+    # other interface:
+    command_interface: [mode, pose]
+    command_length: [1, 6]
+    command_type: [int, double]
+    state_interface: [io, pose]
+    state_length: [6, 6]
+    state_type: [bool, double]
+    # sensors:
     sensors: [ft_sensor]
     ft_sensor: hardwares::FTATISensor
 
