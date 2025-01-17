@@ -15,26 +15,26 @@ ForceDragController:
   ros__parameters:
     mass: 7.54128
     cog: [0.0297184, -0.00390314, 0.0543826]
-    offset: [2.05021, 2.124, -0.0601285, -0.0599583, 0.0641192, -0.100106]
+    offset: [0.949434, 2.35846, -0.68032, 0.0282969, -0.0161999, -0.0863016]
     pose: [.0, .0, .0475, .0, .0, .0]
 
 ForceDragDevController:
   ros__parameters:
     mass: 7.54128
     cog: [0.0297184, -0.00390314, 0.0543826]
-    offset: [2.05021, 2.124, -0.0601285, -0.0599583, 0.0641192, -0.100106]
+    offset: [0.949434, 2.35846, -0.68032, 0.0282969, -0.0161999, -0.0863016]
     pose: [.0, .0, .0475, .0, .0, .0]
 
 AdmittanceController:
   ros__parameters:
     mass: 7.54128
     cog: [0.0297184, -0.00390314, 0.0543826]
-    offset: [2.05021, 2.124, -0.0601285, -0.0599583, 0.0641192, -0.100106]
+    offset: [0.949434, 2.35846, -0.68032, 0.0282969, -0.0161999, -0.0863016]
     pose: [.0, .0, .0475, .0, .0, .0]
 
 URRobot:
   ros__parameters:
-    robot_ip: 192.168.31.201
+    robot_ip: 192.168.124.201
     end_effector: ""
     joint_command_interface:
       - position # servoJ
@@ -47,9 +47,11 @@ URRobot:
       - pose
     command_interface: [mode]
     command_length: [1]
+    command_type: [int]
+
     state_interface: [io]
     state_length: [6]
-    state_type: [int]
+    state_type: [bool]
     sensors: [ft_sensor]
     ft_sensor: hardwares::FTATISensor
 

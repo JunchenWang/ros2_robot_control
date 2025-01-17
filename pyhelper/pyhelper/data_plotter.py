@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from robot_msgs.msg import VectorData
+from control_msgs.msg import VectorData
 import matplotlib.pyplot as plt
 from collections import deque
 import math

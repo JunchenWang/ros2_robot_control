@@ -117,7 +117,7 @@ namespace controllers
             Tcp_ = Eigen::Matrix4d::Identity();
             Tcp_.block(0, 3, 3, 1) = Pcom;
 
-            Tdtcp_ = pose_to_tform(state_->at("pose")) * Tcp_;
+            Tdtcp_ = pose_to_tform(state_->get<double>("pose")) * Tcp_;
             Vdtcp_.setZero();
             Tref_ = Eigen::Matrix4d::Identity();
 
@@ -129,7 +129,7 @@ namespace controllers
             pedd_.setZero();
 
             inv_flag_ = 0;
-            command_->at("mode")[0] = 0;
+            command_->get<int>("mode")[0] = 0;
 
             data_logger_ = new DataLogger(
                 {
@@ -153,7 +153,7 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            command_->at("mode")[0] = 0;
+            command_->get<int>("mode")[0] = 0;
             data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "adm_ctrl");
             string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
             FileUtils::modifyYamlValue(yaml_file_path, "offset", offset_);
@@ -164,14 +164,13 @@ namespace controllers
 
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration &period) override
         {
-            const std::vector<double> &force = com_state_->at("ft_sensor")->at("force");
-            const std::vector<double> &q = state_->at("position");
-            const std::vector<double> &dq = state_->at("velocity");
-            const std::vector<double> &ddq = state_->at("acceleration");
-            const std::vector<double> &pose = state_->at("pose");
-            const std::vector<double> &io = state_->at("io");
-            std::vector<double> &cmd_q = command_->at("position");
-            std::vector<double> &cmd_pose = command_->at("pose");
+            const std::vector<double> &force = com_state_->at("ft_sensor")->get<double>("force");
+            const std::vector<double> &q = state_->get<double>("position");
+            const std::vector<double> &dq = state_->get<double>("velocity");
+            const std::vector<double> &ddq = state_->get<double>("acceleration");
+            const std::vector<double> &pose = state_->get<double>("pose");
+            const std::vector<bool> &io = state_->get<bool>("io");
+            std::vector<double> &cmd_pose = command_->get<double>("pose");
 
             // 从 offset_in_box_ 中取出值给 offset_
             offset_in_box_.try_get([=](auto const &value)
@@ -223,22 +222,11 @@ namespace controllers
             // 这里得到的是工具坐标系相对于基坐标系的变换矩阵，需要转化为参考末端法兰相对于基坐标系的变换矩阵
             Tref_ = Tref_ * inv_tform(Tcp_);
 
-            command_->at("mode")[0] = 2;
+            command_->get<int>("mode")[0] = 2;
             cmd_pose = tform_to_pose(Tref_);
-            // inverse_kin_general(robot_, Tref_, q, inv_tol_.data(), qt_, &inv_flag_);
-            // if (inv_flag_ == 1.0)
-            // {
-            //     command_->at("mode")[0] = 1;
-            //     cmd_q = qt_;
-            // }
-            // else
-            // {
-            //     command_->at("mode")[0] = 0;
-            //     RCLCPP_ERROR(node_->get_logger(), "Inverse kinematics failed!");
-            // }
 
             // 修正力传感器读数，修正工具重力/重力矩及零点偏移，不考虑外力旋量和合力旋量（机器人运动）
-            Fext_ = get_ext_force(force, mass_, offset_, cog_, sensor_pose_, pose_to_tform(state_->at("pose")));
+            Fext_ = get_ext_force(force, mass_, offset_, cog_, sensor_pose_, pose_to_tform(pose));
             f_filter_->filtering(Fext_.data(), Fext_.data());
             // RCLCPP_INFO(node_->get_logger(), "Fext_: %f, %f, %f, %f, %f, %f", Fext_(0), Fext_(1), Fext_(2), Fext_(3), Fext_(4), Fext_(5));
             if (!prev_io1_ && io[1])
@@ -253,7 +241,7 @@ namespace controllers
             }
             prev_io1_ = io[1];
             data_logger_->record();
-            Eigen::Matrix4d Tatcp = pose_to_tform(state_->at("pose")) * Tcp_;
+            Eigen::Matrix4d Tatcp = pose_to_tform(pose) * Tcp_;
             visual_tools_->broadcastTransform(Tatcp, "base", "end_effector");
             visual_tools_->publishMarker(Tatcp.block(0, 3, 3, 1), "base", 0.15);
         }

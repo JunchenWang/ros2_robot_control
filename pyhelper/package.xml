@@ -6,7 +6,7 @@
   <description>TODO: Package description</description>
   <maintainer email="buaalh@buaa.edu.cn">eric</maintainer>
   <license>Apache-2.0</license>
-  <depend>robot_msgs</depend>
+  <depend>control_msgs</depend>
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

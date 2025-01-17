@@ -104,26 +104,26 @@ namespace controllers
             Vtcp_.setZero();
             dVtcp_.setZero();
 
-            command_->at("mode")[0] = 0;
+            command_->get<int>("mode")[0] = 0;
 
             return CallbackReturn::SUCCESS;
         }
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            command_->at("mode")[0] = 0;
+            command_->get<int>("mode")[0] = 0;
             return CallbackReturn::SUCCESS;
         }
 
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration &period) override
         {
-            const std::vector<double> &force = com_state_->at("ft_sensor")->at("force");
-            const std::vector<double> &q = state_->at("position");
-            const std::vector<double> &dq = state_->at("velocity");
-            const std::vector<double> &ddq = state_->at("acceleration");
-            const std::vector<double> &pose = state_->at("pose");
-            const std::vector<double> &io = state_->at("io");
-            std::vector<double> &cmd_qd = command_->at("velocity");
+            const std::vector<double> &force = com_state_->at("ft_sensor")->get<double>("force");
+            const std::vector<double> &q = state_->get<double>("position");
+            const std::vector<double> &dq = state_->get<double>("velocity");
+            const std::vector<double> &ddq = state_->get<double>("acceleration");
+            const std::vector<double> &pose = state_->get<double>("pose");
+            const std::vector<bool> &io = state_->get<bool>("io");
+            std::vector<double> &cmd_qd = command_->get<double>("velocity");
 
             // 从 offset_in_box_ 中取出值给 offset_
             offset_in_box_.try_get([=](auto const &value)
@@ -168,7 +168,7 @@ namespace controllers
             dVtcp_.tail(3) = (Ftcp_.tail(3) - bv_ * Vtcp_.tail(3)).array() / mv_;
             Vtcp_ = Vtcp_ + dVtcp_ * period.seconds();
 
-            command_->at("mode")[0] = 3; // speedJ
+            command_->get<int>("mode")[0] = 3; // speedJ
             Eigen::Map<Eigen::Vector6d> cmd_qd_map(&cmd_qd[0]);
             cmd_qd_map = dx_to_dq(Jtcp_, Vtcp_, 1e6, 0.1);
             // RCLCPP_INFO(node_->get_logger(), "cmd_qd: %f, %f, %f, %f, %f, %f", cmd_qd[0], cmd_qd[1], cmd_qd[2], cmd_qd[3], cmd_qd[4], cmd_qd[5]);

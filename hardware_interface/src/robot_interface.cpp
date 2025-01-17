@@ -26,8 +26,7 @@ namespace hardware_interface
                 ss << j << " ";
             }
             RCLCPP_INFO(node_->get_logger(), "joint name in order: %s", ss.str().c_str());
-            
-            
+
             for (auto &name : joint_state_names)
             {
                 state_.get<double>().emplace(std::move(name), std::vector<double>(dof_, 0.0));
@@ -54,7 +53,7 @@ namespace hardware_interface
     {
         std::string robot_description;
         node_->get_parameter_or<std::string>("robot_description", robot_description, "");
-         if (!configure_urdf(robot_description))
+        if (!configure_urdf(robot_description))
             return CallbackReturn::FAILURE;
 
         // other state and command on the robot
@@ -64,21 +63,21 @@ namespace hardware_interface
         node_->get_parameter_or<std::vector<std::string>>("command_interface", commands, std::vector<std::string>());
         node_->get_parameter_or<std::vector<long int>>("command_length", command_len, std::vector<long int>());
         node_->get_parameter_or<std::vector<std::string>>("command_type", command_type, std::vector<std::string>());
-        if(commands.size() != command_len.size())
+        if (commands.size() != command_len.size())
         {
-            RCLCPP_WARN(node_->get_logger(), "command name and lengh are different!");
+            RCLCPP_WARN(node_->get_logger(), "command name and length are different!");
             return CallbackReturn::FAILURE;
         }
-        
-        for(int i = 0; i < commands.size(); i++)
+
+        for (int i = 0; i < commands.size(); i++)
         {
-            if(command_type.empty())
+            if (command_type.empty())
                 command_.get<double>().emplace(std::move(commands[i]), std::vector<double>(command_len[i], 0));
             else
             {
-                if(command_type[i] == "int")
+                if (command_type[i] == "int")
                     command_.get<int>().emplace(std::move(commands[i]), std::vector<int>(command_len[i], 0));
-                else if(command_type[i] == "bool")
+                else if (command_type[i] == "bool")
                     command_.get<bool>().emplace(std::move(commands[i]), std::vector<bool>(command_len[i], false));
                 else
                     RCLCPP_WARN(node_->get_logger(), "command type %s is not supported!", command_type[i].c_str());
@@ -87,21 +86,21 @@ namespace hardware_interface
         node_->get_parameter_or<std::vector<std::string>>("state_interface", states, std::vector<std::string>());
         node_->get_parameter_or<std::vector<long int>>("state_length", state_len, std::vector<long int>());
         node_->get_parameter_or<std::vector<std::string>>("state_type", state_type, std::vector<std::string>());
-        if(states.size() != state_len.size())
+        if (states.size() != state_len.size())
         {
             RCLCPP_WARN(node_->get_logger(), "state name and length are different!");
             return CallbackReturn::FAILURE;
         }
-            
-        for(int i = 0; i < states.size(); i++)
+
+        for (int i = 0; i < states.size(); i++)
         {
-             if(state_type.empty())
+            if (state_type.empty())
                 state_.get<double>().emplace(std::move(states[i]), std::vector<double>(state_len[i], 0));
             else
             {
-                if(state_type[i] == "int")
+                if (state_type[i] == "int")
                     state_.get<int>().emplace(std::move(states[i]), std::vector<int>(state_len[i], 0));
-                else if(state_type[i] == "bool")
+                else if (state_type[i] == "bool")
                     state_.get<bool>().emplace(std::move(states[i]), std::vector<bool>(state_len[i], false));
                 else
                     RCLCPP_WARN(node_->get_logger(), "command type %s is not supported!", state_type[i].c_str());
@@ -114,15 +113,15 @@ namespace hardware_interface
         node_->get_parameter_or<std::vector<std::string>>("sensors", sensors, sensors);
         try
         {
-            for(auto & sensor_name : sensors)
+            for (auto &sensor_name : sensors)
             {
                 node_->get_parameter_or<std::string>(sensor_name, sensor_type, "");
                 RCLCPP_INFO(node_->get_logger(), "found %s : %s", sensor_name.c_str(), sensor_type.c_str());
                 auto sensor = sensor_loader_->createSharedInstance(sensor_type);
                 components_[sensor_name] = sensor;
                 com_state_.emplace(sensor_name, &sensor->get_state_interface());
-                //loaned_command_.emplace(sensor_name, &sensor->get_command_interface());
-                if(!sensor->initialize(sensor_name))
+                // loaned_command_.emplace(sensor_name, &sensor->get_command_interface());
+                if (!sensor->initialize(sensor_name))
                 {
                     throw std::runtime_error("sensor node initialized failed");
                 }
@@ -160,12 +159,12 @@ namespace hardware_interface
         return CallbackReturn::SUCCESS;
     }
 
-    void RobotInterface::write(const rclcpp::Time & t, const rclcpp::Duration & period)
+    void RobotInterface::write(const rclcpp::Time &t, const rclcpp::Duration &period)
     {
         for (auto &c : components_)
             c.second->write(t, period);
     }
-    void RobotInterface::read(const rclcpp::Time & t, const rclcpp::Duration & period)
+    void RobotInterface::read(const rclcpp::Time &t, const rclcpp::Duration &period)
     {
         for (auto &c : components_)
             c.second->read(t, period);

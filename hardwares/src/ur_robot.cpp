@@ -22,17 +22,17 @@ namespace hardwares
         {
             // RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
             hardware_interface::RobotInterface::write(t, period);
-            int mode = (int)command_.at("mode")[0];
+            int mode = command_.get<int>("mode")[0];
             switch (mode)
             {
             case 1:
-                control_interface_->servoJ(command_.at("position"), 1, 1, 0.002, 0.05, 1000);
+                control_interface_->servoJ(command_.get<double>("position"), 1, 1, 0.002, 0.05, 1000);
                 break;
             case 2:
-                control_interface_->servoL(command_.at("pose"), 1, 1, 0.002, 0.05, 1000);
+                control_interface_->servoL(command_.get<double>("pose"), 1, 1, 0.002, 0.05, 1000);
                 break;
             case 3:
-                control_interface_->speedJ(command_.at("velocity"), 1.5, 0.002);
+                control_interface_->speedJ(command_.get<double>("velocity"), 1.5, 0.002);
                 break;
             }
         }
@@ -43,11 +43,12 @@ namespace hardwares
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::read(t, period);
-            auto &q = state_["position"];
-            auto &dq = state_["velocity"];
-            auto &ddq = state_["acceleration"];
-            auto &pose = state_["pose"];
-            auto &force = loaned_state_["ft_sensor"]->at("force");
+            auto &q = state_.get<double>("position");
+            auto &io_state = state_.get<bool>("io");
+            auto &dq = state_.get<double>("velocity");
+            auto &ddq = state_.get<double>("acceleration");
+            auto &pose = state_.get<double>("pose");
+            auto &force = com_state_["ft_sensor"]->get<double>("force");
 
             auto dt = period.seconds();
 
@@ -55,8 +56,8 @@ namespace hardwares
             dq = receive_interface_->getActualQd();
             pose = receive_interface_->getActualTCPPose();
 
-            state_["io"][0] = receive_interface_->getDigitalOutState(0);
-            state_["io"][1] = receive_interface_->getDigitalOutState(1);
+            io_state[0] = receive_interface_->getDigitalOutState(0);
+            io_state[1] = receive_interface_->getDigitalOutState(1);
             if (dt > 1e-5)
             {
                 for (int i = 0; i < 6; i++)
