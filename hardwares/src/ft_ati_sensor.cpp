@@ -134,7 +134,7 @@ namespace hardwares
                                     resp.FTData[i] = ntohl(*(int32 *)&readdata[12 + i * 4]);
                                     force[i] = resp.FTData[i] / 1000000.0f;
                                 }
-                                real_time_buffer_double_.writeFromNonRT(force);
+                                get<double>("force").writeFromNonRT(force);
                                 // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
                                 //  msg->force.x = force[0];
                                 //  msg->force.y = force[1];

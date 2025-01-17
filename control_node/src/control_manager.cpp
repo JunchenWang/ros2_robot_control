@@ -37,7 +37,7 @@ namespace control_node
             robot_ = robot_loader_->createSharedInstance(robot_class);
             int pos = robot_class.rfind(":");
             auto robot_name = robot_class.substr(pos + 1);
-
+            robot_->set_update_rate(update_rate_);
             robot_->initialize(robot_name);
             auto nodes = robot_->get_all_nodes();
             for (auto &no : nodes)
@@ -292,6 +292,7 @@ namespace control_node
     void ControlManager::control_loop()
     {
         // for calculating sleep time
+        double dt = 1.0 / update_rate_;
         auto const period = std::chrono::nanoseconds(1'000'000'000 / update_rate_);
         auto const cm_now = std::chrono::nanoseconds(this->now().nanoseconds());
         std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>

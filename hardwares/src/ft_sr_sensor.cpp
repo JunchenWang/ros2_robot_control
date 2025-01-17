@@ -22,7 +22,7 @@ namespace hardwares
 
         bool on_receive_data(float fx, float fy, float fz, float mx, float my, float mz)
         {
-             real_time_buffer_double_.writeFromNonRT({fx, fy, fz, mx, my, mz});
+             get<double>("force").writeFromNonRT({fx, fy, fz, mx, my, mz});
             //std::cerr << "FTSR Sensor: " << fx << " " << fy << " " << fz << " " << mx << " " << my << " " << mz << std::endl;
             return true;
         }
@@ -56,7 +56,7 @@ namespace hardwares
             return CallbackReturn::FAILURE;
         }
 
-        CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override
+        CallbackReturn on_shutdown(const rclcpp_lifecycle::State &/*previous_state*/) override
         {
             commManager.Stop();
 
@@ -75,12 +75,8 @@ namespace hardwares
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            if(commManager.Stop())
-            {
-                return CallbackReturn::SUCCESS;
-            }
-            else
-                return CallbackReturn::FAILURE;
+            commManager.Stop();
+            return CallbackReturn::SUCCESS;
         }
 
     protected:

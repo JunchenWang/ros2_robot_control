@@ -14,6 +14,7 @@ namespace hardware_interface
     class RobotInterface : public HardwareInterface
     {
     public:
+        using SuperClass = HardwareInterface;
         ~RobotInterface() {}
         RobotInterface();
         int configure_urdf(const std::string &robot_description);
@@ -21,6 +22,7 @@ namespace hardware_interface
         int get_dof() const { return dof_; }
         const urdf::Model &get_urdf_model() const { return robot_model_; }
         virtual bool is_stop() {return false;};
+        void set_update_rate(int rate) { update_rate_ = rate; }
         std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> get_all_nodes();
         void robot_dynamics(const std::vector<double> &x, std::vector<double> &dx, double t,
                             std::function<Eigen::MatrixXd(double)> f_external,
@@ -28,7 +30,7 @@ namespace hardware_interface
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override;
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override;
         // for simulation only
-        void write_state(const std::vector<double> &state, const std::vector<double> &force)
+        void write_state(const std::vector<double> &state, const std::vector<double> &/*force*/)
         {
             std::copy(state.begin(), state.begin() + dof_, state_.get<double>("position").begin());
             std::copy(state.begin() + dof_, state.begin() + 2 * dof_, state_.get<double>("velocity").begin());
@@ -51,7 +53,6 @@ namespace hardware_interface
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
         const robot_math::Robot &get_robot_math()  const { return robot_;}
     protected:
-    
         std::unique_ptr<pluginlib::ClassLoader<hardware_interface::SensorInterface>> sensor_loader_;
         std::vector<std::string> joint_names_;
         std::string end_effector_;
@@ -61,7 +62,7 @@ namespace hardware_interface
         std::map<std::string, const hardware_interface::StateInterface*> com_state_;
         std::map<std::string, hardware_interface::CommandInterface*> com_command_;
         std::map<std::string, hardware_interface::HardwareInterface::SharedPtr> components_;
-
+        int update_rate_;
     };
 
 } // namespace hardware

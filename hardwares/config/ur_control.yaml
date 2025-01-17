@@ -31,13 +31,13 @@ URRobot:
     # command_length: []
     state_interface: [io]
     state_length: [6]
-    state_type: [int]
+    state_type: [bool]
     sensors: [ft_sensor]
     ft_sensor: hardwares::FTATISensor
 
 ft_sensor:
   ros__parameters:
     sensor_ip: 192.168.124.12
-    state_interface: force
-    length: 6      
+    state_interface: [force]
+    state_length: [6]    
 

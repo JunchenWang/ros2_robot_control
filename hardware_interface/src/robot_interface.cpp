@@ -3,7 +3,7 @@
 namespace hardware_interface
 {
 
-    RobotInterface::RobotInterface() : dof_(0)
+    RobotInterface::RobotInterface() : dof_(0), update_rate_(0)
     {
         sensor_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::SensorInterface>>("hardware_interface", "hardware_interface::SensorInterface");
     }
@@ -50,65 +50,20 @@ namespace hardware_interface
         }
         return nodes;
     }
-    CallbackReturn RobotInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
+    CallbackReturn RobotInterface::on_configure(const rclcpp_lifecycle::State & previous_state)
     {
+        if(SuperClass::on_configure(previous_state) != CallbackReturn::SUCCESS)
+            return CallbackReturn::FAILURE;
+
         std::string robot_description;
         node_->get_parameter_or<std::string>("robot_description", robot_description, "");
          if (!configure_urdf(robot_description))
             return CallbackReturn::FAILURE;
 
-        // other state and command on the robot
-        std::vector<std::string> commands, states;
-        std::vector<long int> command_len, state_len;
-        std::vector<std::string> command_type, state_type;
-        node_->get_parameter_or<std::vector<std::string>>("command_interface", commands, std::vector<std::string>());
-        node_->get_parameter_or<std::vector<long int>>("command_length", command_len, std::vector<long int>());
-        node_->get_parameter_or<std::vector<std::string>>("command_type", command_type, std::vector<std::string>());
-        if(commands.size() != command_len.size())
-        {
-            RCLCPP_WARN(node_->get_logger(), "command name and lengh are different!");
-            return CallbackReturn::FAILURE;
-        }
-        
-        for(int i = 0; i < commands.size(); i++)
-        {
-            if(command_type.empty())
-                command_.get<double>().emplace(std::move(commands[i]), std::vector<double>(command_len[i], 0));
-            else
-            {
-                if(command_type[i] == "int")
-                    command_.get<int>().emplace(std::move(commands[i]), std::vector<int>(command_len[i], 0));
-                else if(command_type[i] == "bool")
-                    command_.get<bool>().emplace(std::move(commands[i]), std::vector<bool>(command_len[i], false));
-                else
-                    RCLCPP_WARN(node_->get_logger(), "command type %s is not supported!", command_type[i].c_str());
-            }
-        }
-        node_->get_parameter_or<std::vector<std::string>>("state_interface", states, std::vector<std::string>());
-        node_->get_parameter_or<std::vector<long int>>("state_length", state_len, std::vector<long int>());
-        node_->get_parameter_or<std::vector<std::string>>("state_type", state_type, std::vector<std::string>());
-        if(states.size() != state_len.size())
-        {
-            RCLCPP_WARN(node_->get_logger(), "state name and length are different!");
-            return CallbackReturn::FAILURE;
-        }
-            
-        for(int i = 0; i < states.size(); i++)
-        {
-             if(state_type.empty())
-                state_.get<double>().emplace(std::move(states[i]), std::vector<double>(state_len[i], 0));
-            else
-            {
-                if(state_type[i] == "int")
-                    state_.get<int>().emplace(std::move(states[i]), std::vector<int>(state_len[i], 0));
-                else if(state_type[i] == "bool")
-                    state_.get<bool>().emplace(std::move(states[i]), std::vector<bool>(state_len[i], false));
-                else
-                    RCLCPP_WARN(node_->get_logger(), "command type %s is not supported!", state_type[i].c_str());
-            }
-        }
-
         // sensors mounted on the robot
+        com_state_.clear();
+        com_command_.clear();
+        components_.clear();
         std::vector<std::string> sensors;
         std::string sensor_type;
         node_->get_parameter_or<std::vector<std::string>>("sensors", sensors, sensors);
@@ -119,7 +74,7 @@ namespace hardware_interface
                 node_->get_parameter_or<std::string>(sensor_name, sensor_type, "");
                 RCLCPP_INFO(node_->get_logger(), "found %s : %s", sensor_name.c_str(), sensor_type.c_str());
                 auto sensor = sensor_loader_->createSharedInstance(sensor_type);
-                components_[sensor_name] = sensor;
+                components_.emplace(sensor_name, sensor);
                 com_state_.emplace(sensor_name, &sensor->get_state_interface());
                 //loaned_command_.emplace(sensor_name, &sensor->get_command_interface());
                 if(!sensor->initialize(sensor_name))
@@ -137,14 +92,14 @@ namespace hardware_interface
         return CallbackReturn::SUCCESS;
     }
 
-    CallbackReturn RobotInterface::on_shutdown(const rclcpp_lifecycle::State &previous_state)
+    CallbackReturn RobotInterface::on_shutdown(const rclcpp_lifecycle::State &/*previous_state*/)
     {
         for (auto &c : components_)
             c.second->finalize();
         return CallbackReturn::SUCCESS;
     }
 
-    CallbackReturn RobotInterface::on_activate(const rclcpp_lifecycle::State &previous_state)
+    CallbackReturn RobotInterface::on_activate(const rclcpp_lifecycle::State &/*previous_state*/)
     {
         for (auto &c : components_)
             if (c.second->get_node()->activate().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
@@ -152,7 +107,7 @@ namespace hardware_interface
         return CallbackReturn::SUCCESS;
     }
 
-    CallbackReturn RobotInterface::on_deactivate(const rclcpp_lifecycle::State &previous_state)
+    CallbackReturn RobotInterface::on_deactivate(const rclcpp_lifecycle::State &/*previous_state*/)
     {
         for (auto &c : components_)
             c.second->get_node()->deactivate();

@@ -13,7 +13,9 @@ namespace hardwares
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::read(t, period);
-
+            // auto &force = com_state_["ft_sensor"]->get<double>("force");
+            // std::cerr << "raw force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
+            
         }
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
@@ -41,16 +43,6 @@ namespace hardwares
                     state["velocity"] = it->second;
                 }
             }
-            // for(auto & state : state_names_)
-            // {
-            //     auto it = command_.find(state);
-            //     if(it != command_.end())
-            //     {
-            //         state_[state] = it->second;
-            //     }
-            // }
-            // state_["position"] = command_["position"];
-            // state_["velocity"] = command_["velocity"];
         }
     };
 

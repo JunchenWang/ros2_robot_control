@@ -8,7 +8,6 @@ namespace hardware_interface
     }
     HardwareInterface::~HardwareInterface()
     {
-       
     }
     int HardwareInterface::initialize(const std::string &name, const std::string &name_space,
                                       const rclcpp::NodeOptions &options,
@@ -57,7 +56,67 @@ namespace hardware_interface
     }
     CallbackReturn HardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
+        command_.clear();
+        state_.clear();
+        std::vector<std::string> command_interface, state_interface;
+        std::vector<long int> command_length, state_length;
+        std::vector<std::string> command_type, state_type;
+        node_->get_parameter_or<std::vector<std::string>>("command_interface", command_interface, std::vector<std::string>());
+        node_->get_parameter_or<std::vector<long int>>("command_length", command_length, std::vector<long int>());
+        node_->get_parameter_or<std::vector<std::string>>("command_type", command_type, std::vector<std::string>());
+        if (command_interface.size() != command_length.size())
+        {
+            RCLCPP_ERROR(node_->get_logger(), "command name and lengh are different!");
+            return CallbackReturn::FAILURE;
+        }
 
+        for (std::size_t i = 0; i < command_interface.size(); i++)
+        {
+            if (command_type.empty())
+                command_.get<double>().emplace(std::move(command_interface[i]), std::vector<double>(command_length[i], 0));
+            else
+            {
+                if (command_type[i] == "int")
+                    command_.get<int>().emplace(std::move(command_interface[i]), std::vector<int>(command_length[i], 0));
+                else if (command_type[i] == "bool")
+                    command_.get<bool>().emplace(std::move(command_interface[i]), std::vector<bool>(command_length[i], false));
+                else if (command_type[i] == "double")
+                    command_.get<double>().emplace(std::move(command_interface[i]), std::vector<double>(command_length[i], 0));
+                else
+                {
+                    RCLCPP_ERROR(node_->get_logger(), "command type %s is not supported!", command_type[i].c_str());
+                    return CallbackReturn::FAILURE;
+                }
+            }
+        }
+        node_->get_parameter_or<std::vector<std::string>>("state_interface", state_interface, std::vector<std::string>());
+        node_->get_parameter_or<std::vector<long int>>("state_length", state_length, std::vector<long int>());
+        node_->get_parameter_or<std::vector<std::string>>("state_type", state_type, std::vector<std::string>());
+        if (state_interface.size() != state_length.size())
+        {
+            RCLCPP_ERROR(node_->get_logger(), "state name and length are different!");
+            return CallbackReturn::FAILURE;
+        }
+
+        for (std::size_t i = 0; i < state_interface.size(); i++)
+        {
+            if (state_type.empty())
+                state_.get<double>().emplace(std::move(state_interface[i]), std::vector<double>(state_length[i], 0));
+            else
+            {
+                if (state_type[i] == "int")
+                    state_.get<int>().emplace(std::move(state_interface[i]), std::vector<int>(state_length[i], 0));
+                else if (state_type[i] == "bool")
+                    state_.get<bool>().emplace(std::move(state_interface[i]), std::vector<bool>(state_length[i], false));
+                else if (state_type[i] == "double")
+                    state_.get<double>().emplace(std::move(state_interface[i]), std::vector<double>(state_length[i], 0));
+                else
+                {
+                    RCLCPP_WARN(node_->get_logger(), "state type %s is not supported!", state_type[i].c_str());
+                    return CallbackReturn::FAILURE;
+                }
+            }
+        }
         return CallbackReturn::SUCCESS;
     }
 

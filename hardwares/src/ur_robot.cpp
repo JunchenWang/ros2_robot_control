@@ -40,14 +40,14 @@ namespace hardwares
             auto & io = state_.get<bool>("io");
             auto dt = period.seconds();
            
-            auto const &force = com_state_["ft_sensor"]->get<double>("force");
-            auto pose2 = receive_interface_->getActualTCPPose();
+            //auto const &force = com_state_["ft_sensor"]->get<double>("force");
+            // auto pose2 = receive_interface_->getActualTCPPose();
            
             q = receive_interface_->getActualQ();
             dq = receive_interface_->getActualQd();
             io[0] = receive_interface_->getDigitalOutState(0);
             io[1] = receive_interface_->getDigitalOutState(1);
-            if(dt > 1e-5)
+            if(dt > 0.5 / update_rate_)
             {
                 for (int i = 0; i < 6; i++)
                 {

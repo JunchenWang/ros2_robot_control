@@ -29,7 +29,7 @@ SimulationRobot:
       - velocity
     state_interface: [io]
     state_length: [6]
-    state_type: [int]
+    state_type: [bool]
     # command_interface: []
     # command_length: []
     # state_interface: []
@@ -39,8 +39,8 @@ SimulationRobot:
 
 ft_sensor:
   ros__parameters:
-    state_interface: force
-    length: 6
+    state_interface: [force]
+    state_length: [6]
     sensor_ip: 192.168.110.101
     sensor_port: 4008
 

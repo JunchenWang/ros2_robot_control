@@ -25,15 +25,21 @@ namespace hardware_interface
             return std::get<std::unordered_map<std::string, std::vector<T>>>(command_).at(name);
         }
 
-         template <typename T>
-        std::unordered_map<std::string, std::vector<T>> & get()
+        template <typename T>
+        std::unordered_map<std::string, std::vector<T>> &get()
         {
             return std::get<std::unordered_map<std::string, std::vector<T>>>(command_);
         }
         template <typename T>
-        const std::unordered_map<std::string, std::vector<T>> & get() const
+        const std::unordered_map<std::string, std::vector<T>> &get() const
         {
             return std::get<std::unordered_map<std::string, std::vector<T>>>(command_);
+        }
+        void clear()
+        {
+            std::get<0>(command_).clear();
+            std::get<1>(command_).clear();
+            std::get<2>(command_).clear();
         }
         CommandType command_;
     };

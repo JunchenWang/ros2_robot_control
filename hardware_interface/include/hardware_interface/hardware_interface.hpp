@@ -6,8 +6,6 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 namespace hardware_interface
 {
-    typedef std::tuple<std::vector<double>, std::vector<int>, std::vector<bool>> InterfaceValueType;
-
     using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
     class HardwareInterface : public rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface
@@ -23,7 +21,6 @@ namespace hardware_interface
         void finalize();
         // for simulation
         void write_state(const std::string& name, const std::vector<double> &s);
-        
         virtual void read(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) {}
         virtual void write(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) {}
         const rclcpp_lifecycle::State &get_state() const { return node_->get_current_state(); }

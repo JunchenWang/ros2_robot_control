@@ -11,18 +11,34 @@ namespace hardware_interface
     class SensorInterface : public HardwareInterface
     {
     public:
+        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<double>>> RealtimeBufferDouble;
+        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<int>>> RealtimeBufferInt;
+        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<bool>>> RealtimeBufferBool;
+        typedef std::tuple<RealtimeBufferDouble, RealtimeBufferInt, RealtimeBufferBool> RealtimeBufferType;
+        using SuperClass = HardwareInterface;
         ~SensorInterface();
         SensorInterface();
         void read(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override;
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
+
     protected:
+        template <typename T>
+        realtime_tools::RealtimeBuffer<std::vector<T>> &get(const std::string &name)
+        {
+            return std::get<std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<T>>>>(real_time_buffer_)[name];
+        }
+
+        template <typename T>
+        std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<T>>> &get()
+        {
+            return std::get<std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<T>>>>(real_time_buffer_);
+        }
+    protected:
+        int update_rate_;
         std::unique_ptr<std::thread> thread_;
         std::atomic_bool is_running_;
-        //volatile bool is_running_;
-        realtime_tools::RealtimeBuffer<std::vector<double>> real_time_buffer_double_;
-        realtime_tools::RealtimeBuffer<std::vector<int>> real_time_buffer_int_;
-        realtime_tools::RealtimeBuffer<std::vector<bool>> real_time_buffer_bool_;
-        std::string state_name_;
+        // volatile bool is_running_;
+        RealtimeBufferType real_time_buffer_;
     };
 
 } // namespace hardware

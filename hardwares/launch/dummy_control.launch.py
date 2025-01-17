@@ -53,8 +53,8 @@ def generate_launch_description():
                 [
                     FindPackageShare("hardwares"),
                     "config",
-                    "ur5e@B211",
-                    "kinematics.yaml",
+                    "ur5e",
+                    "kinematics@B211.yaml",
                 ]
             )
     robot_description_content = Command(

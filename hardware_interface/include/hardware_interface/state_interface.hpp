@@ -34,7 +34,12 @@ namespace hardware_interface
         {
             return std::get<std::unordered_map<std::string, std::vector<T>>>(state_);
         }
-
+        void clear()
+        {
+            std::get<0>(state_).clear();
+            std::get<1>(state_).clear();
+            std::get<2>(state_).clear();
+        }
         StateType state_;
     };
 } // namespace hardware

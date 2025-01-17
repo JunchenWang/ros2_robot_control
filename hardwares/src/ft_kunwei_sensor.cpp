@@ -176,7 +176,7 @@ namespace hardwares
                                         z.m[i] = data[i + 22];
                                     }
                                     force[5] = 1000 * z.n;
-                                    real_time_buffer_double_.writeFromNonRT(force);
+                                    get<double>("force").writeFromNonRT(force);
                                     // printf("Fx= %2f Kg,Fy= %2f Kg,Fz= %2f Kg,Mx= %2f Kg/M,My= %2f Kg/M,Mz= %2f Kg/M\n", Force[0], Force[1], Force[2], Force[3], Force[4], Force[5]);
                                     // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
                                     // msg->force.x = Force[0] * 1000;
