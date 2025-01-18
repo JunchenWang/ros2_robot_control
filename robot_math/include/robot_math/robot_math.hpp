@@ -92,7 +92,8 @@ namespace robot_math
 	void body_twist_to_spatial(const double T[16], const double Vb[6], const double dVb[16], double Vs[6], double dVs[6]);
 	void spatial_twist_to_body(const double T[16], const double Vs[6], double const dVs[16], double Vb[6], double dVb[6]);
 	void swap_order(double *buf, int n);
-
+	
+    // return the force without gravity in the sensor frame
 	Eigen::Vector6d get_ext_force(const std::vector<double>& force, 
 	                   double mass, 
 					   const std::vector<double>& offset, 
@@ -133,7 +134,7 @@ namespace robot_math
 	void admittance_error_cal(const Robot *robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Td, const Eigen::Vector6d &Vd,
 							  const std::vector<double> &q, const std::vector<double> &qd, Eigen::Vector3d &re, Eigen::Vector3d &pe, Eigen::Vector3d &red, Eigen::Vector3d &ped, bool flag);
 
-		
+	// pure interaction force to the envrionment expressed in TCP frame (negative if for force drag)	
 	Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &dq,
 												  const std::vector<double> &ddq, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale = 1.0);
 

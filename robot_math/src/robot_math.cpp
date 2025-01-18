@@ -1111,7 +1111,7 @@ namespace robot_math
             T = tform * T;
         }
     }
-    // pure interaction force to the envrionment expressed in TCP frame (negative if for force drag)
+    
     Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &dq,
                                                      const std::vector<double> &ddq, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale)
     {
