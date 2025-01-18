@@ -226,7 +226,7 @@ namespace controllers
             cmd_pose = tform_to_pose(Tref_);
 
             // 修正力传感器读数，修正工具重力/重力矩及零点偏移，不考虑外力旋量和合力旋量（机器人运动）
-            Fext_ = get_ext_force(force, mass_, offset_, cog_, sensor_pose_, pose_to_tform(pose));
+            Fext_ = get_ext_force(force, mass_, offset_, cog_, Tsensor_, pose_to_tform(pose));
             f_filter_->filtering(Fext_.data(), Fext_.data());
             // RCLCPP_INFO(node_->get_logger(), "Fext_: %f, %f, %f, %f, %f, %f", Fext_(0), Fext_(1), Fext_(2), Fext_(3), Fext_(4), Fext_(5));
             if (!prev_io1_ && io[1])

@@ -1,10 +1,7 @@
 #include "robot_math/robot_math.hpp"
 #include <jsoncpp/json/json.h>
-#include "matlab_code/derivative_jacobian_matrix.h"
-#include "matlab_code/jacobian_matrix.h"
 #include "matlab_code/inverse_kin_general.h"
 #include "matlab_code/forward_kin_general.h"
-#include "matlab_code/m_c_g_matrix.h"
 #include <iostream>
 #include <fstream>
 #include "urdf/model.h"
@@ -403,17 +400,15 @@ namespace robot_math
         return svd.matrixV() * singularValuesInv.asDiagonal() * svd.matrixU().transpose();
     }
 
-    // 前三个是力矩，后三个是力
+    // return 前三个是力矩，后三个是力
     Eigen::Vector6d get_ext_force(const std::vector<double> &force,
                        double mass,
                        const std::vector<double> &offset,
                        const std::vector<double> &cog,
-                       const std::vector<double> &installed_pose,
-                       const Eigen::Matrix4d & robot_T)
+                       const Eigen::Matrix4d & T_sensor, 
+					   const Eigen::Matrix4d & T_robot)
     {
-        Eigen::Matrix4d T = robot_T * pose_to_tform(installed_pose);
-        Eigen::Matrix3d R = T.block(0, 0, 3, 3).transpose();
-
+        Eigen::Matrix3d R = (T_robot.block<3,3>(0, 0) * T_sensor.block<3,3>(0, 0)).transpose();
         Eigen::Vector3d g = R * Eigen::Vector3d(0, 0, -1) * mass;
         Eigen::Vector3d M = Eigen::Vector3d(cog[0], cog[1], cog[2]).cross(g);
         return Eigen::Vector6d(force[3] - M(0) - offset[3],
@@ -422,20 +417,6 @@ namespace robot_math
                                force[0] - g(0) - offset[0],
                                force[1] - g(1) - offset[1],
                                force[2] - g(2) - offset[2]);
-    }
-    void get_ext_force(float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose)
-    {
-        Eigen::Matrix4d T = pose_to_tform(pose);
-        Eigen::Matrix3d R = T.block(0, 0, 3, 3).transpose();
-
-        Eigen::Vector3d g = R * Eigen::Vector3d(0, 0, -1) * mass;
-        Eigen::Vector3d M = Eigen::Vector3d(cog[0], cog[1], cog[2]).cross(g);
-        force[0] -= static_cast<float>(g(0) + offset[0]);
-        force[1] -= static_cast<float>(g(1) + offset[1]);
-        force[2] -= static_cast<float>(g(2) + offset[2]);
-        force[3] -= static_cast<float>(M(0) + offset[3]);
-        force[4] -= static_cast<float>(M(1) + offset[4]);
-        force[5] -= static_cast<float>(M(2) + offset[5]);
     }
 
     Eigen::Matrix3d so_w(const Eigen::Vector3d &w)
@@ -1130,64 +1111,9 @@ namespace robot_math
             T = tform * T;
         }
     }
-
-    void gravity_and_inertia_compensation(const Robot &robot, const std::vector<double> &q, const std::vector<double> &qd, const std::vector<double> &qdd, double _T[16], double _Tcb[16], double _Tcs[16], float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose, const double _G[36]) // force:fxyzTxyz _Tcs:sensor frame based on gravity center frame
-    {
-        get_ext_force(force, mass, offset, cog, pose);
-        double _Vb[6]{0}, _dVb[6]{0};
-        get_task_space_motion(robot, q, qd, qdd, _T, _Vb, _dVb);
-        Eigen::Vector6d Vc = Eigen::Vector6d::Zero();
-        Eigen::Vector6d dVc = Eigen::Vector6d::Zero();
-        Eigen::Map<const Eigen::Vector6d> Vb(_Vb);
-        Eigen::Map<const Eigen::Vector6d> dVb(_dVb);
-        Eigen::Map<const Eigen::Matrix4d> Tcb(_Tcb);
-        Vc = adjoint_T(Tcb) * Vb;
-        dVc = adjoint_T(Tcb) * dVb;
-        //  bodyTwist2SpatialTwist(_Tcb, _Vb, _dVb, _Vc, _dVc);
-        Eigen::Map<const Eigen::Matrix6d> G(_G);
-        Eigen::Map<const Eigen::Matrix4d> Tcs(_Tcs);
-
-        Eigen::Vector6d Fc = Eigen::Vector6d::Zero();
-        Eigen::Matrix6d adV = Eigen::Matrix6d::Zero();
-        adV.block(0, 0, 3, 3) = so_w(Vc.topRows(3));
-        adV.block(3, 0, 3, 3) = so_w(Vc.bottomRows(3));
-        adV.block(3, 3, 3, 3) = so_w(Vc.topRows(3));
-        Fc = G * dVc - adV.transpose() * G * Vc;
-        Eigen::Vector6d Fsensor = Eigen::Vector6d::Zero();
-        Fsensor = adjoint_T(Tcs).transpose() * Fc;
-        force[0] -= static_cast<float>(Fsensor(3));
-        force[1] -= static_cast<float>(Fsensor(4));
-        force[2] -= static_cast<float>(Fsensor(5));
-        force[3] -= static_cast<float>(Fsensor(0));
-        force[4] -= static_cast<float>(Fsensor(1));
-        force[5] -= static_cast<float>(Fsensor(2));
-    }
-
-    void get_task_space_motion(const Robot &robot, const std::vector<double> &q, const std::vector<double> &qd, const std::vector<double> &qdd, double T[16], double V[6], double dV[6])
-    {
-        int n = q.size();
-        double dT[16] = {0};
-        Eigen::Map<Eigen::Vector6d> twist(V), dtwist(dV);
-        if (n == 7)
-        {
-            Eigen::Matrix6x7d Jb, dJb;
-            Eigen::Map<const Eigen::Vector7d> js(&qd[0]), ja(&qdd[0]);
-            ::derivative_jacobian_matrix(&robot, q, qd, coder_array_wrapper1(dJb), coder_array_wrapper2(Jb), dT, T);
-            twist = Jb * js;
-            dtwist = dJb * js + Jb * ja;
-        }
-        else if (n == 6)
-        {
-            Eigen::Matrix6d Jb, dJb;
-            Eigen::Map<const Eigen::Vector6d> js(&qd[0]), ja(&qdd[0]);
-            ::derivative_jacobian_matrix(&robot, q, qd, coder_array_wrapper1(dJb), coder_array_wrapper2(Jb), dT, T);
-            twist = Jb * js;
-            dtwist = dJb * js + Jb * ja;
-        }
-    }
-
-    Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &qd,
-                                                     const std::vector<double> &qdd, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale)
+    // pure interaction force to the envrionment expressed in TCP frame (negative if for force drag)
+    Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &dq,
+                                                     const std::vector<double> &ddq, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale)
     {
         Eigen::Vector3d com(cog[0], cog[1], cog[2]);
         Eigen::Vector3d Pcom = Tsensor.block(0, 3, 3, 1) + Tsensor.block(0, 0, 3, 3) * com;
@@ -1197,9 +1123,12 @@ namespace robot_math
         Eigen::Matrix6d g = Eigen::Matrix6d::Identity();
         g(3, 3) = g(4, 4) = g(5, 5) = mass;
         g.topLeftCorner(3, 3) = mI;
+        Eigen::MatrixXd J, dJ;
+        Eigen::Matrix4d T, dT;
         Eigen::Vector6d Vc, dVc, Vb, dVb;
-        Eigen::Matrix4d T;
-        get_task_space_motion(robot, q, qd, qdd, T.data(), Vb.data(), dVb.data());
+        derivative_jacobian_matrix(&robot, q, dq, dJ, J, dT, T);
+        Vb = J * Eigen::Map<const Eigen::VectorXd>(&dq[0], dq.size());
+        dVb = dJ * Eigen::Map<const Eigen::VectorXd>(&dq[0], dq.size()) + J * Eigen::Map<const Eigen::VectorXd>(&ddq[0], ddq.size());
         Vc = adTcb * Vb;
         dVc = adTcb * dVb;
         Eigen::Vector6d Ftotal = g * dVc - adjoint_V(Vc).transpose() * g * Vc;
@@ -1217,10 +1146,8 @@ namespace robot_math
     {
         int n = robot->dof;
         Eigen::Matrix4d T;
-        Eigen::MatrixX<double> Jb(6, n);
-        coder::array<double, 2> Jb_array;
-        Jb_array.set(Jb.data(), 6, n);
-        ::jacobian_matrix(robot, q, Jb_array, T.data());
+        Eigen::MatrixXd Jb;
+        jacobian_matrix(robot, q, Jb, T);
         T = T * Tcp;
         Jb = adjoint_T(inv_tform(Tcp)) * Jb;
         Eigen::Matrix3d R = T.block(0, 0, 3, 3);

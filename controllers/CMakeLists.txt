@@ -22,6 +22,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "tf2_ros"
   "visualization_msgs"
   "geometry_msgs"
+  "std_srvs"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})

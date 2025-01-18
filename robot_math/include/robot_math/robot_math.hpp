@@ -97,11 +97,10 @@ namespace robot_math
 	                   double mass, 
 					   const std::vector<double>& offset, 
 					   const std::vector<double>& cog, 
-					   const std::vector<double> &installed_pose, 
-					   const Eigen::Matrix4d & robot_T);
+					   const Eigen::Matrix4d & T_sensor, 
+					   const Eigen::Matrix4d & T_robot);
 
-	void get_ext_force(float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose);
-
+	
 	Eigen::Vector6d twist_estimate(const Eigen::Matrix4d &Td, const Eigen::Matrix4d &Td_pre, double dt);
 
 	Eigen::Matrix6d spatial_inertia_matrix(const Eigen::Matrix3d &I, double m, const Eigen::Vector3d &com);
@@ -134,12 +133,9 @@ namespace robot_math
 	void admittance_error_cal(const Robot *robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Td, const Eigen::Vector6d &Vd,
 							  const std::vector<double> &q, const std::vector<double> &qd, Eigen::Vector3d &re, Eigen::Vector3d &pe, Eigen::Vector3d &red, Eigen::Vector3d &ped, bool flag);
 
-	void get_task_space_motion(const Robot &robot, const std::vector<double> &q, const std::vector<double> &qd, const std::vector<double> &qdd, double T[16], double V[6], double dV[6]);
-	
-	void gravity_and_inertia_compensation(const Robot &robot, const std::vector<double> &q, const std::vector<double> &qd, const std::vector<double> &qdd, double _T[16], double _Tcb[16], double _Tcs[16], float force[6], float mass, const float offset[6], const float cog[3], const std::vector<double> &pose, const double _G[36]);
-	
-	Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &qd,
-												  const std::vector<double> &qdd, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale = 1.0);
+		
+	Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &dq,
+												  const std::vector<double> &ddq, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale = 1.0);
 
 	template <class T, int m, int n>
 	coder::array<T, 1> &coder_array_1d_wrapper(Eigen::Matrix<T, m, n> &M)

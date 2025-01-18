@@ -174,7 +174,7 @@ namespace controllers
             // RCLCPP_INFO(node_->get_logger(), "cmd_qd: %f, %f, %f, %f, %f, %f", cmd_qd[0], cmd_qd[1], cmd_qd[2], cmd_qd[3], cmd_qd[4], cmd_qd[5]);
 
             // 修正力传感器读数，修正工具重力/重力矩及零点偏移，不考虑外力旋量和合力旋量（机器人运动）
-            Fext_ = get_ext_force(force, mass_, offset_, cog_, sensor_pose_, T_);
+            Fext_ = get_ext_force(force, mass_, offset_, cog_, Tsensor_, T_);
             f_filter_->filtering(Fext_.data(), Fext_.data());
             // RCLCPP_INFO(node_->get_logger(), "Fext_: %f, %f, %f, %f, %f, %f", Fext_(0), Fext_(1), Fext_(2), Fext_(3), Fext_(4), Fext_(5));
             if (!prev_io1_ && io[1])
