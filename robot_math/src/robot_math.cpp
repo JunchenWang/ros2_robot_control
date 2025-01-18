@@ -1,7 +1,6 @@
 #include "robot_math/robot_math.hpp"
 #include <jsoncpp/json/json.h>
 #include "matlab_code/inverse_kin_general.h"
-#include "matlab_code/forward_kin_general.h"
 #include <iostream>
 #include <fstream>
 #include "urdf/model.h"
@@ -755,7 +754,17 @@ namespace robot_math
 
     void forward_kin_general(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T)
     {
-        ::forward_kin_general(robot, q, T.data());
+        int n = static_cast<int>(robot->dof);
+        Eigen::Map<const Eigen::Matrix4d> ME(robot->ME);
+        Eigen::Map<const Eigen::Matrix4d> TCP(robot->TCP);
+        T = ME * TCP;
+        for (int i = n; i >= 1; i--)
+        {
+            Eigen::Vector6d Ai(robot->A.at(i - 1, 0), robot->A.at(i - 1, 1), robot->A.at(i - 1, 2),
+                               robot->A.at(i - 1, 3), robot->A.at(i - 1, 4), robot->A.at(i - 1, 5));
+           
+            T = Eigen::Map<const Eigen::Matrix4d>(robot->M.data() + 16 * (i - 1)) * exp_twist(Ai * q[i - 1]) * T;
+        }
     }
 
     class jsexception : public std::exception
