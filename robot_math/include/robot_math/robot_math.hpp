@@ -137,75 +137,75 @@ namespace robot_math
 	Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &dq,
 												  const std::vector<double> &ddq, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale = 1.0);
 
-	template <class T, int m, int n>
-	coder::array<T, 1> &coder_array_1d_wrapper(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 1> array;
-		array.set(M.data(), m * n);
-		return array;
-	}
+	// template <class T, int m, int n>
+	// coder::array<T, 1> &coder_array_1d_wrapper(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 1> array;
+	// 	array.set(M.data(), m * n);
+	// 	return array;
+	// }
 
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
 
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper1(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper1(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
 
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper2(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper3(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper4(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper2(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper3(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper4(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
 
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper5(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper5(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
 
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper6(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper6(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
 
-	template <class T, int m, int n>
-	coder::array<T, 2> &coder_array_wrapper7(Eigen::Matrix<T, m, n> &M)
-	{
-		static coder::array<T, 2> array;
-		array.set(M.data(), m, n);
-		return array;
-	}
+	// template <class T, int m, int n>
+	// coder::array<T, 2> &coder_array_wrapper7(Eigen::Matrix<T, m, n> &M)
+	// {
+	// 	static coder::array<T, 2> array;
+	// 	array.set(M.data(), m, n);
+	// 	return array;
+	// }
 } // namespace robot_math
 
 #endif // ROBOT_MATH__ROBOT_MATH_HPP_
