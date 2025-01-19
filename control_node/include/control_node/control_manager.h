@@ -13,9 +13,17 @@
 #include "control_msgs/srv/control_command.hpp"
 #include <functional>
 #include <chrono>
-
+#include <atomic>
 namespace control_node
 {
+    class ShutDownException : public std::runtime_error
+    {
+        public:
+        ShutDownException(const std::string & msg): std::runtime_error(msg)
+        {
+
+        }
+    };
 
     class ControlManager : public rclcpp::Node
     {
@@ -41,7 +49,6 @@ namespace control_node
         Eigen::MatrixXd simulation_external_force(double t);
         void simulation_observer(const std::vector<double> &x, double t);
         bool is_simulation();
-
     protected:
         pluginlib::UniquePtr<pluginlib::ClassLoader<hardware_interface::RobotInterface>> robot_loader_;
         pluginlib::UniquePtr<pluginlib::ClassLoader<controller_interface::ControllerInterface>> controller_loader_;

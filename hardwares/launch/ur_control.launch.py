@@ -33,19 +33,19 @@ from launch.event_handlers.on_process_start import OnProcessStart
 
 def generate_launch_description():
 
-    rviz_file = PathJoinSubstitution(
-                [
-                    FindPackageShare("ur_description"), 
-                    "rviz", 
-                    "view_robot.rviz"
-                ]
-            )
+    # rviz_file = PathJoinSubstitution(
+    #             [
+    #                 FindPackageShare("ur_description"), 
+    #                 "rviz", 
+    #                 "view_robot.rviz"
+    #             ]
+    #         )
     
-    b211_rviz_file = PathJoinSubstitution(
+    rviz_file = PathJoinSubstitution(
             [
                 FindPackageShare("hardwares"), 
                 "config",
-                "ur5e@B211",
+                "ur5e",
                 "view_robot.rviz"
             ]
         )
@@ -110,7 +110,7 @@ def generate_launch_description():
                 package="rviz2",
                 executable="rviz2",
                 name="rviz2",
-                arguments=["--display-config", b211_rviz_file],
+                arguments=["--display-config", rviz_file],
             )
     
     control_node = Node(

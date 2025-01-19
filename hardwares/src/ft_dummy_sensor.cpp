@@ -17,12 +17,7 @@ namespace hardwares
         {
             if (previous_state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
             {
-                if (thread_ && thread_->joinable())
-                {
-                    is_running_ = false;
-                    thread_->join();
-                }
-                thread_ = nullptr;
+                stop_thread();
             }
             return CallbackReturn::SUCCESS;
         }
@@ -34,7 +29,7 @@ namespace hardwares
                 [this]() -> void
                 {
                     rclcpp::WallRate loop_rate(500);
-                    while (is_running_ && rclcpp::ok())
+                    while (is_running_)
                     {
                         double t = node_->now().seconds();
                         // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
@@ -47,21 +42,19 @@ namespace hardwares
                         //printf("Published message with address: %p\n",reinterpret_cast<std::uintptr_t>(msg.get()));
                         //publisher_->publish(std::move(msg));
                         get<double>("force").writeFromNonRT({std::sin(t), std::cos(t), 3,4,5,6});
+                        is_data_comming_ = true;
                         loop_rate.sleep();
                     }
                 });
+            if(!is_data_comming())
+                    return CallbackReturn::FAILURE;
 
             return CallbackReturn::SUCCESS;
         }
 
-        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override
         {
-            if (thread_ && thread_->joinable())
-            {
-                is_running_ = false;
-                thread_->join();
-            }
-            thread_ = nullptr;
+            SensorInterface::on_deactivate(previous_state);
             return CallbackReturn::SUCCESS;
         }
 

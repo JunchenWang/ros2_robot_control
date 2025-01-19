@@ -20,7 +20,9 @@ namespace hardware_interface
         SensorInterface();
         void read(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override;
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
-
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
+        void stop_thread();
+        bool is_data_comming();
     protected:
         template <typename T>
         realtime_tools::RealtimeBuffer<std::vector<T>> &get(const std::string &name)
@@ -37,7 +39,7 @@ namespace hardware_interface
         int update_rate_;
         std::unique_ptr<std::thread> thread_;
         std::atomic_bool is_running_;
-        // volatile bool is_running_;
+        std::atomic_bool is_data_comming_;
         RealtimeBufferType real_time_buffer_;
     };
 

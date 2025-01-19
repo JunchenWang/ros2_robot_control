@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     if (lock_memory)
     {
         auto ret = realtime_tools::lock_memory();
-        if(!ret.first)
+        if (!ret.first)
             RCLCPP_WARN(cm->get_logger(), "Unable to lock the memory : '%s'", ret.second.c_str());
     }
 
@@ -83,15 +83,25 @@ int main(int argc, char **argv)
                     cm->get_logger(), "Successful set up FIFO RT scheduling policy with priority %i.",
                     thread_priority);
             }
-
-            while (rclcpp::ok())
+            try
             {
-                cm->prepare_loop();
-                if (cm->is_simulation())
-                    cm->start_simulation(10);
-                else
-                    cm->control_loop();
-                cm->end_loop();
+                while (rclcpp::ok())
+                {
+                    cm->prepare_loop();
+                    if (cm->is_simulation())
+                        cm->start_simulation(10);
+                    else
+                        cm->control_loop();
+                    cm->end_loop();
+                }
+            }
+            catch (control_node::ShutDownException &e)
+            {
+                RCLCPP_ERROR(cm->get_logger(), "%s due to %s", "shutting down...", e.what());
+            }
+            catch (std::exception &e)
+            {
+                RCLCPP_ERROR(cm->get_logger(), "%s", e.what());
             }
             cm->shutdown_robot();
         });

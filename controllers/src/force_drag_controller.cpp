@@ -37,8 +37,8 @@ namespace controllers
             ddq_filtered_ = std::vector<double>(dof, 0);
             std::vector<double> sensor_pose;
             std::vector<double> tcp_pose;
-            node_->get_parameter_or<std::vector<double>>("M", M_, {1, 1, 1, 1, 1, 1});
-            node_->get_parameter_or<std::vector<double>>("B", B_, {1, 1, 1, 1, 1, 1});
+            node_->get_parameter_or<std::vector<double>>("M", M_, {0.05, 0.05, 0.05, 0.7, 0.7, 0.7});
+            node_->get_parameter_or<std::vector<double>>("B", B_, {5, 5, 5, 50, 50, 50});
             node_->get_parameter_or<std::vector<double>>("cog", cog_, {0, 0, 0});
             node_->get_parameter_or<std::vector<double>>("offset", offset_, {0, 0, 0, 0, 0, 0});
             node_->get_parameter_or<std::vector<double>>("sensor_pose", sensor_pose, {0, 0, 0, 0, 0, 0});
@@ -94,6 +94,8 @@ namespace controllers
             auto &q = state_->get<double>("position");
             auto &dq = state_->get<double>("velocity");
             auto &cmd = command_->get<double>("velocity");
+            auto &mode = command_->get<int>("mode");
+            mode[0] = 3;// speed control;
             offset_in_box_.try_get([=](auto const &value)
                                    { offset_ = value; });
             M_in_box_.try_get([=](auto const &value)

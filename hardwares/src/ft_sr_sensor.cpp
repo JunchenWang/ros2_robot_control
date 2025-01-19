@@ -23,6 +23,7 @@ namespace hardwares
         bool on_receive_data(float fx, float fy, float fz, float mx, float my, float mz)
         {
              get<double>("force").writeFromNonRT({fx, fy, fz, mx, my, mz});
+             is_data_comming_ = true;
             //std::cerr << "FTSR Sensor: " << fx << " " << fy << " " << fz << " " << mx << " " << my << " " << mz << std::endl;
             return true;
         }
@@ -67,14 +68,17 @@ namespace hardwares
         {
             if(commManager.Run())
             {
+                if(!is_data_comming())
+                    return CallbackReturn::FAILURE;
                 return CallbackReturn::SUCCESS;
             }
             else
                 return CallbackReturn::FAILURE;
         }
 
-        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override
         {
+            SensorInterface::on_deactivate(previous_state);
             commManager.Stop();
             return CallbackReturn::SUCCESS;
         }

@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-
+using namespace std::chrono_literals;
 #define PORT 49152    /* Port the Net F/T always uses */
 #define COMMAND 2     /* Command code 2 starts streaming */
 #define NUM_SAMPLES 0 /* Will send 1 sample before stopping */
@@ -94,12 +94,7 @@ namespace hardwares
         {
             if (previous_state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
             {
-                if (thread_ && thread_->joinable())
-                {
-                    is_running_ = false;
-                    thread_->join();
-                }
-                thread_ = nullptr;
+                stop_thread();
                 stop_sensing();
             }
             if (handle_ >= 0)
@@ -120,7 +115,7 @@ namespace hardwares
                         char readdata[36];
                         std::vector<double> force(6);
                         RESPONSE resp;
-                        while (is_running_ && rclcpp::ok())
+                        while (is_running_)
                         {
                             int resv_num = recvfrom(handle_, readdata, 36, 0, (struct sockaddr *)&addr_, &len);
 
@@ -135,32 +130,22 @@ namespace hardwares
                                     force[i] = resp.FTData[i] / 1000000.0f;
                                 }
                                 get<double>("force").writeFromNonRT(force);
-                                // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
-                                //  msg->force.x = force[0];
-                                //  msg->force.y = force[1];
-                                //  msg->force.z = force[2];
-                                //  msg->torque.x = force[3];
-                                //  msg->torque.y = force[4];
-                                //  msg->torque.z = force[5];
-                                //  publisher_->publish(std::move(msg));
+                                is_data_comming_ = true;
                             }
                         }
                     });
-
+                if(!is_data_comming())
+                    return CallbackReturn::FAILURE;
+                
                 return CallbackReturn::SUCCESS;
             }
             else
                 return CallbackReturn::FAILURE;
         }
 
-        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override
         {
-            if (thread_ && thread_->joinable())
-            {
-                is_running_ = false;
-                thread_->join();
-            }
-            thread_ = nullptr;
+            SensorInterface::on_deactivate(previous_state);
             stop_sensing();
             return CallbackReturn::SUCCESS;
         }

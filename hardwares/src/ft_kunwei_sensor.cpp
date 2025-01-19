@@ -75,12 +75,7 @@ namespace hardwares
         {
             if (previous_state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
             {
-                if (thread_ && thread_->joinable())
-                {
-                    is_running_ = false;
-                    thread_->join();
-                }
-                thread_ = nullptr;
+                stop_thread();
                 write_command("\x43\xAA\x0D\x0A");
             }
             if (handle_ >= 0)
@@ -111,7 +106,7 @@ namespace hardwares
                         int i, len;
                         int ReceivedDataLangth;
                         std::vector<double> force(6);
-                        while (is_running_ && rclcpp::ok())
+                        while (is_running_)
                         {
                             len = 0;
                             FD_ZERO(&readset);
@@ -177,6 +172,7 @@ namespace hardwares
                                     }
                                     force[5] = 1000 * z.n;
                                     get<double>("force").writeFromNonRT(force);
+                                    is_data_comming_ = true;
                                     // printf("Fx= %2f Kg,Fy= %2f Kg,Fz= %2f Kg,Mx= %2f Kg/M,My= %2f Kg/M,Mz= %2f Kg/M\n", Force[0], Force[1], Force[2], Force[3], Force[4], Force[5]);
                                     // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
                                     // msg->force.x = Force[0] * 1000;
@@ -213,21 +209,17 @@ namespace hardwares
                             }
                         }
                     });
-
+                if(!is_data_comming())
+                    return CallbackReturn::FAILURE;
                 return CallbackReturn::SUCCESS;
             }
             else
                 return CallbackReturn::FAILURE;
         }
 
-        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override
         {
-            if (thread_ && thread_->joinable())
-            {
-                is_running_ = false;
-                thread_->join();
-            }
-            thread_ = nullptr;
+            SensorInterface::on_deactivate(previous_state);
             write_command("\x43\xAA\x0D\x0A");
             return CallbackReturn::SUCCESS;
         }

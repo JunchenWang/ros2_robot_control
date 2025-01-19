@@ -1,6 +1,6 @@
 #include "control_node/control_manager.h"
-#include <boost/numeric/odeint.hpp>
 #include "lifecycle_msgs/msg/state.hpp"
+#include <boost/numeric/odeint.hpp>
 using namespace std::chrono_literals;
 using namespace boost::numeric::odeint;
 namespace control_node
@@ -49,10 +49,10 @@ namespace control_node
                 pos = name.rfind(":");
                 name = name.substr(pos + 1);
                 controller->loan_interface(&robot_->get_robot_math(),
-                                            &robot_->get_command_interface(),
-                                            &robot_->get_state_interface(),
-                                            &robot_->get_com_command_interface(),
-                                            &robot_->get_com_state_interface());
+                                           &robot_->get_command_interface(),
+                                           &robot_->get_state_interface(),
+                                           &robot_->get_com_command_interface(),
+                                           &robot_->get_com_state_interface());
                 controller->initialize(name);
                 controllers_.push_back(controller);
                 executor_->add_node(controller->get_node()->get_node_base_interface());
@@ -65,13 +65,13 @@ namespace control_node
         }
         service_ = create_service<control_msgs::srv::ControlCommand>("~/control_command",
                                                                      std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
-        
-        auto stop_callback = [=] (const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
-                              std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/)
-                              {
-                                    running_box_ = false;
-                              };
-        stop_service_ = create_service<std_srvs::srv::Empty>("~/stop",  stop_callback);
+
+        auto stop_callback = [=](const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
+                                 std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/)
+        {
+            running_box_ = false;
+        };
+        stop_service_ = create_service<std_srvs::srv::Empty>("~/stop", stop_callback);
     }
 
     ControlManager::~ControlManager()
@@ -129,7 +129,7 @@ namespace control_node
         if (cmd == "activate")
             response->result = activate_controller(request->cmd_params[0]);
     }
-    
+
     int ControlManager::get_update_rate()
     {
         return update_rate_;
@@ -137,7 +137,7 @@ namespace control_node
 
     void ControlManager::shutdown_robot()
     {
-        RCLCPP_INFO(this->get_logger(), "shutting down");
+        RCLCPP_INFO(this->get_logger(), "shutting down controllers and robot and all attached hardwares");
         for (auto &controller : controllers_)
         {
             controller->finalize();
@@ -169,6 +169,8 @@ namespace control_node
                 joint_state->effort = it->second;
             }
             joint_state->header.stamp = t;
+            // this is faster but may block the rt thread
+            // joint_state_publisher_->publish(*joint_state);
             if (real_time_publisher_->trylock())
             {
                 real_time_publisher_->msg_ = *joint_state;
@@ -323,50 +325,45 @@ namespace control_node
     void ControlManager::prepare_loop()
     {
         auto state = robot_->get_state();
-        while (rclcpp::ok() && state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
+        while (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
         {
             RCLCPP_WARN(this->get_logger(), "robot is not configured!");
             std::this_thread::sleep_for(1s);
         }
-        if (rclcpp::ok())
+        robot_->get_node()->activate();
+        RCLCPP_INFO(get_logger(), "waiting for controller to be activated...");
+        std::stringstream ss;
+        for (auto &controller : controllers_)
         {
-            robot_->get_node()->activate();
-            RCLCPP_INFO(get_logger(), "waiting for controller to be activated...");
-            std::stringstream ss;
-            for (auto &controller : controllers_)
-            {
-                ss << controller->get_node()->get_name() << " ";
-            }
-            RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
-            do
-            {
-                if (!is_simulation_)
-                    read(this->now(), rclcpp::Duration(0, 0));
-                while (!active_controller_box_.try_get([=](auto const &value)
-                                                       { active_controller_ = value; }))
-                {
-                    std::this_thread::sleep_for(100ms);
-                }
-                std::this_thread::sleep_for(1s);
-            } while (rclcpp::ok() && !active_controller_);
-            running_ = true;
-            running_box_ = true;
+            ss << controller->get_node()->get_name() << " ";
         }
+        RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
+        do
+        {
+            if (!is_simulation_)
+                read(this->now(), rclcpp::Duration(0, 0));
+            while (!active_controller_box_.try_get([=](auto const &value)
+                                                   { active_controller_ = value; }))
+            {
+                std::this_thread::sleep_for(100ms);
+            }
+            std::this_thread::sleep_for(1s);
+        } while (rclcpp::ok() && !active_controller_);
+        running_ = true;
+        running_box_ = true;
     }
 
     void ControlManager::end_loop()
     {
-        if (rclcpp::ok())
+        active_controller_box_.set([=](auto &value)
         {
-            active_controller_box_.set([=](auto &value)
-                                       {
                 if (value)
                 {
                     value->get_node()->deactivate();
                     value = nullptr;
-                } });
-            robot_->get_node()->deactivate();
-        }
+                } 
+        });
+        robot_->get_node()->deactivate();
     }
 
 }

@@ -22,17 +22,22 @@ namespace hardwares
         {
             // RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
             hardware_interface::RobotInterface::write(t, period);
+            double dt = 1.0 / update_rate_;
+            // auto &cmd = command_.get<double>("velocity");
+            // std::for_each(cmd.begin(),cmd.end(), [](auto &s) { std::cerr << s << " ";});
+            // std::cerr << std::endl;
+            // return;
             int mode = command_.get<int>("mode")[0];
             switch (mode)
             {
             case 1:
-                control_interface_->servoJ(command_.get<double>("position"), 1, 1, 0.002, 0.05, 1000);
+                control_interface_->servoJ(command_.get<double>("position"), 1, 1, dt, 0.05, 1000);
                 break;
             case 2:
-                control_interface_->servoL(command_.get<double>("pose"), 1, 1, 0.002, 0.05, 1000);
+                control_interface_->servoL(command_.get<double>("pose"), 1, 1, dt, 0.05, 1000);
                 break;
             case 3:
-                control_interface_->speedJ(command_.get<double>("velocity"), 1.5, 0.002);
+                control_interface_->speedJ(command_.get<double>("velocity"), 1.5, dt);
                 break;
             }
         }
@@ -48,8 +53,9 @@ namespace hardwares
             auto &dq = state_.get<double>("velocity");
             auto &ddq = state_.get<double>("acceleration");
             auto &pose = state_.get<double>("pose");
-            auto &force = com_state_["ft_sensor"]->get<double>("force");
-
+            // auto &force = com_state_["ft_sensor"]->get<double>("force");
+            // std::for_each(force.begin(), force.end(), [](auto it) { std::cerr << it << " ";});
+            // std::cerr << std::endl;
             auto dt = period.seconds();
 
             q = receive_interface_->getActualQ();
@@ -103,7 +109,7 @@ namespace hardwares
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override
         {
             RobotInterface::on_shutdown(previous_state);
-            if (control_interface_)
+            if (control_interface_ && control_interface_->isConnected())
             {
                 control_interface_->servoStop();
                 control_interface_->speedStop();
