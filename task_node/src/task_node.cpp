@@ -7,10 +7,9 @@
 #include "rclcpp/executors.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "realtime_tools/realtime_helpers.hpp"
-
+// this is a template
 using namespace std::chrono_literals;
 
-void *(*control_func)(void *) = nullptr;
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
@@ -35,12 +34,10 @@ int main(int argc, char **argv)
                 RCLCPP_INFO(node->get_logger(), "Successful set up FIFO RT scheduling policy with priority %i.",
                             kSchedPriority);
             }
-            // while (rclcpp::ok())
-            // {
-
-            // }
-            if(control_func)
-                control_func(nullptr);
+            while (rclcpp::ok())
+            {
+                // to do your stuff
+            }
         });
     executor->add_node(node);
     executor->spin();

@@ -31,9 +31,11 @@ find_package(Boost 1.83.0 COMPONENTS odeint)
 
 # include_directories(${Boost_INCLUDE_DIRS}) 
 
-file(GLOB_RECURSE srcs src/*.cpp)
+# file(GLOB_RECURSE srcs src/*.cpp)
+
+
 add_executable(task_node 
-              ${srcs})
+              src/task_node.cpp)
 
 target_include_directories(task_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -43,8 +45,7 @@ target_compile_features(task_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and
 ament_target_dependencies(task_node PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 target_link_libraries(task_node PUBLIC
-                      ${Boost_LIBRARIES}
-)
+                      ${Boost_LIBRARIES})
 
 # install(
 #   DIRECTORY include/
