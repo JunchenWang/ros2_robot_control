@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include <thread>
-
+#include <atomic>
 #include "control_node/control_manager.h"
 #include "rclcpp/executors.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -11,11 +11,26 @@
 
 using namespace std::chrono_literals;
 
+std::shared_ptr<control_node::ControlManager> cm;
+std::shared_ptr<std::thread> cm_thread;
+void signal_handler(int s)
+{
+    if (s == SIGINT)
+    {
+        RCLCPP_INFO(rclcpp::get_logger("control_node"), "Caught signal %d", s);
+        cm->interrupt();
+        if(cm_thread->joinable())
+            cm_thread->join();
+        rclcpp::shutdown();
+    }
+}
+
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    int kSchedPriority = 50;
+    signal(SIGINT, signal_handler);
 
+    int kSchedPriority = 50;
     std::shared_ptr<rclcpp::Executor> executor =
         std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
     std::string manager_node_name = "control_node";
@@ -36,7 +51,7 @@ int main(int argc, char **argv)
     }
     node_options.arguments(node_arguments);
 
-    auto cm = std::make_shared<control_node::ControlManager>(
+    cm = std::make_shared<control_node::ControlManager>(
         executor, manager_node_name, "", node_options);
 
     // /etc/security/limits.conf --> @realtime soft memlock 102400000 or, the bad_alloc exception occurs
@@ -65,8 +80,8 @@ int main(int argc, char **argv)
         cm->get_logger(), "Spawning %s RT thread with scheduler priority: %d", cm->get_name(),
         thread_priority);
 
-    std::thread cm_thread(
-        [cm, thread_priority]()
+    cm_thread = std::make_shared<std::thread>(
+        [thread_priority]()
         {
             if (!realtime_tools::configure_sched_fifo(thread_priority))
             {
@@ -85,7 +100,7 @@ int main(int argc, char **argv)
             }
             try
             {
-                while (rclcpp::ok())
+                while (cm->is_keep_running())
                 {
                     cm->prepare_loop();
                     if (cm->is_simulation())
@@ -95,19 +110,18 @@ int main(int argc, char **argv)
                     cm->end_loop();
                 }
             }
-            catch (control_node::ShutDownException &e)
-            {
-                RCLCPP_ERROR(cm->get_logger(), "%s due to %s", "shutting down...", e.what());
-            }
             catch (std::exception &e)
             {
-                RCLCPP_ERROR(cm->get_logger(), "%s", e.what());
+                RCLCPP_ERROR(cm->get_logger(), "exception caught: %s and begin to shutdown", e.what());
             }
             cm->shutdown_robot();
         });
     executor->add_node(cm);
     executor->spin();
-    cm_thread.join();
+    if(cm_thread->joinable())
+        cm_thread->join();
+    cm_thread.reset();
+    cm.reset();
     rclcpp::shutdown();
     return 0;
 }

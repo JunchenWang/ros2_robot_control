@@ -10,7 +10,8 @@ namespace control_node
         : rclcpp::Node(node_name, name_space, option),
           executor_(executor),
           running_(false),
-          running_box_(false)
+          running_box_(false),
+          keep_running_(true)
     {
         update_rate_ = this->get_parameter_or<int>("update_rate", 500);
         is_simulation_ = this->get_parameter_or<bool>("simulation", true);
@@ -76,6 +77,15 @@ namespace control_node
 
     ControlManager::~ControlManager()
     {
+    }
+    void ControlManager::interrupt()
+    {
+        keep_running_ = false;
+        running_box_ = false;
+    }
+    bool ControlManager::is_keep_running()
+    {
+        return keep_running_;
     }
     bool ControlManager::activate_controller(const std::string &controller_name)
     {
@@ -244,7 +254,7 @@ namespace control_node
 
     void ControlManager::start_simulation(double time)
     {
-        if (!rclcpp::ok())
+        if(!running_)
             return;
 
         typedef std::vector<double> state_type;
@@ -301,7 +311,7 @@ namespace control_node
             next_iteration_time{cm_now};
 
         rclcpp::Time previous_time = this->now();
-        while (rclcpp::ok() && running_ && !robot_->is_stop()) // give robot a change to stop running
+        while (running_ && !robot_->is_stop()) // give robot a change to stop running
         {
             // calculate measured period
             auto const current_time = this->now();
@@ -324,11 +334,18 @@ namespace control_node
 
     void ControlManager::prepare_loop()
     {
+        running_box_ = true;
+        running_ = true;  
         auto state = robot_->get_state();
-        while (state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
+        while (keep_running_ && state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
         {
             RCLCPP_WARN(this->get_logger(), "robot is not configured!");
             std::this_thread::sleep_for(1s);
+        }
+        if(!keep_running_)
+        {
+            running_ = false;
+            return;
         }
         robot_->get_node()->activate();
         RCLCPP_INFO(get_logger(), "waiting for controller to be activated...");
@@ -348,9 +365,11 @@ namespace control_node
                 std::this_thread::sleep_for(100ms);
             }
             std::this_thread::sleep_for(1s);
-        } while (rclcpp::ok() && !active_controller_);
-        running_ = true;
-        running_box_ = true;
+        } while (keep_running_ && !active_controller_);
+        if(!keep_running_)
+        {
+            running_ = false;  
+        }
     }
 
     void ControlManager::end_loop()
@@ -359,11 +378,17 @@ namespace control_node
         {
                 if (value)
                 {
-                    value->get_node()->deactivate();
+                    auto state = value->get_state();
+                    if(state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+                        value->get_node()->deactivate();
+       
                     value = nullptr;
                 } 
         });
-        robot_->get_node()->deactivate();
+        auto state = robot_->get_state();
+        if(state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+            robot_->get_node()->deactivate();
+      
     }
 
 }

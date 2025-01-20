@@ -7,7 +7,7 @@ control_node:
     publish_joint_state: true
     robot: hardwares::SimulationRobot
     controllers: 
-      - controllers::ForceDragController
+      - controllers::DummyController
 
 ForceDragController:
   ros__parameters:

@@ -108,6 +108,7 @@ namespace hardwares
 
         CallbackReturn on_shutdown(const rclcpp_lifecycle::State &previous_state) override
         {
+
             RobotInterface::on_shutdown(previous_state);
             if (control_interface_ && control_interface_->isConnected())
             {

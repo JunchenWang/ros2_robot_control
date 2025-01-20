@@ -37,6 +37,7 @@ namespace control_node
         void control_loop();
         void prepare_loop();
         void end_loop();
+        void interrupt();
         void command_callback(const std::shared_ptr<control_msgs::srv::ControlCommand::Request> request,
                               std::shared_ptr<control_msgs::srv::ControlCommand::Response> response);
         bool activate_controller(const std::string &controller_name);
@@ -49,6 +50,7 @@ namespace control_node
         Eigen::MatrixXd simulation_external_force(double t);
         void simulation_observer(const std::vector<double> &x, double t);
         bool is_simulation();
+        bool is_keep_running();
     protected:
         pluginlib::UniquePtr<pluginlib::ClassLoader<hardware_interface::RobotInterface>> robot_loader_;
         pluginlib::UniquePtr<pluginlib::ClassLoader<controller_interface::ControllerInterface>> controller_loader_;
@@ -69,6 +71,7 @@ namespace control_node
         bool running_;
         realtime_tools::RealtimeBox<bool> running_box_;
         rclcpp::Time sim_start_time_;
+        std::atomic<bool> keep_running_;
     };
 
 }
