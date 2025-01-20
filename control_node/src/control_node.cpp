@@ -28,8 +28,6 @@ void signal_handler(int s)
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    signal(SIGINT, signal_handler);
-
     int kSchedPriority = 50;
     std::shared_ptr<rclcpp::Executor> executor =
         std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
@@ -116,6 +114,7 @@ int main(int argc, char **argv)
             }
             cm->shutdown_robot();
         });
+    signal(SIGINT, signal_handler);
     executor->add_node(cm);
     executor->spin();
     if(cm_thread->joinable())
