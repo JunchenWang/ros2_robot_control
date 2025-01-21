@@ -78,8 +78,9 @@ namespace control_node
     ControlManager::~ControlManager()
     {
     }
+
     void ControlManager::interrupt()
-    {
+    {   
         keep_running_ = false;
         running_box_ = false;
     }
@@ -334,8 +335,6 @@ namespace control_node
 
     void ControlManager::prepare_loop()
     {
-        running_box_ = true;
-        running_ = true;  
         auto state = robot_->get_state();
         while (keep_running_ && state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
         {
@@ -369,7 +368,10 @@ namespace control_node
         if(!keep_running_)
         {
             running_ = false;  
+            return;
         }
+        running_box_ = true;
+        running_ = true;  
     }
 
     void ControlManager::end_loop()
