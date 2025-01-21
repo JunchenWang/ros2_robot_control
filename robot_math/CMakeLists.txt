@@ -27,15 +27,8 @@ file(GLOB_RECURSE matlab_srcs src/matlab_code/*.cpp)
 add_library(robot_math SHARED
            src/robot_math.cpp
            src/OnlineTrajPlanner.cpp
-           ${matlab_srcs}
           )
 
-          # src/matlab_code/derivative_jacobian_matrix.cpp
-          # src/matlab_code/jacobian_matrix.cpp
-          # src/matlab_code/m_c_g_matrix.cpp
-          # src/matlab_code/logR.cpp
-          # src/matlab_code/rt_nonfinite.cpp
-          # src/matlab_code/svd.cpp
 add_library(robot_math::robot_math ALIAS robot_math)
 target_compile_features(robot_math PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(robot_math PUBLIC

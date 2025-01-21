@@ -2,9 +2,9 @@
 #define ROBOT_MATH__ROBOT_MATH_HPP_
 
 #include "robot_math/visibility_control.h"
-#include "robot_math/coder_array.h"
 #include <eigen3/Eigen/Dense>
-
+#include <memory>
+#include <vector>
 namespace Eigen
 {
 	typedef Eigen::Matrix<double, 6, 6> Matrix6d;
@@ -17,22 +17,20 @@ namespace Eigen
 
 namespace robot_math
 {
-
 	struct Robot
 	{
-		double dof;
-		coder::array<double, 1U> mass;
-		coder::array<double, 3U> inertia;
-		coder::array<double, 2U> A;
-		coder::array<double, 3U> M;
+		int dof;
+		std::vector<double> mass;
+		std::vector<std::array<double, 9>> inertia; // 3x3
+		std::vector<std::array<double, 6>> A;
+		std::vector<std::array<double, 16>> M; // 4x4
+		std::vector<std::array<double, 3>> com;
 		double ME[16];
-		coder::array<double, 2U> com;
 		double gravity[3];
 		double TCP[16];
 	};
 	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name);
 	void print_robot(const Robot &robot);
-	void print_code_array(const coder::array<double, 3> &array);
     // pose: first three are position
 	Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose);
 	std::vector<double> tform_to_pose(const Eigen::Matrix4d &T);
@@ -58,8 +56,8 @@ namespace robot_math
 
 
 	void jacobian_matrix(const Robot *robot, const std::vector<double> &q, Eigen::MatrixXd &J, Eigen::Matrix4d &T);
-	void jacobian_matrix_all(const Robot *robot, const std::vector<double> &q, coder::array<double, 3> &J);
-	void inverse_kin_general(const Robot *robot, Eigen::Matrix4d Td, const std::vector<double> &qref, const double tol[2], std::vector<double> &q, double *flag);
+	void jacobian_matrix_all(const Robot *robot, const std::vector<double> &q, std::shared_ptr<double[]> &J);
+	//void inverse_kin_general(const Robot *robot, Eigen::Matrix4d Td, const std::vector<double> &qref, const double tol[2], std::vector<double> &q, double *flag);
 	void forward_kin_general(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T);
 
 	Eigen::MatrixXd J_sharp(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M); // X x 6
@@ -105,7 +103,7 @@ namespace robot_math
 	Eigen::Vector6d twist_estimate(const Eigen::Matrix4d &Td, const Eigen::Matrix4d &Td_pre, double dt);
 
 	Eigen::Matrix6d spatial_inertia_matrix(const Eigen::Matrix3d &I, double m, const Eigen::Vector3d &com);
-	// load robot structure in Json file
+	
 	Robot load_robot(const char *filename);
     
     Eigen::VectorXd get_ext_torque(const Robot *robot, const std::vector<double> &q, const Eigen::MatrixXd& fext);

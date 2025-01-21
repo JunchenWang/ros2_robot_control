@@ -55,7 +55,7 @@ namespace hardware_interface
         }
     }
 
-    CallbackReturn SensorInterface::on_deactivate(const rclcpp_lifecycle::State &previous_state)
+    CallbackReturn SensorInterface::on_deactivate(const rclcpp_lifecycle::State &/*previous_state*/)
     {
         stop_thread();
         is_data_comming_ = false;
