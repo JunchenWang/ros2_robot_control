@@ -789,7 +789,7 @@ namespace robot_math
         int n = robot->dof;
         std::shared_ptr<double[]> J;
         jacobian_matrix_all(robot, q, J);
-        Eigen::VectorXd ext_torque = Eigen::VectorXd::Zero(7);
+        Eigen::VectorXd ext_torque = Eigen::VectorXd::Zero(n);
         for (int i = 0; i < n; i++)
             ext_torque += (Eigen::Map<Eigen::MatrixXd>(J.get() + i * 6 * n, 6, n)).transpose() * fext.col(i);
         return ext_torque;
