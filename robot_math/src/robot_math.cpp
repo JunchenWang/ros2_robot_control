@@ -102,23 +102,6 @@ namespace robot_math
         }
     }
 
-    // void print_code_array(const coder::array<double, 3> &array)
-    // {
-    //     auto sz = array.size();
-    //     for (int k = 0; k < sz[2]; k++)
-    //     {
-    //         for (int i = 0; i < sz[0]; i++)
-    //         {
-    //             for (int j = 0; j < sz[1]; j++)
-    //             {
-    //                 std::cout << std::setw(10) << std::fixed << std::setprecision(4) << array.at(i, j, k);
-    //             }
-    //             std::cout << "\n";
-    //         }
-    //         std::cout << "\n";
-    //     }
-    // }
-
     Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name)
     {
         urdf::Model urdf_model;
