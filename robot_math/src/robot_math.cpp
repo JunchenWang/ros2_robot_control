@@ -201,13 +201,13 @@ namespace robot_math
                 base = joint_transform;
                 if (dof > 0 && m > 0)
                 {
-                    Eigen::Map<Eigen::Matrix3d> inert(inertia[(dof - 1)].data());
+                    Eigen::Map<Eigen::Matrix3d> inert(inertia[dof - 1].data());
                     Eigen::Matrix4d T = joint_transform * make_tform(R, t);
                     R = T.block<3, 3>(0, 0);
                     t = T.block<3, 1>(0, 3);
                     inert += R * I * R.transpose() + m * (t.squaredNorm() * Eigen::Matrix3d::Identity() - t * t.transpose());
                     double rho = m / (mass[dof - 1] + m);
-                    Eigen::Vector3d c = rho * t + (1 - rho) * Eigen::Vector3d(com[dof - 1].data());
+                    Eigen::Vector3d c = rho * t + (1 - rho) * Eigen::Map<Eigen::Vector3d>(com[dof - 1].data());
                     com[dof - 1] = {c[0], c[1], c[2]};
                     mass[dof - 1] += m;
                 }
@@ -225,11 +225,11 @@ namespace robot_math
                 auto axis = bodies[i]->parent_joint->axis;
                 if (type == urdf::Joint::REVOLUTE)
                 {
-                    A[dof] = {axis.x, axis.y, axis.z, 0, 0, 0};
+                    A[dof - 1] = {axis.x, axis.y, axis.z, 0, 0, 0};
                 }
                 else
                 {
-                    A[dof] = {0, 0, 0, axis.x, axis.y, axis.z};
+                    A[dof - 1] = {0, 0, 0, axis.x, axis.y, axis.z};
                 }
                 base = Eigen::Matrix4d::Identity();
             }
