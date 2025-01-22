@@ -45,7 +45,7 @@ namespace robot_math
 	Eigen::Matrix6d adjoint_T(const Eigen::Matrix4d &T);
 	Eigen::Matrix6d adjoint_V(const Eigen::Vector6d &V);
 	Eigen::Matrix4d make_tform(const Eigen::Matrix3d &R, const Eigen::Vector3d &t);
-	Eigen::MatrixXd pinv(const Eigen::MatrixXd &matrix, double tol = 1e-6);
+	Eigen::MatrixXd pinv(const Eigen::MatrixXd &matrix, double tol = 1e-9);
 	Eigen::Vector3d cond_matrix(const Eigen::MatrixXd &A);
 
 	void derivative_tform_inv(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix4d & dinvT, Eigen::Matrix4d & invT);
