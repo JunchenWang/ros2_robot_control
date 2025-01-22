@@ -297,22 +297,21 @@ namespace robot_math
         return Eigen::Vector3d(singular_values(0) / singular_values(n - 1), singular_values(0), singular_values(1));
     }
 
-    Eigen::MatrixXd dx_to_dq(const Eigen::MatrixXd &J, const Eigen::MatrixXd &dx, double con_threshold, double lambda)
+    Eigen::MatrixXd damping_least_square(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b, double con_threshold, double lambda)
     {
-        int m = J.cols();
-        int n = J.rows();
-        Eigen::MatrixXd JJ_t = J * J.transpose();
-        Eigen::JacobiSVD<Eigen::MatrixXd> svd(JJ_t, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        int m = A.rows();
+        int n = A.cols();
+        Eigen::MatrixXd AA_t = A * A.transpose();
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(AA_t, Eigen::ComputeThinU | Eigen::ComputeThinV);
         auto singular_values = svd.singularValues();
         double c = singular_values(0) / singular_values(m - 1);
         Eigen::MatrixXd I = Eigen::MatrixXd::Identity(n, n);
         if (c > con_threshold)
-        {
-            return (J.transpose() * J + lambda * lambda * I).ldlt().solve(J.transpose() * dx);
-        }
+            return (A.transpose() * A + lambda * lambda * I).ldlt().solve(A.transpose() * b);
         else
-            return J.transpose() * svd.solve(dx);
+            return A.transpose() * svd.solve(b);
     }
+
     void derivative_tform_inv(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix4d &dinvT, Eigen::Matrix4d &invT)
     {
         Eigen::Matrix3d dR_t = dT.block<3, 3>(0, 0).transpose();

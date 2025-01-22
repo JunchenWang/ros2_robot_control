@@ -121,7 +121,7 @@ namespace controllers
             const std::vector<double> &q = state_->get<double>("position");
             const std::vector<double> &dq = state_->get<double>("velocity");
             const std::vector<double> &ddq = state_->get<double>("acceleration");
-            const std::vector<double> &pose = state_->get<double>("pose");
+            // const std::vector<double> &pose = state_->get<double>("pose");
             const std::vector<bool> &io = state_->get<bool>("io");
             std::vector<double> &cmd_qd = command_->get<double>("velocity");
 
@@ -170,7 +170,7 @@ namespace controllers
 
             command_->get<int>("mode")[0] = 3; // speedJ
             Eigen::Map<Eigen::Vector6d> cmd_qd_map(&cmd_qd[0]);
-            cmd_qd_map = dx_to_dq(Jtcp_, Vtcp_, 1e6, 0.1);
+            cmd_qd_map = damping_least_square(Jtcp_, Vtcp_, 1e6, 0.1);
             // RCLCPP_INFO(node_->get_logger(), "cmd_qd: %f, %f, %f, %f, %f, %f", cmd_qd[0], cmd_qd[1], cmd_qd[2], cmd_qd[3], cmd_qd[4], cmd_qd[5]);
 
             // 修正力传感器读数，修正工具重力/重力矩及零点偏移，不考虑外力旋量和合力旋量（机器人运动）

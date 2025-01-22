@@ -305,7 +305,7 @@ namespace control_node
     void ControlManager::control_loop()
     {
         // for calculating sleep time
-        double dt = 1.0 / update_rate_;
+        // double dt = 1.0 / update_rate_;
         auto const period = std::chrono::nanoseconds(1'000'000'000 / update_rate_);
         auto const cm_now = std::chrono::nanoseconds(this->now().nanoseconds());
         std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>

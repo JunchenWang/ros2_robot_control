@@ -20,14 +20,14 @@ namespace robot_math
 	struct Robot
 	{
 		int dof;
-		std::vector<double> mass;
-		std::vector<std::array<double, 9>> inertia; // 3x3
-		std::vector<std::array<double, 6>> A;
-		std::vector<std::array<double, 16>> M; // 4x4
-		std::vector<std::array<double, 3>> com;
-		double ME[16];
-		double gravity[3];
-		double TCP[16];
+		std::vector<double> mass; // link mass
+		std::vector<std::array<double, 9>> inertia; // 3x3 inertia matrix
+		std::vector<std::array<double, 6>> A; // screw axis
+		std::vector<std::array<double, 16>> M; // 4x4 tform 
+		std::vector<std::array<double, 3>> com; // center of mass
+		double ME[16]; // ME is read from urdf
+		double TCP[16]; // TCP can be freely set to increase flexibility, default is identity
+		double gravity[3]; // [0, 0, -9.8] if the robot is vertically installed 
 	};
 	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name);
 	void print_robot(const Robot &robot);
@@ -51,9 +51,8 @@ namespace robot_math
 	void derivative_tform_inv(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix4d & dinvT, Eigen::Matrix4d & invT);
 	void derivative_adjoint_T(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix6d &dAdT, Eigen::Matrix6d &AdT);
 
-    // damping least squares
-	Eigen::MatrixXd dx_to_dq(const Eigen::MatrixXd &J, const Eigen::MatrixXd &dx, double con_threshold = 1e6, double lambda = 0.1);
-
+    // damping least squares Ax = b with constraint on ||x||
+	Eigen::MatrixXd damping_least_square(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b, double con_threshold = 1e6, double lambda = 0.1);
 
 	void jacobian_matrix(const Robot *robot, const std::vector<double> &q, Eigen::MatrixXd &J, Eigen::Matrix4d &T);
 	void jacobian_matrix_all(const Robot *robot, const std::vector<double> &q, std::shared_ptr<double[]> &J);
@@ -136,75 +135,6 @@ namespace robot_math
 	Eigen::Vector6d gravity_and_inertia_compensation(const Robot &robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Tsensor, const std::vector<double> &q, const std::vector<double> &dq,
 												  const std::vector<double> &ddq, const double *rawForce, double mass, const double offset[6], const double cog[3], const Eigen::Matrix3d &mI, double scale = 1.0);
 
-	// template <class T, int m, int n>
-	// coder::array<T, 1> &coder_array_1d_wrapper(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 1> array;
-	// 	array.set(M.data(), m * n);
-	// 	return array;
-	// }
-
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
-
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper1(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
-
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper2(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper3(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper4(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
-
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper5(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
-
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper6(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
-
-	// template <class T, int m, int n>
-	// coder::array<T, 2> &coder_array_wrapper7(Eigen::Matrix<T, m, n> &M)
-	// {
-	// 	static coder::array<T, 2> array;
-	// 	array.set(M.data(), m, n);
-	// 	return array;
-	// }
 } // namespace robot_math
 
 #endif // ROBOT_MATH__ROBOT_MATH_HPP_

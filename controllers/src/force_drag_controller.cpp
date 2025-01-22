@@ -130,7 +130,7 @@ namespace controllers
             V_ = V_ + dV * period.seconds();
 
             Eigen::Map<Eigen::Vector6d> dq_command(&cmd[0]);
-            dq_command = dx_to_dq(Jtcp, V_, 1e6, 0.1);
+            dq_command = damping_least_square(Jtcp, V_, 1e6, 0.1);
         }
 
     protected:
@@ -140,7 +140,7 @@ namespace controllers
         realtime_tools::RealtimeBox<std::vector<double>> offset_in_box_;
         Eigen::Matrix4d T_s_tcp_;
         Eigen::Matrix4d T_tcp_;     // tcp with respect to flange
-        Eigen::Matrix4d T_tcp_inv_; // tcp with respect to flange
+        Eigen::Matrix4d T_tcp_inv_; // T_tcp_'s inverse
         Eigen::Matrix4d T_;
         Eigen::Matrix4d T_sensor_;
         Eigen::MatrixXd J_;
