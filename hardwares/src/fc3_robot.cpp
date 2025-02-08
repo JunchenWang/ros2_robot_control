@@ -39,13 +39,14 @@ namespace hardwares
         {
             auto &&state = control_->readOnce().first;
             auto success_rate = state.control_command_success_rate;
-            // auto && mass = franka_model_->mass(state);
+            auto && mass = franka_model_->mass(state);
             auto &&coriolis = franka_model_->coriolis(state);
             auto &&gravity = franka_model_->gravity(state);
             auto &&T = state.O_T_EE;
             auto &&tau_d = state.tau_J_d;
             auto &&ext_tau = state.tau_ext_hat_filtered;
             state_.get<double>("success")[0] = success_rate;
+            std::copy(mass.begin(), mass.end(), state_.get<double>("m").begin());
             std::copy(ext_tau.begin(), ext_tau.end(), state_.get<double>("external_torque").begin());
             std::copy(tau_d.begin(), tau_d.end(), state_.get<double>("torque").begin());
             std::copy(T.begin(), T.end(), state_.get<double>("T").begin());

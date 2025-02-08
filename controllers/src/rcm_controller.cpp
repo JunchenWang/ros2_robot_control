@@ -21,12 +21,15 @@ namespace controllers
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             my_robot_= load_robot("/home/wjc/Desktop/robot_control/panda_correct.json");
+            print_robot(my_robot_);
+            std::cout << "-------------------------------------\n";
+            print_robot(*robot_);
             dof_ = robot_->dof;
             p1_F_ = Eigen::Vector3d(0, 0, 0);
             p2_F_ = Eigen::Vector3d(0, 0, 0.41);
             Kn_.setZero(dof_);
             Bn_ = 1 * Eigen::VectorXd::Ones(dof_);
-            Y_ = 1 * Eigen::VectorXd::Ones(dof_);
+            Y_ = 0 * Eigen::VectorXd::Ones(dof_);
             Kx_ << 3000, 3000, 3000;
             Bx_ << 90, 90, 90;
             return CallbackReturn::SUCCESS;
@@ -91,6 +94,7 @@ namespace controllers
             auto &cmd_torque = command_->get<double>("torque");
             auto &tau_d_vector = state_->get<double>("torque");
             auto &external_torque = state_->get<double>("external_torque");
+            auto &m_vector = state_->get<double>("m");
             Eigen::Map<Eigen::VectorXd> tau_c(cmd_torque.data(), dof_);
             Eigen::Map<const Eigen::VectorXd> tau_d(tau_d_vector.data(), dof_);
             auto &q_vector = state_->get<double>("position");
@@ -102,12 +106,14 @@ namespace controllers
             Eigen::Map<const Eigen::VectorXd> coli(&franka_c[0], dof_);
             Eigen::Map<const Eigen::VectorXd> dq(&dq_vector[0], dof_);
             Eigen::Map<const Eigen::VectorXd> q(&q_vector[0], dof_);
+            Eigen::Map<const Eigen::MatrixXd> m(&m_vector[0], dof_, dof_);
             std::fill(cmd_torque.begin(), cmd_torque.end(), 0);
             Eigen::MatrixXd M, C, Jb, dJb, dM;
             Eigen::VectorXd g;
             Eigen::Matrix4d Tb, dTb;
 
-            m_c_g_matrix(&my_robot_, q_vector, dq_vector, M, C, g, Jb, dJb, dM, dTb, Tb);
+            m_c_g_matrix(robot_, q_vector, dq_vector, M, C, g, Jb, dJb, dM, dTb, Tb);
+            std::cerr << (coli - C*dq).squaredNorm() / coli.squaredNorm() << std::endl;
             Eigen::Vector3d p1 = Tb.block<3, 3>(0, 0) * p1_F_ + Tb.block<3, 1>(0, 3);
             Eigen::Vector3d p2 = Tb.block<3, 3>(0, 0) * p2_F_ + Tb.block<3, 1>(0, 3);
             Eigen::VectorXd P = (Y_.array() * dq.array()).matrix();
@@ -124,7 +130,7 @@ namespace controllers
             double lamda = (a.dot(b) / b.dot(b));
 
             Eigen::MatrixXd J_rcm, dJ_rcm;
-            rcm_Jacobian(&my_robot_, q_vector, dq_vector, p1_F_, p2_F_, x_d_, Jb, dJb, Tb, dTb, J_rcm, dJ_rcm, x);
+            rcm_Jacobian(robot_, q_vector, dq_vector, p1_F_, p2_F_, x_d_, Jb, dJb, Tb, dTb, J_rcm, dJ_rcm, x);
             // std::cerr << cond_matrix(J_rcm * J_rcm.transpose())(0) << std::endl;
 
             // std::cout << singular_values << "\n\n";
