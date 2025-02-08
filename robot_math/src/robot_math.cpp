@@ -1,12 +1,77 @@
 #include "robot_math/robot_math.hpp"
-#include <jsoncpp/json/json.h>
-#include <iostream>
-#include <fstream>
 #include "urdf/model.h"
+#include <fstream>
 #include <iomanip>
+#include <iostream>
+#include <jsoncpp/json/json.h>
 #include <queue>
 namespace robot_math
 {
+
+    void rcm_Jacobian(const Robot *robot, const std::vector<double> &q, const std::vector<double> &dq_array,
+                      const Eigen::Vector3d &p1_F, const Eigen::Vector3d &p2_F, const Eigen::Vector3d &rcm,
+                      const Eigen::MatrixXd &Jb, const Eigen::MatrixXd &dJb, const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT,
+                      Eigen::MatrixXd &J, Eigen::MatrixXd &dJ, Eigen::Vector3d &x)
+    {
+        Eigen::Matrix4d T1, T2, invT1, invT2;
+        Eigen::Matrix3d R, dR;
+        Eigen::Vector3d t, p1, p2, v, u, dv, du;
+        Eigen::MatrixXd J1_all, dJ1_all, J2_all, dJ2_all;
+        Eigen::MatrixXd J1, J2, dJ1, dJ2, J_lambda, dJ_lambda;
+        double lambda, vn2, vn4;
+        Eigen::MatrixXd term1, term2, dterm1, dterm2;
+        int n = robot->dof;
+        Eigen::VectorXd dq(n);
+        T1 << Eigen::Matrix3d::Identity(), p1_F,
+            0, 0, 0, 1;
+        T2 << Eigen::Matrix3d::Identity(), p2_F,
+            0, 0, 0, 1;
+        R = T.block<3, 3>(0, 0);
+        dR = dT.block<3, 3>(0, 0);
+        t = T.block<3, 1>(0, 3);
+        invT1 = inv_tform(T1);
+        invT2 = inv_tform(T2);
+        J1_all = adjoint_T(invT1) * Jb;
+        dJ1_all = adjoint_T(invT1) * dJb;
+        J2_all = adjoint_T(invT2) * Jb;
+        dJ2_all = adjoint_T(invT2) * dJb;
+        J1 = R * J1_all.bottomRows(3);
+        dJ1 = dR * J1_all.bottomRows(3) + R * dJ1_all.bottomRows(3);
+        J2 = R * J2_all.bottomRows(3);
+        dJ2 = dR * J2_all.bottomRows(3) + R * dJ2_all.bottomRows(3);
+        p1 = R * p1_F + t;
+        p2 = R * p2_F + t;
+        v = p2 - p1;
+        u = rcm - p1;
+
+        std::copy(dq_array.begin(), dq_array.end(), dq.data());
+        dv = (J2 - J1) * dq;
+        du = -J1 * dq;
+        vn2 = v.dot(v);
+        vn4 = vn2 * vn2;
+        lambda = u.dot(v) / vn2;
+        x = p1 + lambda * (p2 - p1);
+        term1 = 2 * u.dot(v) * v.transpose() - (u + v).transpose() / vn2;
+        term2 = u.transpose() / vn2 - 2 * u.dot(v) * v.transpose();
+
+        // std::cout << dJ1 << "\n\n";
+        // std::cout << dJ2 << "\n\n";
+
+        J_lambda = term1 * J1 + term2 * J2;
+        dterm1 = 2 * (du.dot(v) + u.dot(dv)) * v.transpose() + 2 * u.dot(v) * dv.transpose() - ((du + dv).transpose() * vn2 - 2 * v.dot(dv) * (u + v).transpose()) / vn4;
+        dterm2 = (du.transpose() * vn2 - 2 * v.dot(dv) * u.transpose()) / vn4 - (2 * (du.dot(v) + u.dot(dv)) * v.transpose() + 2 * u.dot(v) * dv.transpose());
+        dJ_lambda = dterm1 * J1 + term1 * dJ1 + dterm2 * J2 + term2 * dJ2;
+
+        J = J1 + lambda * (J2 - J1) + v * J_lambda;
+        double dlambda = (J_lambda * dq)(0, 0);
+        dJ = dJ1 + dlambda * (J2 - J1) + lambda * (dJ2 - dJ1) + dv * J_lambda + v * dJ_lambda;
+        /*MatrixXd a,b,c,d;
+        a = dJ1 + J_lambda*dq*(J2 - J1);
+        b = lambda*(dJ2 - dJ1);
+        c = dv*J_lambda;
+        d = v*dJ_lambda;*/
+        // dJ = a+b+c+d;
+    }
 
     Eigen::Matrix4d make_tform(const Eigen::Matrix3d &R, const Eigen::Vector3d &t)
     {
@@ -101,7 +166,7 @@ namespace robot_math
             std::cout << "\n";
         }
     }
-
+    
     Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name)
     {
         urdf::Model urdf_model;
@@ -456,10 +521,11 @@ namespace robot_math
         Eigen::LDLT<Eigen::MatrixXd> ldlt2(J * tem);
         return (dtem - tem * (ldlt2.solve((dJ * tem + J * dtem)))) * ldlt2.solve(X);
     }
-    double c = 1000;
-    double cd = 5e-2;
+    // double c = 100;
+    // double cd = 5e-2;
 
-    Eigen::MatrixXd J_sharp_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &X)
+    Eigen::MatrixXd J_sharp_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &X,
+                             double c, double lambda)
     {
         Eigen::MatrixXd tem = M.ldlt().solve(J.transpose());
         Eigen::MatrixXd tem2 = J * tem;
@@ -468,7 +534,7 @@ namespace robot_math
         if (cond(0) > c)
         {
             // std::cout << "cond big " << cond(0) <<  "\n";
-            double alpha = cd; // std::max(cd, (cond(1) * cond(1) - c * cond(2) * cond(2)) / (c- 1));
+            double alpha = lambda; // std::max(cd, (cond(1) * cond(1) - c * cond(2) * cond(2)) / (c- 1));
             // std::cout <<  (cond(1) * cond(1) + alpha) / (cond(2) * cond(2) + alpha) <<  "\n";
             Eigen::MatrixXd tem3 = tem2.transpose() * tem2;
             Eigen::VectorXd d(tem2.cols());
@@ -482,7 +548,8 @@ namespace robot_math
         //    return tem * pInv(tem2) * X;
     }
 
-    Eigen::MatrixXd J_sharp_T_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &X)
+    Eigen::MatrixXd J_sharp_T_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &X
+                                , double c, double lambda)
     {
         Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
         Eigen::MatrixXd tem = ldlt.solve(J.transpose());
@@ -491,7 +558,7 @@ namespace robot_math
         if (cond(0) > c)
         {
             // std::cout << "cond big " << cond(0) <<  "\n";
-            double alpha = cd; // std::max(cd, (cond(1) * cond(1) - c * cond(2) * cond(2)) / (c- 1));
+            double alpha = lambda; // std::max(cd, (cond(1) * cond(1) - c * cond(2) * cond(2)) / (c- 1));
             // std::cout <<  (cond(1) * cond(1) + alpha) / (cond(2) * cond(2) + alpha) <<  "\n";
             Eigen::MatrixXd tem3 = tem2.transpose() * tem2;
             Eigen::VectorXd d(tem2.cols());
@@ -521,9 +588,9 @@ namespace robot_math
         return (J * tem).ldlt().solve(X);
     }
 
-    Eigen::VectorXd null_proj(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::VectorXd &v)
+    Eigen::VectorXd null_proj(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::VectorXd &v, double c, double lambda)
     {
-        return v - J_sharp_X(J, M, J * v);
+        return v - J_sharp_X(J, M, J * v, c, lambda);
     }
 
     Eigen::MatrixXd null_z(const Eigen::MatrixXd &J)
@@ -718,7 +785,6 @@ namespace robot_math
         }
     }
 
-
     Robot load_robot(const char *filename)
     {
         Json::Value root;
@@ -755,7 +821,7 @@ namespace robot_math
             M << exp_r(w), t, 0, 0, 0, 1;
             // std::cout << M << std::endl;
             for (int j = 0; j < 6; j++)
-                robot.A[i][j]= root["A"][i][j].asDouble();
+                robot.A[i][j] = root["A"][i][j].asDouble();
             for (int j = 0; j < 3; j++)
                 robot.com[i][j] = root["com"][i][j].asDouble();
         }

@@ -266,10 +266,10 @@ public:
             if (dataInfo.size > 1)
                 for (size_t i = 0; i < dataInfo.size; i++)
                 {
-                    file << dataInfo.name + to_string(i + 1) << ",";
+                    file << dataInfo.name + to_string(i + 1) << ", ";
                 }
             else
-                file << dataInfo.name << ",";
+                file << dataInfo.name << ", ";
         }
         file << endl;
 

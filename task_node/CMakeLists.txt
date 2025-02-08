@@ -7,6 +7,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(Franka REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -37,6 +38,9 @@ find_package(Boost 1.83.0 COMPONENTS odeint)
 add_executable(task_node 
               src/task_node.cpp)
 
+add_executable(franka_rcm 
+              src/franka_rcm.cpp)
+
 target_include_directories(task_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
@@ -47,12 +51,24 @@ ament_target_dependencies(task_node PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 target_link_libraries(task_node PUBLIC
                       ${Boost_LIBRARIES})
 
+
+target_include_directories(franka_rcm PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+target_compile_features(franka_rcm PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+
+ament_target_dependencies(franka_rcm PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+target_link_libraries(franka_rcm PUBLIC
+                      Franka::Franka
+                      ${Boost_LIBRARIES})
+
 # install(
 #   DIRECTORY include/
 #   DESTINATION include/${PROJECT_NAME}
 # )
 
-install(TARGETS task_node
+install(TARGETS task_node franka_rcm
   DESTINATION lib/${PROJECT_NAME})
 
 install(

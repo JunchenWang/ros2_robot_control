@@ -20,4 +20,7 @@
   <class type="controllers::AdmittanceController" base_class_type="controller_interface::ControllerInterface">
     <description>This is an admittance controller plugin.</description>
   </class>
+    <class type="controllers::RCMController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is an rcm controller plugin.</description>
+  </class>
 </library>

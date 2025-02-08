@@ -11,6 +11,9 @@
   <class type="hardwares::URRobot" base_class_type="hardware_interface::RobotInterface">
     <description>This is URRobot plugin.</description>
   </class>
+  <class type="hardwares::FC3Robot" base_class_type="hardware_interface::RobotInterface">
+    <description>This is franka FC3 plugin.</description>
+  </class>
   <class type="hardwares::FTDummySensor" base_class_type="hardware_interface::SensorInterface">
     <description>This is dummy sensor plugin.</description>
   </class>

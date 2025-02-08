@@ -181,7 +181,7 @@ namespace control_node
             }
             joint_state->header.stamp = t;
             // this is faster but may block the rt thread
-            // joint_state_publisher_->publish(*joint_state);
+            //joint_state_publisher_->publish(*joint_state);
             if (real_time_publisher_->trylock())
             {
                 real_time_publisher_->msg_ = *joint_state;

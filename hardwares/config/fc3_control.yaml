@@ -1,0 +1,30 @@
+control_node:
+  ros__parameters:
+    update_rate: 1000
+    lock_memory: true
+    simulation: false
+    sim_real_time: false
+    publish_joint_state: false
+    robot: hardwares::FC3Robot
+    controllers: 
+      - controllers::TorqueController
+      - controllers::RCMController
+
+FC3Robot:
+  ros__parameters:
+    robot_ip: 192.168.1.101
+    end_effector: ""
+    # joint interface:
+    joint_command_interface:
+      - torque 
+    joint_state_interface:
+      - position
+      - velocity
+      - torque
+    # other interface:
+    command_interface: [mode, pose]
+    command_length: [2, 6]
+    command_type: [int, double]
+    state_interface: [T, c, g, external_torque, success]
+    state_length: [16, 7, 7, 7, 1]
+    state_type: [double, double, double, double, double]

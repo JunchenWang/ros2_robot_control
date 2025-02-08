@@ -9,7 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(ur_rtde REQUIRED)
-
+find_package(Franka REQUIRED)
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   "rclcpp_lifecycle"
   "lifecycle_msgs"
@@ -44,8 +44,9 @@ ament_target_dependencies(
 )
 
 target_link_libraries(hardwares 
-                      ur_rtde::rtde             
-)
+                      ur_rtde::rtde
+                      Franka::Franka
+                      )             
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
 target_compile_definitions(hardwares PRIVATE "HARDWARES_BUILDING_LIBRARY")
@@ -75,7 +76,8 @@ ament_target_dependencies(
 )
 
 target_link_libraries(test_hardware 
-                      ur_rtde::rtde             
+                      ur_rtde::rtde 
+                      Franka::Franka            
                       )
 
 install(TARGETS test_hardware
