@@ -80,7 +80,7 @@ int main(int argc, char **argv)
                 Eigen::Vector7d Kn = 0 * Eigen::Vector7d::Ones();
                 Eigen::Vector7d Bn = 1 * Eigen::Vector7d::Ones();
                 // Eigen::Vector7d Y(8, 8, 8, 0.5, 8, 8, 8);
-                Eigen::Vector7d Y = 1 * Eigen::Vector7d::Ones();
+                Eigen::Vector7d Y = 2 * Eigen::Vector7d::Ones();
                 // Y.tail(3) << 0, 0, 0;
                 Eigen::Vector7d z = Eigen::Vector7d::Zero();
                 Eigen::Vector7d dq;
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 
                         // taoc_Filter.filtering(Tau_c.data(), Tau_c.data());
                         Tau_c = saturate_torque(Tau_c, tau_J_d);
-
+                        std::cerr << xe.norm() << std::endl;
  
                         // std::cout << lamda << "\n\n";
                         //  std::cout << dq.norm() << " " << lamda << "\n\n";
