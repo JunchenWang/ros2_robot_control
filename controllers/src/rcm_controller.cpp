@@ -20,17 +20,13 @@ namespace controllers
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            my_robot_= load_robot("/home/wjc/Desktop/robot_control/panda_correct.json");
-            // print_robot(my_robot_);
-            // std::cout << "-------------------------------------\n";
-            // print_robot(*robot_);
-            // robot_ = &my_robot_;
+
             dof_ = robot_->dof;
             p1_F_ = Eigen::Vector3d(0, 0, 0);
-            p2_F_ = Eigen::Vector3d(0, 0, 0.41);
+            p2_F_ = Eigen::Vector3d(0, 0, 0.215);
             Kn_.setZero(dof_);
             Bn_ = 1 * Eigen::VectorXd::Ones(dof_);
-            Y_ = 2 * Eigen::VectorXd::Ones(dof_);
+            Y_ = 4 * Eigen::VectorXd::Ones(dof_);
             Kx_ << 3000, 3000, 3000;
             Bx_ << 90, 90, 90;
             return CallbackReturn::SUCCESS;
@@ -53,7 +49,7 @@ namespace controllers
             Eigen::Map<const Eigen::Matrix4d> T(&T_vector[0]);
             Eigen::Vector3d p1 = T.block<3, 3>(0, 0) * p1_F_ + T.block<3, 1>(0, 3);
             Eigen::Vector3d p2 = T.block<3, 3>(0, 0) * p2_F_ + T.block<3, 1>(0, 3);
-            x_d_ = p1 + 0.21 / 0.41 * (p2 - p1);
+            x_d_ = p1 + 0.67442 * (p2 - p1);
             z_ = Eigen::VectorXd::Zero(dof_);
             P_ = Eigen::VectorXd::Zero(dof_);
             tau_x_ = Eigen::VectorXd::Zero(dof_);
@@ -61,20 +57,15 @@ namespace controllers
             disturbance_ = Eigen::VectorXd::Zero(dof_);
             external_torque_ = vector<double>(dof_, 0);
             dq_vector_ = vector<double>(dof_, 0);
+            q_vector_ = vector<double>(dof_, 0);
             cmd_torque_ = vector<double>(dof_, 0);
             data_logger_ = new DataLogger(
                 {
-                    // DATA_WRAPPER(z_),
-                    // DATA_WRAPPER(P_),
-                    // DATA_WRAPPER(tau_x_),
-                    // DATA_WRAPPER(tau_n_),
-                    DATA_WRAPPER(xe_norm_),
-                    DATA_WRAPPER(period_),
+                    DATA_WRAPPER(xe_),
                     DATA_WRAPPER(external_torque_),
                     DATA_WRAPPER(disturbance_),
-                    DATA_WRAPPER(success_rate_),
                     DATA_WRAPPER(dq_vector_),
-                    DATA_WRAPPER(cmd_torque_),
+                    DATA_WRAPPER(q_vector_),
                     DATA_WRAPPER(time_),
                 },
                 {
@@ -120,7 +111,7 @@ namespace controllers
             Eigen::Vector3d p1 = Tb.block<3, 3>(0, 0) * p1_F_ + Tb.block<3, 1>(0, 3);
             Eigen::Vector3d p2 = Tb.block<3, 3>(0, 0) * p2_F_ + Tb.block<3, 1>(0, 3);
             Eigen::VectorXd P = (Y_.array() * dq.array()).matrix();
-            if(time_ < 1e-4)
+            if (time_ < 1e-4)
             {
                 z_ = -P;
             }
@@ -139,14 +130,13 @@ namespace controllers
             // std::cout << singular_values << "\n\n";
             // std::cout << cond << "\n\n";
             Eigen::Vector3d xe = x_d_ - x;
-            
+
             Eigen::VectorXd dqe = -dq;
             Eigen::Vector3d dxe = -J_rcm * dq;
             Eigen::Vector3d ddx_c = A_x_inv(J_rcm, M) * (Mu_x_X(J_rcm, M, dJ_rcm, C, dxe) + (Bx_.array() * dxe.array()).matrix() + (Kx_.array() * xe.array()).matrix());
             // Eigen::Vector3d ddx_c = (Bx_.array() * dxe.array()).matrix() + (Kx_.array() * xe.array()).matrix();
-            double c = 1000, lambda = 5e-2;
-            Eigen::VectorXd tau_x = M * J_sharp_X(J_rcm, M, ddx_c - dJ_rcm * dq, c, lambda);
-            Eigen::VectorXd tau_n = M * null_proj(J_rcm, M, ldlt.solve((Bn_.array() * dqe.array()).matrix()), c, lambda);
+            Eigen::VectorXd tau_x = M * J_sharp_X(J_rcm, M, ddx_c - dJ_rcm * dq);
+            Eigen::VectorXd tau_n = M * null_proj(J_rcm, M, ldlt.solve((Bn_.array() * dqe.array()).matrix()));
             // std::cerr << "tau_x: " << tau_x[0] << " " << tau_x[1] << " " << tau_x[2] << " " << tau_x[3] << " " << tau_x[4] << " " << tau_x[5] << " " << tau_x[6] << std::endl;
             // std::cerr << "tau_n: " << tau_n[0] << " " << tau_n[1] << " " << tau_n[2] << " " << tau_n[3] << " " << tau_n[4] << " " << tau_n[5] << " " << tau_n[6] << std::endl;
             Eigen::VectorXd disturbance = z_ + P;
@@ -160,21 +150,24 @@ namespace controllers
             // Tau_c = tau_x + tau_n + C * dq - G + g;
             Eigen::VectorXd tem = -tau_x - tau_n + proj_disturbance - P - z_;
             // update z
-            Eigen::VectorXd tem2 =  damping_least_square(M, tem, c, 0.1);
-            z_ += (Y_.array() * tem2.array()).matrix() * period.seconds();
+            Eigen::MatrixXd pinvM = pinv(M, 1e-3);
+            // Eigen::VectorXd tem2 =  damping_least_square(M, tem, c, 0.1);
+            z_ += (Y_.array() * (pinvM * tem).array()).matrix() * period.seconds();
             // std::cerr << "z: " << z_[0] << " " << z_[1] << " " << z_[2] << " " << z_[3] << " " << z_[4] << " " << z_[5] << " " << z_[6] << std::endl;
             // std::cerr << z_.norm() << std::endl;tau_c
             tau_c = saturate_torque(tau_c, tau_d);
-            std::cerr <<  xe.norm() << " " << disturbance.norm() << " " << tau_ext.norm() << " " << tem.norm() <<  std::endl;
+            // std::cerr <<  xe.norm() << " " << disturbance.norm() << " " << tau_ext.norm() << " " << tem.norm() <<  std::endl;
             P_ = P;
             tau_x_ = tau_x;
             tau_n_ = tau_n;
-            xe_norm_ = xe.norm();
+            xe_ = xe;
             period_ = period.seconds();
             disturbance_ = disturbance;
-            external_torque_ = external_torque;
+            for (int i = 0; i < dof_; i++)
+                external_torque_[i] = -external_torque[i];
             success_rate_ = success_rate[0];
             dq_vector_ = dq_vector;
+            q_vector_ = q_vector;
             cmd_torque_ = cmd_torque;
             data_logger_->record();
         }
@@ -184,13 +177,13 @@ namespace controllers
         Eigen::Vector3d p1_F_, p2_F_, x_d_;
         Eigen::Vector3d Kx_, Bx_;
         Eigen::VectorXd Kn_, Bn_, Y_, z_;
-        Eigen::VectorXd P_, tau_x_, tau_n_, disturbance_, old_disturbance_;
-        vector<double> external_torque_, dq_vector_, cmd_torque_;
-        double xe_norm_, period_, success_rate_;
+        Eigen::VectorXd P_, tau_x_, tau_n_, disturbance_;
+        vector<double> external_torque_, dq_vector_, cmd_torque_, q_vector_;
+        double period_, success_rate_;
+        Eigen::Vector3d xe_;
         DataLogger *data_logger_;
         MovingFilter<double> d_Filter;
         double time_;
-        robot_math::Robot my_robot_;
     };
 } // namespace controllers
 

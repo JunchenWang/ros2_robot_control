@@ -39,7 +39,8 @@ add_executable(task_node
               src/task_node.cpp)
 
 add_executable(franka_rcm 
-              src/franka_rcm.cpp)
+              src/franka_rcm.cpp
+              src/DataComm.cpp)
 
 target_include_directories(task_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
