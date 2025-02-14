@@ -9,6 +9,7 @@ control_node:
     controllers: 
       - controllers::TorqueController
       - controllers::RCMController
+      - controllers::JointImpedanceController
 
 FC3Robot:
   ros__parameters:
@@ -28,3 +29,8 @@ FC3Robot:
     state_interface: [T, c, g, external_torque, success, m]
     state_length: [16, 7, 7, 7, 1, 49]
     state_type: [double, double, double, double, double, double]
+
+JointImpedanceController:
+  ros__parameters:
+    K: [600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]
+    B: [50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0]

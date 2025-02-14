@@ -50,7 +50,8 @@ add_library(controllers
             src/force_drag_controller.cpp
             src/force_drag_dev_controller.cpp
             src/admittance_controller.cpp
-            src/rcm_controller.cpp)
+            src/rcm_controller.cpp
+            src/joint_impedance_controller.cpp)
 
 add_library(controllers::controllers ALIAS controllers)
 target_compile_features(controllers PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
