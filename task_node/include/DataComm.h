@@ -1,7 +1,6 @@
 #ifndef DATACOMM_H
 #define DATACOMM_H
 
-#pragma once
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>

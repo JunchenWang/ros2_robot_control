@@ -84,3 +84,9 @@ This repository contains the following packages:
 8. hardwares
 
    various hardwares implementation.
+9. task_node
+
+   each cpp file under the src folder is an individual control task.
+
+   > * franka_rcm.cpp: the source code for our article ''Dynamic Control with a Remote Center-of-Motion Constraint for Human-Robot Collaboration'' submitted to R-CIM.
+   >

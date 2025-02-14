@@ -22,7 +22,7 @@ struct ClientData
 
 void log2file(std::ofstream &fout, std::vector<RobotData> &frames)
 {
-    for (int k = 0; k < frames.size(); k++)
+    for (std::size_t k = 0; k < frames.size(); k++)
     {
         fout << frames[k].t << "\n";
         for (int i = 0; i < 4; i++)

@@ -19,28 +19,24 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "urdf"
   "robot_math"
   "control_msgs"
+  "ament_index_cpp"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
 
-set(Boost_USE_STATIC_LIBS OFF) 
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF) 
-find_package(Boost 1.83.0 COMPONENTS odeint) 
 
-# include_directories(${Boost_INCLUDE_DIRS}) 
-
-# file(GLOB_RECURSE srcs src/*.cpp)
+file(GLOB_RECURSE utils src/utils/*.cpp)
 
 
 add_executable(task_node 
-              src/task_node.cpp)
+              src/task_node.cpp
+              ${utils})
 
 add_executable(franka_rcm 
               src/franka_rcm.cpp
-              src/DataComm.cpp)
+              ${utils})
 
 target_include_directories(task_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -62,7 +58,7 @@ ament_target_dependencies(franka_rcm PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 target_link_libraries(franka_rcm PUBLIC
                       Franka::Franka
-                      ${Boost_LIBRARIES})
+                     )
 
 # install(
 #   DIRECTORY include/
