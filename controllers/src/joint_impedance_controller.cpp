@@ -13,8 +13,6 @@ namespace controllers
         JointImpedanceController() {}
         ~JointImpedanceController()
         {
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "joint_impedance_controller");
-            delete data_logger_;
         }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -45,13 +43,11 @@ namespace controllers
                 {
                     DATA_WRAPPER(time_),
                     DATA_WRAPPER(success_rate_),
+                    DATA_WRAPPER(cal_time_),
                     DATA_WRAPPER(q_),
                     DATA_WRAPPER(dq_),
                     DATA_WRAPPER(c_),
                     DATA_WRAPPER(c_cal_),
-                    DATA_WRAPPER(tau_cmd_),
-                    DATA_WRAPPER(tau_d_),
-                    DATA_WRAPPER(qd_),
                 },
                 {
                     CONFIG_WRAPPER(K_),
@@ -63,12 +59,16 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
+            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "joint_impedance_controller");
+            delete data_logger_;
             return CallbackReturn::SUCCESS;
         }
 
         void update(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             time_ += period.seconds();
+
+            auto start_time = std::chrono::high_resolution_clock::now();
             std::vector<double> &tau_cmd_vec = command_->get<double>("torque");
             const std::vector<double> &tau_d_vec = state_->get<double>("torque");
             const std::vector<double> &tau_ext_vec = state_->get<double>("external_torque");
@@ -91,17 +91,13 @@ namespace controllers
             dqe_ = dqd_ - dq;
             tau_cmd = M_ * ddqd_ + B_.asDiagonal() * dqe_ + K_.asDiagonal() * qe_ + c;
 
-            std::cerr << "M_ * ddqd_" << M_ * ddqd_ << std::endl;
-            std::cerr << "B_.asDiagonal() * dqe_" << B_.asDiagonal() * dqe_ << std::endl;
-            std::cerr << "K_.asDiagonal() * qe_" << K_.asDiagonal() * qe_ << std::endl;
-            // tau_cmd.setZero();
-
             q_ = q;
             dq_ = dq;
             c_ = c;
             tau_d_ = tau_d;
             tau_cmd_ = tau_cmd;
 
+            cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
             data_logger_->record();
         }
 
@@ -113,7 +109,7 @@ namespace controllers
         Eigen::VectorXd K_, B_;
         Eigen::VectorXd tau_cmd_, tau_d_, tau_ext_;
         Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_;
-        double success_rate_;
+        double success_rate_, cal_time_;
         std::vector<double> K_vec_, B_vec_;
         DataLogger *data_logger_;
         double time_;
