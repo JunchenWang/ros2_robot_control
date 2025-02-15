@@ -5,9 +5,6 @@
 #include "robot_math/robot_math.hpp"
 #include <fftw3.h>
 
-using namespace std;
-using namespace Eigen;
-
 class SlidingWindow {
 public:
     // 构造函数，初始化窗口大小
@@ -30,7 +27,7 @@ public:
 
 private:
     size_t window_size_;          // 窗口大小
-    vector<double> window_;  // 存储窗口数据
+    std::vector<double> window_;  // 存储窗口数据
 };
 
 #endif // SLIDINGWINDOW
