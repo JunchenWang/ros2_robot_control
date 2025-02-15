@@ -54,9 +54,6 @@ namespace robot_math
         term1 = 2 * u.dot(v) * v.transpose() - (u + v).transpose() / vn2;
         term2 = u.transpose() / vn2 - 2 * u.dot(v) * v.transpose();
 
-        // std::cout << dJ1 << "\n\n";
-        // std::cout << dJ2 << "\n\n";
-
         J_lambda = term1 * J1 + term2 * J2;
         dterm1 = 2 * (du.dot(v) + u.dot(dv)) * v.transpose() + 2 * u.dot(v) * dv.transpose() - ((du + dv).transpose() * vn2 - 2 * v.dot(dv) * (u + v).transpose()) / vn4;
         dterm2 = (du.transpose() * vn2 - 2 * v.dot(dv) * u.transpose()) / vn4 - (2 * (du.dot(v) + u.dot(dv)) * v.transpose() + 2 * u.dot(v) * dv.transpose());
@@ -65,12 +62,6 @@ namespace robot_math
         J = J1 + lambda * (J2 - J1) + v * J_lambda;
         double dlambda = (J_lambda * dq)(0, 0);
         dJ = dJ1 + dlambda * (J2 - J1) + lambda * (dJ2 - dJ1) + dv * J_lambda + v * dJ_lambda;
-        /*MatrixXd a,b,c,d;
-        a = dJ1 + J_lambda*dq*(J2 - J1);
-        b = lambda*(dJ2 - dJ1);
-        c = dv*J_lambda;
-        d = v*dJ_lambda;*/
-        // dJ = a+b+c+d;
     }
 
     Eigen::Matrix4d make_tform(const Eigen::Matrix3d &R, const Eigen::Vector3d &t)

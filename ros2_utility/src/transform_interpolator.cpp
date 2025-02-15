@@ -1,6 +1,10 @@
 #include "ros2_utility/transform_interpolator.hpp"
 #include <iostream>
 
+using namespace std;
+using namespace robot_math;
+using namespace Eigen;
+
 // 构造函数，接收轨迹点集合
 TransformInterpolator::TransformInterpolator(const vector<Matrix4d> &T_traj, double k, double dt, bool print_detail)
     : T_traj_(T_traj),

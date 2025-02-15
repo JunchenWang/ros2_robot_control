@@ -113,6 +113,7 @@ int main(int argc, char **argv)
                 RCLCPP_ERROR(cm->get_logger(), "exception caught: %s and begin to shutdown", e.what());
             }
             cm->shutdown_robot();
+            rclcpp::shutdown();
         });
     signal(SIGINT, signal_handler);
     executor->add_node(cm);

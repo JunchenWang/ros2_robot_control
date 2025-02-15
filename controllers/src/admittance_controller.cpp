@@ -155,7 +155,7 @@ namespace controllers
         {
             command_->get<int>("mode")[0] = 0;
             data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "adm_ctrl");
-            string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
+            std::string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
             FileUtils::modifyYamlValue(yaml_file_path, "offset", offset_);
             delete data_logger_;
             delete visual_tools_;

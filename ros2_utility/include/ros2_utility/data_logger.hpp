@@ -10,9 +10,6 @@
 #include <variant>
 #include <vector>
 
-using namespace std;
-using namespace Eigen;
-
 #define NAME(var) #var
 #define DATA_WRAPPER(var)                                               \
     DataInfo                                                            \
@@ -50,26 +47,26 @@ using namespace Eigen;
  */
 class ExperimentContext
 {
-    string name;
-    vector<double> config;
+    std::string name;
+    std::vector<double> config;
     size_t cols;
 
 public:
-    ExperimentContext(string name, double config) : name(name), config({config}), cols(1) {}
-    ExperimentContext(string name, double *config, size_t size) : name(name), config(config, config + size), cols(1) {}
-    ExperimentContext(string name, vector<double> config) : name(name), config(config), cols(1) {}
-    ExperimentContext(string name, MatrixXd config) : name(name), config(config.data(), config.data() + config.size()), cols(config.cols()) {}
+    ExperimentContext(std::string name, double config) : name(name), config({config}), cols(1) {}
+    ExperimentContext(std::string name, double *config, size_t size) : name(name), config(config, config + size), cols(1) {}
+    ExperimentContext(std::string name, std::vector<double> config) : name(name), config(config), cols(1) {}
+    ExperimentContext(std::string name, Eigen::MatrixXd config) : name(name), config(config.data(), config.data() + config.size()), cols(config.cols()) {}
     /**
      * @brief 生成实验配置字符串
      *
      * @return string 实验配置字符串
      */
-    string recordConfig() const
+    std::string recordConfig() const
     {
-        string str = name + "=[";
+        std::string str = name + "=[";
         for (size_t i = 0; i < config.size(); i++)
         {
-            str += to_string(config[i]);
+            str += std::to_string(config[i]);
             // 每cols个元素用;分隔
             if ((i + 1) % cols == 0)
                 str += ";";
@@ -78,7 +75,7 @@ public:
         }
         str += "];";
         if (cols > 1)
-            str += name + "_cols=" + to_string(cols) + ";";
+            str += name + "_cols=" + std::to_string(cols) + ";";
         return str;
     }
     friend class DataLogger;
@@ -115,39 +112,39 @@ public:
  */
 class DataInfo
 {
-    string name;
-    function<void(vector<double> &)> recordData;
+    std::string name;
+    std::function<void(std::vector<double> &)> recordData;
     size_t size;
 
 public:
-    DataInfo(string name, function<const double()> getData) : name(name), size(1)
+    DataInfo(std::string name, std::function<const double()> getData) : name(name), size(1)
     {
-        recordData = [getData](vector<double> &dataLog)
+        recordData = [getData](std::vector<double> &dataLog)
         {
             dataLog.push_back(getData());
         };
     }
-    DataInfo(string name, function<const double *()> getData, size_t size) : name(name), size(size)
+    DataInfo(std::string name, std::function<const double *()> getData, size_t size) : name(name), size(size)
     {
-        recordData = [getData, size](vector<double> &dataLog)
+        recordData = [getData, size](std::vector<double> &dataLog)
         {
             const double *d = getData();
             dataLog.insert(dataLog.end(), d, d + size);
         };
     }
-    DataInfo(string name, function<vector<double>()> getData) : name(name), size(getData().size())
+    DataInfo(std::string name, std::function<std::vector<double>()> getData) : name(name), size(getData().size())
     {
-        recordData = [getData](vector<double> &dataLog)
+        recordData = [getData](std::vector<double> &dataLog)
         {
-            const vector<double> &d = getData();
+            const std::vector<double> &d = getData();
             dataLog.insert(dataLog.end(), d.begin(), d.end());
         };
     }
-    DataInfo(string name, function<MatrixXd()> getData) : name(name), size(getData().size())
+    DataInfo(std::string name, std::function<Eigen::MatrixXd()> getData) : name(name), size(getData().size())
     {
-        recordData = [getData](vector<double> &dataLog)
+        recordData = [getData](std::vector<double> &dataLog)
         {
-            const MatrixXd &d = getData();
+            const Eigen::MatrixXd &d = getData();
             dataLog.insert(dataLog.end(), d.data(), d.data() + d.size());
         };
     }
@@ -183,13 +180,13 @@ public:
 class DataLogger
 {
 private:
-    vector<double> dataLog;
-    vector<DataInfo> allDataInfo;
-    vector<ExperimentContext> allConfig;
+    std::vector<double> dataLog;
+    std::vector<DataInfo> allDataInfo;
+    std::vector<ExperimentContext> allConfig;
     size_t length;
 
 public:
-    DataLogger(initializer_list<DataInfo> allDataInfo_initializer, initializer_list<ExperimentContext> allConfig, size_t rows)
+    DataLogger(std::initializer_list<DataInfo> allDataInfo_initializer, std::initializer_list<ExperimentContext> allConfig, size_t rows)
     {
         allDataInfo = allDataInfo_initializer;
 
@@ -221,9 +218,9 @@ public:
     {
         for (size_t i = 0; i != dataLog.size(); i++)
         {
-            cout << dataLog[i] << " ";
+            std::cout << dataLog[i] << " ";
             if ((i + 1) % length == 0)
-                cout << endl;
+                std::cout << std::endl;
         }
     }
 
@@ -231,21 +228,21 @@ public:
      * @brief 保存数据到文件
      * @param prefixPath 文件路径前缀
      */
-    void save(const string prefixPath = "", string prefixName = "test", string otherComment = "") const
+    void save(const std::string prefixPath = "", std::string prefixName = "test", std::string otherComment = "") const
     {
         // 生成文件名
-        string filename = prefixPath + prefixName + "_";
-        auto now = chrono::system_clock::now();
-        auto now_c = chrono::system_clock::to_time_t(now);
-        stringstream ss;
-        ss << put_time(localtime(&now_c), "%Y-%m-%d %H-%M-%S");
+        std::string filename = prefixPath + prefixName + "_";
+        auto now = std::chrono::system_clock::now();
+        auto now_c = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(localtime(&now_c), "%Y-%m-%d %H-%M-%S");
         filename += ss.str();
         filename += ".txt";
 
-        ofstream file(filename);
+        std::ofstream file(filename);
         if (!file.is_open())
         {
-            cerr << "Error: cannot open file " << filename << endl;
+            std::cerr << "Error: cannot open file " << filename << std::endl;
             return;
         }
 
@@ -256,7 +253,7 @@ public:
         {
             file << config.recordConfig();
         }
-        file << endl;
+        file << std::endl;
 
         // file << setprecision(10); // 设置输出精度(暂时不需要)
 
@@ -266,12 +263,12 @@ public:
             if (dataInfo.size > 1)
                 for (size_t i = 0; i < dataInfo.size; i++)
                 {
-                    file << dataInfo.name + to_string(i + 1) << ", ";
+                    file << dataInfo.name + std::to_string(i + 1) << ", ";
                 }
             else
                 file << dataInfo.name << ", ";
         }
-        file << endl;
+        file << std::endl;
 
         // 写入数据
         for (size_t i = 0; i < dataLog.size(); i += length)
@@ -280,7 +277,7 @@ public:
             {
                 file << dataLog[i + j] << ", ";
             }
-            file << endl;
+            file << std::endl;
         }
 
         file.close();
@@ -291,15 +288,15 @@ public:
      * @param file_path 文件路径
      * @param data 数据
      */
-    static void appendToFile(const string &file_path, const VectorXd &data)
+    static void appendToFile(const std::string &file_path, const Eigen::VectorXd &data)
     {
-        ofstream fout(file_path, ios::app);
+        std::ofstream fout(file_path, std::ios::app);
         if (!fout)
         {
-            cout << "Failed to open file for appending: " << file_path << endl;
+            std::cout << "Failed to open file for appending: " << file_path << std::endl;
             return;
         }
-        fout << data.transpose() << endl;
+        fout << data.transpose() << std::endl;
         fout.close();
     }
 };
