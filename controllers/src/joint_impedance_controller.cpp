@@ -11,7 +11,11 @@ namespace controllers
     {
     public:
         JointImpedanceController() {}
-        ~JointImpedanceController() {}
+        ~JointImpedanceController()
+        {
+            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "joint_impedance_controller");
+            delete data_logger_;
+        }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
@@ -40,12 +44,14 @@ namespace controllers
             data_logger_ = new DataLogger(
                 {
                     DATA_WRAPPER(time_),
+                    DATA_WRAPPER(success_rate_),
                     DATA_WRAPPER(q_),
                     DATA_WRAPPER(dq_),
                     DATA_WRAPPER(c_),
                     DATA_WRAPPER(c_cal_),
                     DATA_WRAPPER(tau_cmd_),
                     DATA_WRAPPER(tau_d_),
+                    DATA_WRAPPER(qd_),
                 },
                 {
                     CONFIG_WRAPPER(K_),
@@ -57,8 +63,6 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "joint_impedance_controller");
-            delete data_logger_;
             return CallbackReturn::SUCCESS;
         }
 
@@ -71,21 +75,33 @@ namespace controllers
             const std::vector<double> &q_vec = state_->get<double>("position");
             const std::vector<double> &dq_vec = state_->get<double>("velocity");
             const std::vector<double> &c_vec = state_->get<double>("c");
+            success_rate_ = state_->get<double>("success")[0];
 
-            tau_cmd_ = Eigen::Map<Eigen::VectorXd>(tau_cmd_vec.data(), dof_);
-            tau_d_ = Eigen::Map<const Eigen::VectorXd>(tau_d_vec.data(), dof_);
-            tau_ext_ = Eigen::Map<const Eigen::VectorXd>(tau_ext_vec.data(), dof_);
-            q_ = Eigen::Map<const Eigen::VectorXd>(q_vec.data(), dof_);
-            dq_ = Eigen::Map<const Eigen::VectorXd>(dq_vec.data(), dof_);
-            c_ = Eigen::Map<const Eigen::VectorXd>(c_vec.data(), dof_);
+            Eigen::Map<Eigen::VectorXd> tau_cmd(tau_cmd_vec.data(), dof_);
+            Eigen::Map<const Eigen::VectorXd> tau_d(tau_d_vec.data(), dof_);
+            Eigen::Map<const Eigen::VectorXd> tau_ext(tau_ext_vec.data(), dof_);
+            Eigen::Map<const Eigen::VectorXd> q(q_vec.data(), dof_);
+            Eigen::Map<const Eigen::VectorXd> dq(dq_vec.data(), dof_);
+            Eigen::Map<const Eigen::VectorXd> c(c_vec.data(), dof_);
 
             m_c_g_matrix(robot_, q_vec, dq_vec, M_, C_, g_, Jb_, dJb_, dM_, dTb_, Tb_);
-            c_cal_ = C_ * dq_;  // 验证C_ * dq与机器人提供的c是否一致
+            c_cal_ = C_ * dq; // 验证C_ * dq与机器人提供的c是否一致
 
-            qe_ = qd_ - q_;
-            dqe_ = dqd_ - dq_;
-            tau_cmd_ = M_ * ddqd_ + B_ * dqe_ + K_ * qe_ + c_;
-            
+            qe_ = qd_ - q;
+            dqe_ = dqd_ - dq;
+            tau_cmd = M_ * ddqd_ + B_.asDiagonal() * dqe_ + K_.asDiagonal() * qe_ + c;
+
+            std::cerr << "M_ * ddqd_" << M_ * ddqd_ << std::endl;
+            std::cerr << "B_.asDiagonal() * dqe_" << B_.asDiagonal() * dqe_ << std::endl;
+            std::cerr << "K_.asDiagonal() * qe_" << K_.asDiagonal() * qe_ << std::endl;
+            // tau_cmd.setZero();
+
+            q_ = q;
+            dq_ = dq;
+            c_ = c;
+            tau_d_ = tau_d;
+            tau_cmd_ = tau_cmd;
+
             data_logger_->record();
         }
 
@@ -97,6 +113,7 @@ namespace controllers
         Eigen::VectorXd K_, B_;
         Eigen::VectorXd tau_cmd_, tau_d_, tau_ext_;
         Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_;
+        double success_rate_;
         std::vector<double> K_vec_, B_vec_;
         DataLogger *data_logger_;
         double time_;

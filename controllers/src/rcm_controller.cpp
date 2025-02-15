@@ -20,10 +20,10 @@ namespace controllers
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            my_robot_= load_robot("/home/wjc/Desktop/robot_control/panda_correct.json");
-            print_robot(my_robot_);
-            std::cout << "-------------------------------------\n";
-            print_robot(*robot_);
+            // my_robot_= load_robot("/home/wjc/Desktop/robot_control/panda_correct.json");
+            // print_robot(my_robot_);
+            // std::cout << "-------------------------------------\n";
+            // print_robot(*robot_);
             dof_ = robot_->dof;
             p1_F_ = Eigen::Vector3d(0, 0, 0);
             p2_F_ = Eigen::Vector3d(0, 0, 0.41);
