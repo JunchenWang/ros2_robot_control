@@ -488,12 +488,14 @@ namespace robot_math
         return AdV;
     }
 
+    // 求雅可比矩阵的右动态一致广义逆J #
     Eigen::MatrixXd J_sharp(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M)
     {
         Eigen::MatrixXd tem = M.ldlt().solve(J.transpose());
         return tem * (J * tem).inverse();
     }
-
+ 
+    // 求雅可比矩阵的右动态一致广义逆 J# 的导数 dJ#
     Eigen::MatrixXd d_J_sharp(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &dM)
     {
         Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
@@ -503,18 +505,7 @@ namespace robot_math
         return (dtem - tem * (tem2.ldlt().solve((dJ * tem + J * dtem)))) * tem2.inverse();
     }
 
-    Eigen::MatrixXd d_J_sharp_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &dM, const Eigen::MatrixXd &X)
-    {
-        Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
-        Eigen::MatrixXd tem = ldlt.solve(J.transpose());
-        Eigen::MatrixXd dtem = -ldlt.solve(dM) * ldlt.solve(J.transpose()) + ldlt.solve(dJ.transpose());
-        // Eigen::MatrixXd tem2 = J * tem;
-        Eigen::LDLT<Eigen::MatrixXd> ldlt2(J * tem);
-        return (dtem - tem * (ldlt2.solve((dJ * tem + J * dtem)))) * ldlt2.solve(X);
-    }
-    // double c = 100;
-    // double cd = 5e-2;
-
+    // 求 J#X
     Eigen::MatrixXd J_sharp_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &X,
                              double c, double lambda)
     {
@@ -537,6 +528,17 @@ namespace robot_math
         else
             return tem * (tem2).ldlt().solve(X);
         //    return tem * pInv(tem2) * X;
+    }
+
+    // 求 J#X 的导数
+    Eigen::MatrixXd d_J_sharp_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &dM, const Eigen::MatrixXd &X)
+    {
+        Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
+        Eigen::MatrixXd tem = ldlt.solve(J.transpose());
+        Eigen::MatrixXd dtem = -ldlt.solve(dM) * ldlt.solve(J.transpose()) + ldlt.solve(dJ.transpose());
+        // Eigen::MatrixXd tem2 = J * tem;
+        Eigen::LDLT<Eigen::MatrixXd> ldlt2(J * tem);
+        return (dtem - tem * (ldlt2.solve((dJ * tem + J * dtem)))) * ldlt2.solve(X);
     }
 
     Eigen::MatrixXd J_sharp_T_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &X
@@ -562,28 +564,33 @@ namespace robot_math
         // return pInv(tem2) * J * ldlt.solve(X);
     }
 
+    // 求任务空间等效惯性矩阵 Λx
     Eigen::MatrixXd A_x(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M)
     {
         Eigen::MatrixXd tem = M.ldlt().solve(J.transpose());
         return (J * tem).inverse();
     }
 
+    // 求任务空间等效惯性矩阵 Λx 的逆
     Eigen::MatrixXd A_x_inv(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M)
     {
         return J * M.ldlt().solve(J.transpose());
     }
 
+    // 求 Λx*X
     Eigen::MatrixXd A_x_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &X)
     {
         Eigen::MatrixXd tem = M.ldlt().solve(J.transpose());
         return (J * tem).ldlt().solve(X);
     }
 
+    // 将向量投影到零空间即 Nv = v - J#Jv
     Eigen::VectorXd null_proj(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::VectorXd &v, double c, double lambda)
     {
         return v - J_sharp_X(J, M, J * v, c, lambda);
     }
 
+    // 求扩展的零空间矩阵 Z
     Eigen::MatrixXd null_z(const Eigen::MatrixXd &J)
     {
         int m = J.rows();
@@ -599,21 +606,25 @@ namespace robot_math
         return Z;
     }
 
+    // 求扩展的零空间矩阵 Z 的左广义逆 Z#
     Eigen::MatrixXd z_sharp(const Eigen::MatrixXd &Z, const Eigen::MatrixXd &M)
     {
         return (Z.transpose() * M * Z).ldlt().solve(Z.transpose() * M);
     }
 
-    Eigen::MatrixXd Mu_x_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &C, const Eigen::MatrixXd &X)
-    {
-        return (J_sharp_T_X(J, M, C) - A_x_X(J, M, dJ)) * J_sharp_X(J, M, X);
-    }
-
+    // 求任务空间耦合科氏力矩阵 μx
     Eigen::MatrixXd Mu_x(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &C)
     {
         return (J_sharp_T_X(J, M, C) - A_x_X(J, M, dJ)) * J_sharp(J, M);
     }
 
+    // 求 μx*X
+    Eigen::MatrixXd Mu_x_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &C, const Eigen::MatrixXd &X)
+    {
+        return (J_sharp_T_X(J, M, C) - A_x_X(J, M, dJ)) * J_sharp_X(J, M, X);
+    }
+
+    // 求 Z 的导数
     Eigen::MatrixXd d_null_z(const Eigen::MatrixXd &J, const Eigen::MatrixXd &dJ)
     {
         int m = J.rows();
@@ -633,6 +644,7 @@ namespace robot_math
         return dZ;
     }
 
+    // 求 Z# 的导数
     Eigen::MatrixXd d_z_sharp(const Eigen::MatrixXd &Z, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dZ, const Eigen::MatrixXd &dM)
     {
         Eigen::LDLT<Eigen::MatrixXd> ldlt(Z.transpose() * M * Z);
@@ -645,26 +657,31 @@ namespace robot_math
         return -ldlt.solve(dtem1) * ldlt.solve(tem2) + ldlt.solve(dtem2);
     }
 
+    // 求零空间等效惯性矩阵 Λv
     Eigen::MatrixXd A_v(const Eigen::MatrixXd &Z, const Eigen::MatrixXd &M)
     {
         return Z.transpose() * M * Z;
     }
 
+    // 求零空间耦合科氏力矩阵 μv
     Eigen::MatrixXd Mu_v(const Eigen::MatrixXd &Z, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dZ, const Eigen::MatrixXd &dM, const Eigen::MatrixXd &C)
     {
         return (Z.transpose() * C - A_v(Z, M) * d_z_sharp(Z, M, dZ, dM)) * Z;
     }
 
+    // 求 μ_xv
     Eigen::MatrixXd Mu_xv(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &Z, const Eigen::MatrixXd &C)
     {
         return (J_sharp_T_X(J, M, C) - A_x_X(J, M, dJ)) * Z;
     }
 
+    // 求 μ_vx
     Eigen::MatrixXd Mu_vx(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dZ, const Eigen::MatrixXd &dM, const Eigen::MatrixXd &Z, const Eigen::MatrixXd &C)
     {
         return (Z.transpose() * C - A_v(Z, M) * d_z_sharp(Z, M, dZ, dM)) * J_sharp(J, M);
     }
 
+    // 求 μ_vx*X
     Eigen::MatrixXd Mu_vx_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &Z, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dZ, const Eigen::MatrixXd &dM, const Eigen::MatrixXd &C, const Eigen::MatrixXd &X)
     {
         return (Z.transpose() * C - A_v(Z, M) * d_z_sharp(Z, M, dZ, dM)) * J_sharp_X(J, M, X);

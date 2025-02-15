@@ -26,4 +26,10 @@
   <class type="controllers::JointImpedanceController" base_class_type="controller_interface::ControllerInterface">
     <description>This is an joint impedance controller plugin.</description>
   </class>
+  <class type="controllers::CartesianImpedancePDController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is an cartesian impedance pd controller plugin.</description>
+  </class>
+  <class type="controllers::CartesianImpedancePDPlusController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is an cartesian impedance pd+ controller plugin.</description>
+  </class>
 </library>
