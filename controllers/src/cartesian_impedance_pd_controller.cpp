@@ -101,7 +101,7 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "cartesian_impedance_pd_controller");
+            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/cartesian_impedance_pd_controller/", "cartesian_impedance_pd_controller");
             delete data_logger_;
             return CallbackReturn::SUCCESS;
         }
@@ -123,13 +123,13 @@ namespace controllers
             Eigen::Map<const Eigen::VectorXd> c(c_vec.data(), dof_);
 
             Kx_in_box_.try_get([=](auto const &value)
-                              { Kx_vec_ = value; });
+                               { Kx_vec_ = value; });
             Bx_in_box_.try_get([=](auto const &value)
-                              { Bx_vec_ = value; });
+                               { Bx_vec_ = value; });
             Kn_in_box_.try_get([=](auto const &value)
-                              { Kn_vec_ = value; });
+                               { Kn_vec_ = value; });
             Bn_in_box_.try_get([=](auto const &value)
-                              { Bn_vec_ = value; });
+                               { Bn_vec_ = value; });
             Kx_ = Eigen::Map<Eigen::VectorXd>(Kx_vec_.data(), dof_);
             Bx_ = Eigen::Map<Eigen::VectorXd>(Bx_vec_.data(), dof_);
             Kn_ = Eigen::Map<Eigen::VectorXd>(Kn_vec_.data(), dof_);
@@ -139,6 +139,7 @@ namespace controllers
 
             R_ = Tb_.block(0, 0, 3, 3);
             p_ = Tb_.block(0, 3, 3, 1);
+
             qe_ = qd_ - q;
             dqe_ = dqd_ - dq;
 
@@ -149,19 +150,22 @@ namespace controllers
 
             xe_.head(3) = logR(R_.transpose() * Rd_);
             xe_.tail(3) = pd_ - p_;
-            dxe_.head(3) = R_.transpose() * (wd_ - w_);
-            dxe_.tail(3) = vd_ - v_;
-            tau_task_ = M_ * J_sharp(Jh_, M_) * (ddxd_ + Bx_.asDiagonal() * dxe_ + Kx_.asDiagonal() * xe_ - dJh_ * q);
+            dxe_.head(3) = R_.transpose() * wd_ - (Jh_ * dq).head(3);
+            dxe_.tail(3) = vd_ - (Jh_ * dq).tail(3);
+            tau_task_ = M_ * J_sharp(Jh_, M_) * (ddxd_ + Bx_.asDiagonal() * dxe_ + Kx_.asDiagonal() * xe_ - dJh_ * dq);
+            Eigen::Vector6d a(ddxd_ + Bx_.asDiagonal() * dxe_ + Kx_.asDiagonal() * xe_ - dJh_ * dq);
+            std::cerr << a[0] << " " << a[1] << " " << a[2] << " " << a[3] << " " << a[4] << " " << a[5] << std::endl;
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M_);
-            tau_null_ = M_ * null_proj(Jh_, M_, ddqd_ + Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_);
+            tau_null_ = M_ * null_proj(Jh_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
+            tau_null_.setZero();
             tau_cmd = tau_task_ + tau_null_ + c;
 
             q_ = q;
             dq_ = dq;
             tau_cmd_ = tau_cmd;
 
-            log2Channel(robot_data_, 0, xe_.data(), 3);
-            log2Channel(robot_data_, 1, dxe_.data(), 3);
+            log2Channel(robot_data_, 0, xe_.head(3).data(), 3);
+            log2Channel(robot_data_, 1, xe_.tail(3).data(), 3);
             log2Channel(robot_data_, 2, tau_task_.data(), dof_);
             log2Channel(robot_data_, 3, tau_null_.data(), dof_);
             robot_data_.t = time_;
@@ -182,7 +186,7 @@ namespace controllers
         Eigen::Vector6d xe_, dxe_, ddxd_;
         Eigen::Matrix3d Rd_, R_;
         Eigen::Matrix6d Thb_, dThb_;
-        Eigen::Vector3d pd_, p_, wd_, w_, vd_, v_;
+        Eigen::Vector3d pd_, p_, wd_, vd_;
         double success_rate_, cal_time_;
         realtime_tools::RealtimeBox<std::vector<double>> Kx_in_box_, Bx_in_box_, Kn_in_box_, Bn_in_box_;
         std::vector<double> Kx_vec_, Bx_vec_, Kn_vec_, Bn_vec_;

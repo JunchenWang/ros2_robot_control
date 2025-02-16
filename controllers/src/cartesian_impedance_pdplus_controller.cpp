@@ -101,7 +101,7 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "cartesian_impedance_pdplus_controller");
+            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/cartesian_impedance_pdplus_controller/", "cartesian_impedance_pdplus_controller");
             delete data_logger_;
             return CallbackReturn::SUCCESS;
         }
@@ -156,6 +156,7 @@ namespace controllers
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M_);
             tau_null_ = M_ * null_proj(Jh_, M_, ddqd_ + Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_);
             tau_cmd = tau_task_ + tau_null_ + c;
+            tau_cmd.setZero();
 
             q_ = q;
             dq_ = dq;

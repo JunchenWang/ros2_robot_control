@@ -10,6 +10,8 @@ control_node:
       - controllers::TorqueController
       - controllers::RCMController
       - controllers::JointImpedanceController
+      - controllers::CartesianImpedancePDController
+      - controllers::CartesianImpedancePDPlusController
 
 FC3Robot:
   ros__parameters:
@@ -37,14 +39,14 @@ JointImpedanceController:
 
 CartesianImpedancePDController:
   ros__parameters:
-    Kt: [10.0, 10.0, 10.0, 100.0, 100.0, 100.0]
-    Bt: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+    Kx: [10.0, 10.0, 10.0, 100.0, 100.0, 100.0]
+    Bx: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
     Kn: [60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0]
     Bn: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
 
 CartesianImpedancePDPlusController:
   ros__parameters:
-    Kt: [10.0, 10.0, 10.0, 100.0, 100.0, 100.0]
-    Bt: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+    Kx: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
+    Bx: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
     Kn: [60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0]
     Bn: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]

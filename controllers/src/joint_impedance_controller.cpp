@@ -79,7 +79,7 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "joint_impedance_controller");
+            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/joint_impedance_controller/", "joint_impedance_controller");
             delete data_logger_;
             return CallbackReturn::SUCCESS;
         }
