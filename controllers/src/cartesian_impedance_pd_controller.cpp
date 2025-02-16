@@ -15,7 +15,14 @@ namespace controllers
     {
     public:
         CartesianImpedancePDController() {}
-        ~CartesianImpedancePDController() {}
+        ~CartesianImpedancePDController()
+        {
+            if (data_logger_)
+            {
+                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/cartesian_impedance_pd_controller/", "cartesian_impedance_pd_controller");
+                delete data_logger_;
+            }
+        }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
@@ -101,8 +108,6 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/cartesian_impedance_pd_controller/", "cartesian_impedance_pd_controller");
-            delete data_logger_;
             return CallbackReturn::SUCCESS;
         }
 
@@ -153,11 +158,8 @@ namespace controllers
             dxe_.head(3) = R_.transpose() * wd_ - (Jh_ * dq).head(3);
             dxe_.tail(3) = vd_ - (Jh_ * dq).tail(3);
             tau_task_ = M_ * J_sharp(Jh_, M_) * (ddxd_ + Bx_.asDiagonal() * dxe_ + Kx_.asDiagonal() * xe_ - dJh_ * dq);
-            Eigen::Vector6d a(ddxd_ + Bx_.asDiagonal() * dxe_ + Kx_.asDiagonal() * xe_ - dJh_ * dq);
-            std::cerr << a[0] << " " << a[1] << " " << a[2] << " " << a[3] << " " << a[4] << " " << a[5] << std::endl;
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M_);
             tau_null_ = M_ * null_proj(Jh_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
-            tau_null_.setZero();
             tau_cmd = tau_task_ + tau_null_ + c;
 
             q_ = q;
