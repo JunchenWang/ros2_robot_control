@@ -93,6 +93,8 @@ namespace controllers
                     DATA_WRAPPER(cal_time_),
                     DATA_WRAPPER(q_),
                     DATA_WRAPPER(dq_),
+                    DATA_WRAPPER(xe_),
+                    DATA_WRAPPER(dxe_),
                     DATA_WRAPPER(tau_task_),
                     DATA_WRAPPER(tau_null_),
                 },
@@ -144,7 +146,6 @@ namespace controllers
 
             R_ = Tb_.block(0, 0, 3, 3);
             p_ = Tb_.block(0, 3, 3, 1);
-
             qe_ = qd_ - q;
             dqe_ = dqd_ - dq;
 
@@ -157,7 +158,9 @@ namespace controllers
             xe_.tail(3) = pd_ - p_;
             dxe_.head(3) = R_.transpose() * wd_ - (Jh_ * dq).head(3);
             dxe_.tail(3) = vd_ - (Jh_ * dq).tail(3);
-            tau_task_ = M_ * J_sharp(Jh_, M_) * (ddxd_ + Bx_.asDiagonal() * dxe_ + Kx_.asDiagonal() * xe_ - dJh_ * dq);
+
+            ddxc_ = ddxd_ + Bx_.asDiagonal() * dxe_ + Kx_.asDiagonal() * xe_ - dJh_ * dq;
+            tau_task_ = M_ * J_sharp(Jh_, M_) * ddxc_;
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M_);
             tau_null_ = M_ * null_proj(Jh_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
             tau_cmd = tau_task_ + tau_null_ + c;
@@ -185,7 +188,7 @@ namespace controllers
         Eigen::VectorXd Kx_, Bx_, Kn_, Bn_;
         Eigen::VectorXd tau_cmd_, tau_task_, tau_null_;
         Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_;
-        Eigen::Vector6d xe_, dxe_, ddxd_;
+        Eigen::Vector6d xe_, dxe_, ddxd_, ddxc_;
         Eigen::Matrix3d Rd_, R_;
         Eigen::Matrix6d Thb_, dThb_;
         Eigen::Vector3d pd_, p_, wd_, vd_;

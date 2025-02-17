@@ -15,7 +15,14 @@ namespace controllers
     {
     public:
         CartesianImpedancePDPlusController() {}
-        ~CartesianImpedancePDPlusController() {}
+        ~CartesianImpedancePDPlusController()
+        {
+            if (data_logger_)
+            {
+                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/cartesian_impedance_pdplus_controller/", "cartesian_impedance_pdplus_controller");
+                delete data_logger_;
+            }
+        }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
@@ -86,6 +93,8 @@ namespace controllers
                     DATA_WRAPPER(cal_time_),
                     DATA_WRAPPER(q_),
                     DATA_WRAPPER(dq_),
+                    DATA_WRAPPER(xe_),
+                    DATA_WRAPPER(dxe_),
                     DATA_WRAPPER(tau_task_),
                     DATA_WRAPPER(tau_null_),
                 },
@@ -101,8 +110,6 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/cartesian_impedance_pdplus_controller/", "cartesian_impedance_pdplus_controller");
-            delete data_logger_;
             return CallbackReturn::SUCCESS;
         }
 
@@ -149,22 +156,24 @@ namespace controllers
 
             xe_.head(3) = logR(R_.transpose() * Rd_);
             xe_.tail(3) = pd_ - p_;
-            dxe_.head(3) = R_.transpose() * (wd_ - w_);
-            dxe_.tail(3) = vd_ - v_;
-            tau_task_ = M_ * J_sharp(Jh_, M_) * (ddxd_ + A_x_inv(Jh_, M_) * (Mu_x(Jh_, M_, dJh_, c) + Eigen::MatrixXd(Bx_.asDiagonal())) * dxe_ 
-                        + A_x_inv(Jh_, M_) * Kx_.asDiagonal() * xe_ - dJh_ * q);
+            dxe_.head(3) = R_.transpose() * wd_ - (Jh_ * dq).head(3);
+            dxe_.tail(3) = vd_ - (Jh_ * dq).tail(3);
+            ddxc_ = ddxd_ +  A_x_inv(Jh_, M_) * (Mu_x_X(Jh_, M_, dJh_, C_, dxe_) + Bx_.asDiagonal() * dxe_ +
+                   Kx_.asDiagonal() * xe_) - dJh_ * dq;
+
+            tau_task_ = M_ * J_sharp_X(Jh_, M_, ddxc_);
+
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M_);
-            tau_null_ = M_ * null_proj(Jh_, M_, ddqd_ + Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_);
-            tau_cmd = tau_task_ + tau_null_ + c;
-            tau_cmd.setZero();
+            tau_null_ = M_ * null_proj(Jh_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
+            tau_cmd = tau_task_ + tau_null_ + C_*dq;
 
             q_ = q;
             dq_ = dq;
             tau_cmd_ = tau_cmd;
 
-            log2Channel(robot_data_, 0, xe_.data(), 3);
-            log2Channel(robot_data_, 1, dxe_.data(), 3);
-            log2Channel(robot_data_, 2, tau_task_.data(), dof_);
+            log2Channel(robot_data_, 0, xe_.data(), 6);
+            log2Channel(robot_data_, 1, dxe_.data(), 6);
+            log2Channel(robot_data_, 2, tau_task_.data(), 6);
             log2Channel(robot_data_, 3, tau_null_.data(), dof_);
             robot_data_.t = time_;
             DataComm::getInstance()->sendRobotStatus(robot_data_);
@@ -181,10 +190,10 @@ namespace controllers
         Eigen::VectorXd Kx_, Bx_, Kn_, Bn_;
         Eigen::VectorXd tau_cmd_, tau_task_, tau_null_;
         Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_;
-        Eigen::Vector6d xe_, dxe_, ddxd_;
+        Eigen::Vector6d xe_, dxe_, ddxd_, ddxc_;
         Eigen::Matrix3d Rd_, R_;
         Eigen::Matrix6d Thb_, dThb_;
-        Eigen::Vector3d pd_, p_, wd_, w_, vd_, v_;
+        Eigen::Vector3d pd_, p_, wd_, vd_;
         double success_rate_, cal_time_;
         realtime_tools::RealtimeBox<std::vector<double>> Kx_in_box_, Bx_in_box_, Kn_in_box_, Bn_in_box_;
         std::vector<double> Kx_vec_, Bx_vec_, Kn_vec_, Bn_vec_;
