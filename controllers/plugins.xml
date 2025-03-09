@@ -21,15 +21,21 @@
     <description>This is an admittance controller plugin.</description>
   </class>
   <class type="controllers::RCMController" base_class_type="controller_interface::ControllerInterface">
-    <description>This is an rcm controller plugin.</description>
+    <description>This is a rcm controller plugin.</description>
   </class>
   <class type="controllers::JointImpedanceController" base_class_type="controller_interface::ControllerInterface">
-    <description>This is an joint impedance controller plugin.</description>
+    <description>This is a joint impedance controller plugin.</description>
   </class>
   <class type="controllers::CartesianImpedancePDController" base_class_type="controller_interface::ControllerInterface">
-    <description>This is an cartesian impedance pd controller plugin.</description>
+    <description>This is a cartesian impedance pd controller plugin.</description>
   </class>
   <class type="controllers::CartesianImpedancePDPlusController" base_class_type="controller_interface::ControllerInterface">
-    <description>This is an cartesian impedance pd+ controller plugin.</description>
+    <description>This is a cartesian impedance pd+ controller plugin.</description>
+  </class>
+  <class type="controllers::VirtualFixturePlaneController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a planar virtual fixture controller plugin.</description>
+  </class>
+  <class type="controllers::VirtualFixtureLineController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a linear virtual fixture controller plugin.</description>
   </class>
 </library>

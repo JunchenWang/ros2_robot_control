@@ -12,6 +12,7 @@ control_node:
       - controllers::JointImpedanceController
       - controllers::CartesianImpedancePDController
       - controllers::CartesianImpedancePDPlusController
+      - controllers::VirtualFixturePlaneController
 
 FC3Robot:
   ros__parameters:
@@ -50,5 +51,19 @@ CartesianImpedancePDPlusController:
   ros__parameters:
     Kx: [20.0, 20.0, 20.0, 80.0, 80.0, 80.0]
     Bx: [8.0, 8.0, 8.0, 17.0, 17.0, 17.0]
+    Kn: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+    Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
+
+VirtualFixturePlaneController:
+  ros__parameters:
+    Ku: [20.0, 20.0, 20.0, 80.0, 80.0, 80.0]
+    Bu: [8.0, 8.0, 8.0, 17.0, 17.0, 17.0]
+    Kn: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+    Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
+
+VirtualFixtureLineController:
+  ros__parameters:
+    Ku: [20.0, 20.0, 20.0, 80.0, 80.0, 80.0]
+    Bu: [8.0, 8.0, 8.0, 17.0, 17.0, 17.0]
     Kn: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
     Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
