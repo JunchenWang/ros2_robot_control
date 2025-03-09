@@ -27,11 +27,11 @@ namespace controllers
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             dof_ = robot_->dof;
-            u_num_ = 2;
-            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {10.0, 10.0, 10.0, 100.0, 100.0, 100.0});
-            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {10.0, 10.0, 10.0, 100.0, 100.0, 100.0});
-            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
+            u_num_ = 1;
+            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {10.0});
+            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {10.0});
+            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
+            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0});
             Ku_in_box_.set(Ku_vec_);
             Bu_in_box_.set(Bu_vec_);
             Kn_in_box_.set(Kn_vec_);
@@ -130,8 +130,8 @@ namespace controllers
                                { Kn_vec_ = value; });
             Bn_in_box_.try_get([=](auto const &value)
                                { Bn_vec_ = value; });
-            Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), dof_);
-            Bu_ = Eigen::Map<Eigen::VectorXd>(Bu_vec_.data(), dof_);
+            Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_);
+            Bu_ = Eigen::Map<Eigen::VectorXd>(Bu_vec_.data(), u_num_);
             Kn_ = Eigen::Map<Eigen::VectorXd>(Kn_vec_.data(), dof_);
             Bn_ = Eigen::Map<Eigen::VectorXd>(Bn_vec_.data(), dof_);
 
@@ -174,18 +174,18 @@ namespace controllers
 
     protected:
         rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle_;
-        int dof_;
+        int dof_, u_num_;
         Eigen::MatrixXd M_, C_, Jb_, dJb_, dM_, Jh_, dJh_, Ju_, dJu_;
         Eigen::VectorXd g_, q_, dq_;
         Eigen::Matrix4d Tb_, dTb_;
         Eigen::VectorXd Ku_, Bu_, Kn_, Bn_;
         Eigen::VectorXd tau_cmd_, tau_task_, tau_null_;
-        Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_;
-        Eigen::Vector6d ue_, due_, dduc_;
+        Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_, ue_, due_;
+        Eigen::Vector6d dduc_;
         Eigen::Matrix3d Rd_, R_;
         Eigen::Matrix6d Thb_, dThb_;
         Eigen::Vector3d pd_, p_;
-        double success_rate_, cal_time_, u_num_, z0_;
+        double success_rate_, cal_time_, z0_;
         realtime_tools::RealtimeBox<std::vector<double>> Ku_in_box_, Bu_in_box_, Kn_in_box_, Bn_in_box_;
         std::vector<double> Ku_vec_, Bu_vec_, Kn_vec_, Bn_vec_;
         DataLogger *data_logger_;

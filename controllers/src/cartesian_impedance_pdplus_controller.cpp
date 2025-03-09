@@ -29,8 +29,8 @@ namespace controllers
             dof_ = robot_->dof;
             node_->get_parameter_or<std::vector<double>>("Kx", Kx_vec_, {10.0, 10.0, 10.0, 100.0, 100.0, 100.0});
             node_->get_parameter_or<std::vector<double>>("Bx", Bx_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {10.0, 10.0, 10.0, 100.0, 100.0, 100.0});
-            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
+            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
+            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0});
             Kx_in_box_.set(Kx_vec_);
             Bx_in_box_.set(Bx_vec_);
             Kn_in_box_.set(Kn_vec_);
