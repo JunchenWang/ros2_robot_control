@@ -33,15 +33,6 @@ from launch.event_handlers.on_process_start import OnProcessStart
 
 def generate_launch_description():
 
-    # rviz_file = PathJoinSubstitution(
-    #             [
-    #                 FindPackageShare("ur_description"),
-    #                 "rviz",
-    #                 "view_robot.rviz"
-    #             ]
-    #         )
-
-    # 使用hardwares包中的ur5e配置文件
     rviz_file = PathJoinSubstitution(
             [
                 FindPackageShare("franka_description"),
@@ -85,8 +76,6 @@ def generate_launch_description():
     # with open("urdf/fr3.urdf", "w") as f:
     #     f.write(robot_description)
     #     f.close()
-
-   
   
     robot_state_publisher = Node(
             package="robot_state_publisher",
@@ -126,12 +115,9 @@ def generate_launch_description():
             # ),
             ]
 
-
- 
-
     nodes = arguments  + [
             # robot_state_publisher,
-            # rviz_node,
+            rviz_node,
             # robot_monitor,
             control_node,
             ]

@@ -17,8 +17,19 @@ namespace controllers
     {
     public:
         AdmittanceController() : f_tol_({0.1, 0.1, 0.1, 1, 1, 1}),
-                                 inv_tol_({1e-7, 1e-5})
+                                 inv_tol_({1e-7, 1e-5}) {}
+        ~AdmittanceController()
         {
+            command_->get<int>("mode")[0] = 0;
+            std::string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
+            FileUtils::modifyYamlValue(yaml_file_path, "offset", offset_);
+            if (data_logger_)
+            {
+                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/adm_ctrl/", "adm_ctrl");
+                delete data_logger_;
+            }
+            if (visual_tools_)
+                delete visual_tools_;
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
@@ -145,20 +156,12 @@ namespace controllers
                     CONFIG_WRAPPER(kp_),
                 },
                 1000);
-
             visual_tools_ = new ROS2VisualTools(node_);
-
             return CallbackReturn::SUCCESS;
         }
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            command_->get<int>("mode")[0] = 0;
-            data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "adm_ctrl");
-            std::string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
-            FileUtils::modifyYamlValue(yaml_file_path, "offset", offset_);
-            delete data_logger_;
-            delete visual_tools_;
             return CallbackReturn::SUCCESS;
         }
 
@@ -268,5 +271,4 @@ namespace controllers
     };
 }
 #include <pluginlib/class_list_macros.hpp>
-
 PLUGINLIB_EXPORT_CLASS(controllers::AdmittanceController, controller_interface::ControllerInterface)

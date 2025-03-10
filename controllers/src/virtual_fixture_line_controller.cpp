@@ -6,6 +6,7 @@
 #include "ros2_utility/data_comm.hpp"
 #include "ros2_utility/data_logger.hpp"
 #include "ros2_utility/file_utils.hpp"
+#include "ros2_utility/ros2_visual_tools.hpp"
 #include <iostream>
 
 using namespace robot_math;
@@ -22,6 +23,8 @@ namespace controllers
                 data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/virtual_fixture_line_controller/", "virtual_fixture_line_controller");
                 delete data_logger_;
             }
+            if (visual_tools_)
+                delete visual_tools_;
         }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -101,6 +104,7 @@ namespace controllers
                     CONFIG_WRAPPER(Bn_vec_),
                 },
                 1000);
+            visual_tools_ = new ROS2VisualTools(node_);
             return CallbackReturn::SUCCESS;
         }
 
@@ -174,6 +178,7 @@ namespace controllers
             log2Channel(robot_data_, 3, tau_null_.data(), dof_);
             robot_data_.t = time_;
             DataComm::getInstance()->sendRobotStatus(robot_data_);
+            visual_tools_->publishMarker(p_, "base", 0.15);
             cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
             data_logger_->record();
         }
@@ -195,11 +200,11 @@ namespace controllers
         realtime_tools::RealtimeBox<std::vector<double>> Ku_in_box_, Bu_in_box_, Kn_in_box_, Bn_in_box_;
         std::vector<double> Ku_vec_, Bu_vec_, Kn_vec_, Bn_vec_;
         DataLogger *data_logger_;
+        ROS2VisualTools *visual_tools_;
         double time_;
         RobotData robot_data_;
     };
 } // namespace controllers
 
 #include <pluginlib/class_list_macros.hpp>
-
 PLUGINLIB_EXPORT_CLASS(controllers::VirtualFixtureLineController, controller_interface::ControllerInterface)
