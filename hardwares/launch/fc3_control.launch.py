@@ -100,7 +100,6 @@ def generate_launch_description():
         output="both",
     )
 
-
     robot_monitor = Node(
             package='robot_monitor',
             executable='robot_monitor',
@@ -116,7 +115,7 @@ def generate_launch_description():
             ]
 
     nodes = arguments  + [
-            # robot_state_publisher,
+            robot_state_publisher,
             rviz_node,
             # robot_monitor,
             control_node,

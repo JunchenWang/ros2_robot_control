@@ -4,7 +4,7 @@ control_node:
     lock_memory: true
     simulation: false
     sim_real_time: false
-    publish_joint_state: false
+    publish_joint_state: true
     robot: hardwares::FC3Robot
     controllers: 
       - controllers::TorqueController
@@ -57,14 +57,14 @@ CartesianImpedancePDPlusController:
 
 VirtualFixturePlaneController:
   ros__parameters:
-    Ku: [500.0]
-    Bu: [50.0]
+    Ku: [1000.0]
+    Bu: [70.0]
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
 
 VirtualFixtureLineController:
   ros__parameters:
-    Ku: [500.0, 500.0]
+    Ku: [3000.0, 3000.0]
     Bu: [50.0, 50.0]
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
