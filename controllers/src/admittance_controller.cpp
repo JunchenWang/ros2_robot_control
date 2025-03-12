@@ -246,7 +246,7 @@ namespace controllers
             data_logger_->record();
             Eigen::Matrix4d Tatcp = pose_to_tform(pose) * Tcp_;
             visual_tools_->broadcastTransform(Tatcp, "base", "end_effector");
-            visual_tools_->publishMarker(Tatcp.block(0, 3, 3, 1), "base", 0.15);
+            visual_tools_->publishLineMarker(Tatcp.block(0, 3, 3, 1), "base", 1);
         }
 
     protected:

@@ -2,20 +2,20 @@
 #define ROS2_VISUAL_TOOLS_HPP
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "robot_math/robot_math.hpp"
+#include <eigen3/Eigen/Dense>
 #include <fstream>
 #include <geometry_msgs/msg/transform_stamped.hpp>
-#include <visualization_msgs/msg/marker.hpp>
 #include <tf2_ros/transform_broadcaster.h>
-#include <eigen3/Eigen/Dense>
-#include "robot_math/robot_math.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include <visualization_msgs/msg/marker.hpp>
 
 // ROS2VisualTools类，封装了TF广播和Marker发布功能
 class ROS2VisualTools
 {
 public:
     // 构造函数，初始化ROS2节点和发布器
-    ROS2VisualTools(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node);
+    ROS2VisualTools(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode> &node);
 
     // 广播TF变换，更新坐标系之间的转换关系
     // @param transform_matrix 4×4齐次变换矩阵
@@ -25,11 +25,12 @@ public:
         const Eigen::Matrix4d &transform_matrix,
         const std::string &frame_id,
         const std::string &child_frame_id);
-    // 发布Marker，用于可视化
+    // 发布点和线Marker，用于可视化
     // @param position Marker的位置，Eigen::Vector3d 格式
     // @param frame_id Marker所在的坐标系ID
     // @param marker_size Marker的大小，默认为1.0
-    void publishMarker(const Eigen::Vector3d &position, const std::string &frame_id, double marker_size = 1.0);
+    void publishPointMarker(const Eigen::Vector3d &position, const std::string &frame_id, double marker_size = 1.0);
+    void publishLineMarker(const Eigen::Vector3d &position, const std::string &frame_id, double marker_size = 1.0);
 
     // 保存任意长度的向量数据到文件
     void saveToFile(const Eigen::VectorXd &data, const std::string &file_path);
@@ -37,6 +38,12 @@ public:
 private:
     // 发布器，用于发送Marker消息到Rviz等可视化工具
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
+    const size_t PUBLISH_INTERVAL = 10;                  // 每10次控制周期发布一次线段
+    const size_t MAX_POINTS = 3000;                      // 最大存储点数
+    size_t publish_counter_ = 0;                         // 发布计数器
+    visualization_msgs::msg::Marker line_marker_;        // 线段Marker对象
+    visualization_msgs::msg::Marker point_marker_;       // 点Marker对象
+    std::vector<geometry_msgs::msg::Point> path_points_; // 存储历史点
 
     // TF广播器，用于广播TF变换
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;

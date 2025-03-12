@@ -149,7 +149,7 @@ namespace controllers
             log2Channel(robot_data_, 3, tau_ext_vec.data(), dof_);
             robot_data_.t = time_;
             DataComm::getInstance()->sendRobotStatus(robot_data_);
-            visual_tools_->publishMarker(p_, "base", 0.5);
+            visual_tools_->publishLineMarker(p_, "base", 1);
             cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
             data_logger_->record();
         }
