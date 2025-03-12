@@ -57,14 +57,16 @@ CartesianImpedancePDPlusController:
 
 VirtualFixturePlaneController:
   ros__parameters:
-    Ku: [1000.0]
-    Bu: [70.0]
+    Ku: [2000.0]
+    Bu: [50.0]
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
+    Y: 1.0
 
 VirtualFixtureLineController:
   ros__parameters:
-    Ku: [3000.0, 3000.0]
+    Ku: [2000.0, 2000.0]
     Bu: [50.0, 50.0]
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
+    Y: 1.0

@@ -3,6 +3,7 @@
 
 #include <queue>
 #include <vector>
+#include <cstring>
 namespace robot_math
 {
     template <class T>

@@ -5,6 +5,7 @@
 #include "robot_math/robot_math.hpp"
 #include "ros2_utility/data_comm.hpp"
 #include "ros2_utility/data_logger.hpp"
+#include "ros2_utility/disturbance_observer.hpp"
 #include "ros2_utility/file_utils.hpp"
 #include "ros2_utility/ros2_visual_tools.hpp"
 #include <iostream>
@@ -25,43 +26,26 @@ namespace controllers
             }
             if (visual_tools_)
                 delete visual_tools_;
+            if (disturbance_observer_)
+                delete disturbance_observer_;
         }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             dof_ = robot_->dof;
             u_num_ = 2;
+
             node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {10.0, 10.0});
             node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {10.0, 10.0});
             node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
             node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0});
-            Ku_in_box_.set(Ku_vec_);
-            Bu_in_box_.set(Bu_vec_);
-            Kn_in_box_.set(Kn_vec_);
-            Bn_in_box_.set(Bn_vec_);
-            parameters_callback_handle_ = node_->add_on_set_parameters_callback(
-                [&](std::vector<rclcpp::Parameter> parameters) -> rcl_interfaces::msg::SetParametersResult
-                {
-                    RCLCPP_INFO(node_->get_logger(), "Parameter %s update requested.", parameters[0].get_name().c_str());
-                    for (const auto &parameter : parameters)
-                    {
-                        if (parameter.get_name() == "Ku")
-                            Ku_in_box_.set([=](auto &value)
-                                           { value = parameter.as_double_array(); });
-                        else if (parameter.get_name() == "Bu")
-                            Bu_in_box_.set([=](auto &value)
-                                           { value = parameter.as_double_array(); });
-                        else if (parameter.get_name() == "Kn")
-                            Kn_in_box_.set([=](auto &value)
-                                           { value = parameter.as_double_array(); });
-                        else if (parameter.get_name() == "Bn")
-                            Bn_in_box_.set([=](auto &value)
-                                           { value = parameter.as_double_array(); });
-                    }
-                    auto result = rcl_interfaces::msg::SetParametersResult();
-                    result.successful = true;
-                    return result;
-                });
+            node_->get_parameter_or("Y", Y_, 1.0);
+
+            Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_);
+            Bu_ = Eigen::Map<Eigen::VectorXd>(Bu_vec_.data(), u_num_);
+            Kn_ = Eigen::Map<Eigen::VectorXd>(Kn_vec_.data(), dof_);
+            Bn_ = Eigen::Map<Eigen::VectorXd>(Bn_vec_.data(), dof_);
+
             return CallbackReturn::SUCCESS;
         }
 
@@ -98,13 +82,15 @@ namespace controllers
                     DATA_WRAPPER(due_),
                 },
                 {
-                    CONFIG_WRAPPER(Ku_vec_),
-                    CONFIG_WRAPPER(Bu_vec_),
-                    CONFIG_WRAPPER(Kn_vec_),
-                    CONFIG_WRAPPER(Bn_vec_),
+                    CONFIG_WRAPPER(Ku_),
+                    CONFIG_WRAPPER(Bu_),
+                    CONFIG_WRAPPER(Kn_),
+                    CONFIG_WRAPPER(Bn_),
+                    CONFIG_WRAPPER(Y_),
                 },
                 1000);
             visual_tools_ = new ROS2VisualTools(node_);
+            disturbance_observer_ = new DisturbanceObserver(Eigen::MatrixXd::Identity(dof_, dof_) * Y_, Eigen::VectorXd::Ones(dof_) * 10.0, true, 50);
             return CallbackReturn::SUCCESS;
         }
 
@@ -121,26 +107,14 @@ namespace controllers
             std::vector<double> &tau_cmd_vec = command_->get<double>("torque");
             const std::vector<double> &q_vec = state_->get<double>("position");
             const std::vector<double> &dq_vec = state_->get<double>("velocity");
-            const std::vector<double> &c_vec = state_->get<double>("c");
+            const std::vector<double> &tau_ext_vec = state_->get<double>("external_torque");
+            const std::vector<double> &tau_d_vec = state_->get<double>("torque");
             success_rate_ = state_->get<double>("success")[0];
 
             Eigen::Map<Eigen::VectorXd> tau_cmd(tau_cmd_vec.data(), dof_);
             Eigen::Map<const Eigen::VectorXd> q(q_vec.data(), dof_);
             Eigen::Map<const Eigen::VectorXd> dq(dq_vec.data(), dof_);
-            Eigen::Map<const Eigen::VectorXd> c(c_vec.data(), dof_);
-
-            Ku_in_box_.try_get([=](auto const &value)
-                               { Ku_vec_ = value; });
-            Bu_in_box_.try_get([=](auto const &value)
-                               { Bu_vec_ = value; });
-            Kn_in_box_.try_get([=](auto const &value)
-                               { Kn_vec_ = value; });
-            Bn_in_box_.try_get([=](auto const &value)
-                               { Bn_vec_ = value; });
-            Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_);
-            Bu_ = Eigen::Map<Eigen::VectorXd>(Bu_vec_.data(), u_num_);
-            Kn_ = Eigen::Map<Eigen::VectorXd>(Kn_vec_.data(), dof_);
-            Bn_ = Eigen::Map<Eigen::VectorXd>(Bn_vec_.data(), dof_);
+            Eigen::Map<const Eigen::VectorXd> tau_d(tau_d_vec.data(), dof_);
 
             m_c_g_matrix(robot_, q_vec, dq_vec, M_, C_, g_, Jb_, dJb_, dM_, dTb_, Tb_);
 
@@ -166,7 +140,9 @@ namespace controllers
             tau_task_ = M_ * J_sharp(Ju_, M_) * dduc_;
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M_);
             tau_null_ = M_ * null_proj(Ju_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
-            tau_cmd = tau_task_ + tau_null_ + c;
+            tau_dist_ = disturbance_observer_->computeTorqueDisturbance(Ju_, dq, tau_task_ + tau_null_, ldlt, period.seconds());
+            tau_cmd = tau_task_ + tau_null_ - tau_dist_ + C_ * dq;
+            tau_cmd = MathUtils::saturateTorque(tau_cmd, tau_d, 1.0);
 
             q_ = q;
             dq_ = dq;
@@ -174,8 +150,8 @@ namespace controllers
 
             log2Channel(robot_data_, 0, ue_.data(), u_num_);
             log2Channel(robot_data_, 1, due_.data(), u_num_);
-            log2Channel(robot_data_, 2, tau_task_.data(), dof_);
-            log2Channel(robot_data_, 3, tau_null_.data(), dof_);
+            log2Channel(robot_data_, 2, tau_dist_.data(), dof_);
+            log2Channel(robot_data_, 3, tau_ext_vec.data(), dof_);
             robot_data_.t = time_;
             DataComm::getInstance()->sendRobotStatus(robot_data_);
             visual_tools_->publishMarker(p_, "base", 1);
@@ -184,23 +160,22 @@ namespace controllers
         }
 
     protected:
-        rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle_;
         int dof_, u_num_;
         Eigen::MatrixXd M_, C_, Jb_, dJb_, dM_, Jh_, dJh_, Ju_, dJu_;
         Eigen::VectorXd g_, q_, dq_;
         Eigen::Matrix4d Tb_, dTb_;
         Eigen::VectorXd Ku_, Bu_, Kn_, Bn_;
-        Eigen::VectorXd tau_cmd_, tau_task_, tau_null_;
+        Eigen::VectorXd tau_cmd_, tau_task_, tau_null_, tau_dist_;
         Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_, ue_, due_, dduc_;
         Eigen::Matrix3d Rd_, R_;
         Eigen::Matrix6d Thb_, dThb_;
         Eigen::Vector3d pd_, p_;
         double success_rate_, cal_time_, z0_, x0_;
-        realtime_tools::RealtimeBox<std::vector<double>> Ku_in_box_, Bu_in_box_, Kn_in_box_, Bn_in_box_;
+        double Y_, time_;
         std::vector<double> Ku_vec_, Bu_vec_, Kn_vec_, Bn_vec_;
         DataLogger *data_logger_;
+        DisturbanceObserver *disturbance_observer_;
         ROS2VisualTools *visual_tools_;
-        double time_;
         RobotData robot_data_;
     };
 } // namespace controllers
