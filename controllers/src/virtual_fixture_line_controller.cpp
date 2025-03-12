@@ -140,16 +140,16 @@ namespace controllers
             tau_task_ = M_ * J_sharp(Ju_, M_) * dduc_;
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M_);
             tau_null_ = M_ * null_proj(Ju_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
-            tau_dist_ = disturbance_observer_->computeTorqueDisturbance(Ju_, dq, tau_task_ + tau_null_, ldlt, period.seconds());
-            tau_cmd = tau_task_ + tau_null_ - tau_dist_ + C_ * dq;
-            tau_cmd = MathUtils::saturateTorque(tau_cmd, tau_d, 1.0);
+            tau_dist_ = disturbance_observer_->computeTorqueDisturbance(Ju_, dq, tau_task_ + tau_null_, M_, period.seconds());
+            tau_cmd = tau_task_ + tau_null_ + C_ * dq - tau_dist_;
+            tau_cmd = MathUtils::saturateTorque(tau_cmd, tau_d, 2.0);
 
             q_ = q;
             dq_ = dq;
             tau_cmd_ = tau_cmd;
 
             log2Channel(robot_data_, 0, ue_.data(), u_num_);
-            log2Channel(robot_data_, 1, due_.data(), u_num_);
+            log2Channel(robot_data_, 1, tau_cmd_.data(), dof_);
             log2Channel(robot_data_, 2, tau_dist_.data(), dof_);
             log2Channel(robot_data_, 3, tau_ext_vec.data(), dof_);
             robot_data_.t = time_;

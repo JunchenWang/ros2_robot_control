@@ -38,7 +38,7 @@ public:
     Eigen::VectorXd computeTorqueDisturbance(const Eigen::MatrixXd &J,
                                              const Eigen::VectorXd &dq,
                                              const Eigen::VectorXd &tau_calc,
-                                             const Eigen::LDLT<Eigen::MatrixXd> &M_ldlt,
+                                             const Eigen::MatrixXd &M,
                                              double dt);
 
 private:

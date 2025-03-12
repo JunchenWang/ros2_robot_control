@@ -4,11 +4,12 @@
 Eigen::VectorXd DisturbanceObserver::computeTorqueDisturbance(const Eigen::MatrixXd &J,
                                                               const Eigen::VectorXd &dq,
                                                               const Eigen::VectorXd &tau_calc,
-                                                              const Eigen::LDLT<Eigen::MatrixXd> &M_ldlt,
+                                                              const Eigen::MatrixXd &M, 
                                                               double dt)
 {
     Eigen::VectorXd P = Y_ * dq;
     Eigen::VectorXd tau_dist = Z_ + P;
+    Eigen::LDLT<Eigen::MatrixXd> M_ldlt(M);
     Eigen::MatrixXd project_task = J * (M_ldlt.solve(J.transpose()));
     tau_dist = J.transpose() * (project_task.ldlt().solve(J * M_ldlt.solve(tau_dist)));
 
@@ -18,7 +19,7 @@ Eigen::VectorXd DisturbanceObserver::computeTorqueDisturbance(const Eigen::Matri
     MathUtils::limitVectorWithinRanges(tau_dist, limit_);
     Eigen::VectorXd torque_command_updated = tau_calc - tau_dist;
 
-    Eigen::VectorXd dZ = Y_ * M_ldlt.solve(-Z_ - P - torque_command_updated);
+    Eigen::VectorXd dZ = Y_ * robot_math::pinv(M, 1e-3) * (-Z_ - P - torque_command_updated);
     Z_ += dZ * dt;
 
     return tau_dist;
