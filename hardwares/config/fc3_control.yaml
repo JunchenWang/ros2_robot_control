@@ -70,3 +70,11 @@ VirtualFixtureLineController:
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
     Y: 1.0
+
+VirtualFixtureGeneralController:
+  ros__parameters:
+    Ku: [2000.0, 2000.0]
+    Bu: [50.0, 50.0]
+    Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    Bn: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
+    Y: 1.0

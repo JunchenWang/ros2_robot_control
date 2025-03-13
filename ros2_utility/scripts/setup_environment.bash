@@ -33,3 +33,11 @@ sudo apt install -y \
     vlc \
     libfftw3-dev \
     gnuplot \
+
+cd ~/Downloads
+git clone https://github.com/autodiff/autodiff
+cd autodiff
+mkdir .build && cd .build
+cmake .. -DAUTODIFF_BUILD_PYTHON=OFF
+make -j4    
+sudo make install

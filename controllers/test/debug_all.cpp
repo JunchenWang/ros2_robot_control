@@ -1,10 +1,14 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
-#include "robot_math/OnlineTrajPlanner.h"
 #include "control_msgs/msg/vector_data.hpp"
+#include "robot_math/OnlineTrajPlanner.h"
 #include "ros2_utility/data_logger.hpp"
 #include "ros2_utility/file_utils.hpp"
+#include "ros2_utility/math_utils.hpp"
 #include "ros2_utility/sliding_window.hpp"
 #include "ros2_utility/transform_interpolator.hpp"
+#include <autodiff/reverse/var.hpp>
+#include <autodiff/reverse/var/eigen.hpp>
+
 #include <chrono>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
@@ -13,6 +17,13 @@ using namespace Eigen;
 using namespace std;
 using namespace robot_math;
 using namespace std::chrono;
+using namespace autodiff;
+
+// The scalar function for which the gradient is needed
+autodiff::var f(const autodiff::ArrayXvar &x)
+{
+    return sin(x[0]) * x[0] + x[1] * x[1] + x[2] * x[2] - 10;
+}
 
 class DebugAll : public rclcpp::Node
 {
@@ -25,10 +36,11 @@ public:
         // test_slidingwindow();
         // test_fileutils();
         // test_datalogger();
-        test_editYAML();
-        vec_pub1_ = this->create_publisher<control_msgs::msg::VectorData>("plot1", 10);
-        vec_pub2_ = this->create_publisher<control_msgs::msg::VectorData>("plot2", 10);
-        test_publisher();
+        // test_editYAML();
+        // vec_pub1_ = this->create_publisher<control_msgs::msg::VectorData>("plot1", 10);
+        // vec_pub2_ = this->create_publisher<control_msgs::msg::VectorData>("plot2", 10);
+        // test_publisher();
+        test_hessian();
     }
 
     // 测试 OnlineTrajPlanner 类
@@ -316,6 +328,31 @@ public:
         FileUtils::modifyYamlValue(yaml_file_path, "cog", {3, 1, 2});
         FileUtils::modifyYamlValue(yaml_file_path, "offset", {1.2, 4.6, 6, 8, 9, 12.5});
     }
+
+    // 测试计算梯度和Hessian矩阵
+    void test_hessian()
+    {
+        auto start_time_ = std::chrono::steady_clock::now();
+        autodiff::VectorXvar x(3); // Define the input variable x
+        x << 1, 2, 3;
+        Eigen::Vector3d x1 = {1, 2, 3}; 
+
+        // Define the output variable u
+        autodiff::var u = f(x);
+
+        Eigen::VectorXd g;                    // the gradient vector to be computed in method `hessian`
+        // Eigen::MatrixXd H = hessian(u, x, g); // evaluate the Hessian matrix H and the gradient vector g of u
+        Eigen::MatrixXd H = autodiff::hessian(f(x), x, g); // evaluate the Hessian matrix H and the gradient vector g of u
+
+        cout << "u = " << u << endl; // print the evaluated output variable u
+        cout << "g = \n"
+             << g << endl; // print the evaluated gradient vector of u
+        cout << "H = \n"
+             << H << endl; // print the evaluated Hessian matrix of u
+        auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_);
+        cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
+    }
+
     unique_ptr<TransformInterpolator> interpolator_;
     DataLogger *data_logger_;
     rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub1_;

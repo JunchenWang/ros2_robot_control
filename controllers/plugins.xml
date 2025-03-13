@@ -38,4 +38,7 @@
   <class type="controllers::VirtualFixtureLineController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a linear virtual fixture controller plugin.</description>
   </class>
+  <class type="controllers::VirtualFixtureGeneralController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a general virtual fixture controller plugin.</description>
+  </class>
 </library>
