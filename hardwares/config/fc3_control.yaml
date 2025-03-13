@@ -14,6 +14,7 @@ control_node:
       - controllers::CartesianImpedancePDPlusController
       - controllers::VirtualFixturePlaneController
       - controllers::VirtualFixtureLineController
+      - controllers::VirtualFixtureGeneralController
 
 FC3Robot:
   ros__parameters:
@@ -66,7 +67,7 @@ VirtualFixturePlaneController:
 VirtualFixtureLineController:
   ros__parameters:
     Ku: [2000.0, 2000.0]
-    Bu: [50.0, 50.0]
+    Bu: [60.0, 60.0]
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
     Y: 1.0

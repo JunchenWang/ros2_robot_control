@@ -23,7 +23,7 @@ namespace controllers
         {
             if (data_logger_)
             {
-                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/virtual_fixture_any_controller/", "virtual_fixture_any_controller");
+                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/virtual_fixture_general_controller/", "virtual_fixture_general_controller");
                 delete data_logger_;
             }
             if (visual_tools_)
@@ -177,6 +177,7 @@ namespace controllers
             robot_data_.t = time_;
             DataComm::getInstance()->sendRobotStatus(robot_data_);
             visual_tools_->publishLineMarker(p_, "base", 1);
+            tau_cmd.setZero();
             cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
             data_logger_->record();
         }
