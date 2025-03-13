@@ -38,8 +38,8 @@ public:
 private:
     // 发布器，用于发送Marker消息到Rviz等可视化工具
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
-    const size_t PUBLISH_INTERVAL = 10;                  // 每10次控制周期发布一次线段
-    const size_t MAX_POINTS = 3000;                      // 最大存储点数
+    const size_t PUBLISH_INTERVAL = 20;                  // 每PUBLISH_INTERVAL次控制周期发布一次线段
+    const size_t MAX_POINTS = 1000;                      // 最大存储点数
     size_t publish_counter_ = 0;                         // 发布计数器
     visualization_msgs::msg::Marker line_marker_;        // 线段Marker对象
     visualization_msgs::msg::Marker point_marker_;       // 点Marker对象

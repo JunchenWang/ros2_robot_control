@@ -34,6 +34,7 @@ sudo apt install -y \
     libfftw3-dev \
     gnuplot \
 
+# install autodiff lib
 cd ~/Downloads
 git clone https://github.com/autodiff/autodiff
 cd autodiff
@@ -41,3 +42,16 @@ mkdir .build && cd .build
 cmake .. -DAUTODIFF_BUILD_PYTHON=OFF
 make -j4    
 sudo make install
+
+# install ginac lib
+sudo apt install -y \ 
+    texinfo \
+    libcln-dev \
+    libginac-dev \
+# cd ~/Downloads
+# wget https://www.ginac.de/ginac-1.8.8.tar.bz2
+# tar -xvf ginac-1.8.8.tar.bz2
+# cd ginac-1.8.8
+# ./configure
+# make
+# sudo make install

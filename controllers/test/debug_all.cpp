@@ -5,9 +5,11 @@
 #include "ros2_utility/file_utils.hpp"
 #include "ros2_utility/math_utils.hpp"
 #include "ros2_utility/sliding_window.hpp"
+#include "ros2_utility/symbolic_diffentiator.hpp"
 #include "ros2_utility/transform_interpolator.hpp"
 #include <autodiff/reverse/var.hpp>
 #include <autodiff/reverse/var/eigen.hpp>
+#include <ginac/ginac.h>
 
 #include <chrono>
 #include <iostream>
@@ -40,7 +42,8 @@ public:
         // vec_pub1_ = this->create_publisher<control_msgs::msg::VectorData>("plot1", 10);
         // vec_pub2_ = this->create_publisher<control_msgs::msg::VectorData>("plot2", 10);
         // test_publisher();
-        test_hessian();
+        // test_hessian();
+        test_ginac();
     }
 
     // 测试 OnlineTrajPlanner 类
@@ -329,18 +332,18 @@ public:
         FileUtils::modifyYamlValue(yaml_file_path, "offset", {1.2, 4.6, 6, 8, 9, 12.5});
     }
 
-    // 测试计算梯度和Hessian矩阵
+    // 测试计算数值梯度和Hessian矩阵
     void test_hessian()
     {
         auto start_time_ = std::chrono::steady_clock::now();
         autodiff::VectorXvar x(3); // Define the input variable x
         x << 1, 2, 3;
-        Eigen::Vector3d x1 = {1, 2, 3}; 
+        Eigen::Vector3d x1 = {1, 2, 3};
 
         // Define the output variable u
         autodiff::var u = f(x);
 
-        Eigen::VectorXd g;                    // the gradient vector to be computed in method `hessian`
+        Eigen::VectorXd g; // the gradient vector to be computed in method `hessian`
         // Eigen::MatrixXd H = hessian(u, x, g); // evaluate the Hessian matrix H and the gradient vector g of u
         Eigen::MatrixXd H = autodiff::hessian(f(x), x, g); // evaluate the Hessian matrix H and the gradient vector g of u
 
@@ -353,6 +356,27 @@ public:
         cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
     }
 
+    // 测试 GiNaC 库
+    void test_ginac()
+    {
+        GiNaC::symbol x("x"), y("y"), z("z");
+        GiNaC::ex expr = (x - 0.03)*(x - 0.03) + (y - 0.02)*(y - 0.02) - 0.03*0.03;
+        SymbolicDifferentiator diff(expr, x, y, z); 
+        diff.print_symbolic_results();
+        std::cout << diff.compute_gradient({1, 2, 3}) << std::endl;
+        std::cout << diff.compute_hessian({1, 2, 3}) << std::endl;
+        std::cout << diff.compute_value({1, 2, 3}) << std::endl;
+        auto start_time_ = std::chrono::steady_clock::now();
+        for (int i = 0; i < 1000; i++)
+        {
+            Eigen::Vector3d point(i, i, i);
+            Eigen::Vector3d grad = diff.compute_gradient(point);
+            Eigen::Matrix3d hess = diff.compute_hessian(point);
+            double value = diff.compute_value(point);
+        }
+        auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_);
+        cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
+    }
     unique_ptr<TransformInterpolator> interpolator_;
     DataLogger *data_logger_;
     rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub1_;

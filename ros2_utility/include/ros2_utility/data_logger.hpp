@@ -235,7 +235,7 @@ public:
         auto now = std::chrono::system_clock::now();
         auto now_c = std::chrono::system_clock::to_time_t(now);
         std::stringstream ss;
-        ss << std::put_time(localtime(&now_c), "%Y-%m-%d %H-%M-%S");
+        ss << std::put_time(localtime(&now_c), "%Y_%m_%d_%H_%M_%S");
         filename += ss.str();
         filename += ".txt";
 

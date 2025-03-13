@@ -20,14 +20,7 @@ namespace controllers
         ~VirtualFixtureLineController()
         {
             if (data_logger_)
-            {
-                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/virtual_fixture_line_controller/", "virtual_fixture_line_controller");
-                delete data_logger_;
-            }
-            if (visual_tools_)
-                delete visual_tools_;
-            if (disturbance_observer_)
-                delete disturbance_observer_;
+                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/vf_line/", "vf_line");
         }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -35,10 +28,10 @@ namespace controllers
             dof_ = robot_->dof;
             u_num_ = 2;
 
-            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0});
+            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {1500.0, 1500.0});
+            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {50.0, 50.0});
+            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
             node_->get_parameter_or("Y", Y_, 1.0);
 
             Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_);
@@ -60,11 +53,9 @@ namespace controllers
 
             const std::vector<double> &T_vec = state_->get<double>("T");
             Eigen::Matrix4d T = Eigen::Map<const Eigen::Matrix4d>(T_vec.data(), 4, 4).eval();
-            Rd_ = T.block(0, 0, 3, 3);
-            pd_ = T.block(0, 3, 3, 1);
+            R0_ = T.block(0, 0, 3, 3);
+            p0_ = T.block(0, 3, 3, 1);
 
-            z0_ = pd_[2];
-            x0_ = pd_[0];
             Ju_ = Eigen::MatrixXd::Zero(u_num_, dof_);
             dJu_ = Eigen::MatrixXd::Zero(u_num_, dof_);
             ue_ = Eigen::VectorXd::Zero(u_num_);
@@ -73,15 +64,14 @@ namespace controllers
             Thb_ = Eigen::Matrix6d::Identity();
             dThb_ = Eigen::Matrix6d::Zero();
 
-            data_logger_ = new DataLogger(
-                {
+            data_logger_ = std::make_unique<DataLogger>(
+                std::initializer_list<DataInfo>{
                     DATA_WRAPPER(time_),
                     DATA_WRAPPER(success_rate_),
                     DATA_WRAPPER(cal_time_),
                     DATA_WRAPPER(ue_),
-                    DATA_WRAPPER(due_),
                 },
-                {
+                std::initializer_list<ExperimentContext>{
                     CONFIG_WRAPPER(Ku_),
                     CONFIG_WRAPPER(Bu_),
                     CONFIG_WRAPPER(Kn_),
@@ -89,8 +79,8 @@ namespace controllers
                     CONFIG_WRAPPER(Y_),
                 },
                 1000);
-            visual_tools_ = new ROS2VisualTools(node_);
-            disturbance_observer_ = new DisturbanceObserver(Eigen::MatrixXd::Identity(dof_, dof_) * Y_, Eigen::VectorXd::Ones(dof_) * 10.0, true, 50);
+            visual_tools_ = std::make_unique<ROS2VisualTools>(node_);
+            disturbance_observer_ = std::make_unique<DisturbanceObserver>(Eigen::MatrixXd::Identity(dof_, dof_) * Y_, Eigen::VectorXd::Ones(dof_) * 10.0, true, 50);
             return CallbackReturn::SUCCESS;
         }
 
@@ -132,8 +122,8 @@ namespace controllers
             dJu_.row(0) = Eigen::Vector3d(0, 0, 1).transpose() * dJh_.bottomRows(3);
             dJu_.row(1) = Eigen::Vector3d(1, 0, 0).transpose() * dJh_.bottomRows(3);
 
-            ue_[0] = z0_ - p_[2];
-            ue_[1] = x0_ - p_[0];
+            ue_[0] = p0_[2] - p_[2];
+            ue_[1] = p0_[0] - p_[0];
             due_ = -Ju_ * dq;
 
             dduc_ = Bu_.asDiagonal() * due_ + Ku_.asDiagonal() * ue_ - dJu_ * dq;
@@ -142,7 +132,7 @@ namespace controllers
             tau_null_ = M_ * null_proj(Ju_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
             tau_dist_ = disturbance_observer_->computeTorqueDisturbance(Ju_, dq, tau_task_ + tau_null_, M_, period.seconds());
             tau_cmd = tau_task_ + tau_null_ + C_ * dq - tau_dist_;
-            tau_cmd = MathUtils::saturateTorque(tau_cmd, tau_d, 2.0);
+            tau_cmd = MathUtils::saturateTorque(tau_cmd, tau_d, 1.0);
 
             q_ = q;
             dq_ = dq;
@@ -154,28 +144,28 @@ namespace controllers
             log2Channel(robot_data_, 3, tau_ext_vec.data(), dof_);
             robot_data_.t = time_;
             DataComm::getInstance()->sendRobotStatus(robot_data_);
-            visual_tools_->publishLineMarker(p_, "base", 1);
-            cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+            // visual_tools_->publishLineMarker(p_, "base", 1);
             data_logger_->record();
+            cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
         }
 
     protected:
         int dof_, u_num_;
         Eigen::MatrixXd M_, C_, Jb_, dJb_, dM_, Jh_, dJh_, Ju_, dJu_;
+        Eigen::Matrix6d Thb_, dThb_;
         Eigen::VectorXd g_, q_, dq_;
         Eigen::Matrix4d Tb_, dTb_;
         Eigen::VectorXd Ku_, Bu_, Kn_, Bn_;
         Eigen::VectorXd tau_cmd_, tau_task_, tau_null_, tau_dist_;
         Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_, ue_, due_, dduc_;
-        Eigen::Matrix3d Rd_, R_;
-        Eigen::Matrix6d Thb_, dThb_;
-        Eigen::Vector3d pd_, p_;
-        double success_rate_, cal_time_, z0_, x0_;
+        Eigen::Matrix3d R0_, R_;
+        Eigen::Vector3d p0_, p_;
+        double success_rate_, cal_time_;
         double Y_, time_;
         std::vector<double> Ku_vec_, Bu_vec_, Kn_vec_, Bn_vec_;
-        DataLogger *data_logger_;
-        DisturbanceObserver *disturbance_observer_;
-        ROS2VisualTools *visual_tools_;
+        std::unique_ptr<DataLogger> data_logger_;
+        std::unique_ptr<DisturbanceObserver> disturbance_observer_;
+        std::unique_ptr<ROS2VisualTools> visual_tools_;
         RobotData robot_data_;
     };
 } // namespace controllers

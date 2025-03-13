@@ -8,8 +8,8 @@
 #include "ros2_utility/disturbance_observer.hpp"
 #include "ros2_utility/file_utils.hpp"
 #include "ros2_utility/ros2_visual_tools.hpp"
-#include <autodiff/reverse/var.hpp>
-#include <autodiff/reverse/var/eigen.hpp>
+#include "ros2_utility/symbolic_diffentiator.hpp"
+#include <ginac/ginac.h>
 #include <iostream>
 
 using namespace robot_math;
@@ -18,18 +18,11 @@ namespace controllers
     class VirtualFixtureGeneralController : public controller_interface::ControllerInterface
     {
     public:
-        VirtualFixtureGeneralController() {}
+        VirtualFixtureGeneralController() : x("x"), y("y"), z("z") {}
         ~VirtualFixtureGeneralController()
         {
             if (data_logger_)
-            {
-                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/virtual_fixture_general_controller/", "virtual_fixture_general_controller");
-                delete data_logger_;
-            }
-            if (visual_tools_)
-                delete visual_tools_;
-            if (disturbance_observer_)
-                delete disturbance_observer_;
+                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/vf_general/", "vf_general");
         }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -37,10 +30,10 @@ namespace controllers
             dof_ = robot_->dof;
             u_num_ = 2;
 
-            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0});
-            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0});
+            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {1500.0, 1500.0});
+            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {50.0, 50.0});
+            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
             node_->get_parameter_or("Y", Y_, 1.0);
 
             Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_);
@@ -65,24 +58,16 @@ namespace controllers
             R0_ = T.block(0, 0, 3, 3);
             p0_ = T.block(0, 3, 3, 1);
 
-            func_.resize(u_num_);
+            sym_diff_.clear();
             // f0_(x, y, z) = z - z0;
-            func_[0] = [&](const autodiff::Array3var &x)
-            { return x[2] - p0_[2]; }; 
+            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(z - p0_[2], x, y, z));
             // f1_(x, y, z) = x - x0;
-            func_[1] = [&](const autodiff::Array3var &x)
-            { return x[0] - p0_[0]; }; 
+            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(x - p0_[0], x, y, z));
 
             // f1_(x, y, z) = (x - x0 - 0.03)^2 + (y - y0)^2 - 0.03^2;
-            // func_[1] = [&](const autodiff::Array3var &x)
-            // { return (x[0] - p0_[0] - 0.03) * (x[0] - p0_[0] - 0.03) + (x[1] - p0_[1]) * (x[1] - p0_[1]) - 0.03 * 0.03; }; 
-            
+            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>((x - x0 - 0.03)*(x - x0 - 0.03) + (y - y0)*(y - y0) - 0.03*0.03, x, y, z));
             // f1_(x, y, z) = 0.05*sin((6/0.05) * (x - x0)) - (y - y0);
-            // func_[1] = [&](const autodiff::Array3var &x)
-            // { return 0.05*sin((6/0.05) * (x[0] - p0_[0])) - (x[1] - p0_[1]); };
-
-            gradient_.resize(u_num_);
-            Hessian_.resize(u_num_);
+            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(0.05*sin((6/0.05) * (x - x0)) - (y - y0), x, y, z));
 
             Ju_ = Eigen::MatrixXd::Zero(u_num_, dof_);
             dJu_ = Eigen::MatrixXd::Zero(u_num_, dof_);
@@ -92,15 +77,14 @@ namespace controllers
             Thb_ = Eigen::Matrix6d::Identity();
             dThb_ = Eigen::Matrix6d::Zero();
 
-            data_logger_ = new DataLogger(
-                {
+            data_logger_ = std::make_unique<DataLogger>(
+                std::initializer_list<DataInfo>{
                     DATA_WRAPPER(time_),
                     DATA_WRAPPER(success_rate_),
                     DATA_WRAPPER(cal_time_),
                     DATA_WRAPPER(ue_),
-                    DATA_WRAPPER(due_),
                 },
-                {
+                std::initializer_list<ExperimentContext>{
                     CONFIG_WRAPPER(Ku_),
                     CONFIG_WRAPPER(Bu_),
                     CONFIG_WRAPPER(Kn_),
@@ -108,8 +92,8 @@ namespace controllers
                     CONFIG_WRAPPER(Y_),
                 },
                 1000);
-            visual_tools_ = new ROS2VisualTools(node_);
-            disturbance_observer_ = new DisturbanceObserver(Eigen::MatrixXd::Identity(dof_, dof_) * Y_, Eigen::VectorXd::Ones(dof_) * 10.0, true, 50);
+            visual_tools_ = std::make_unique<ROS2VisualTools>(node_);
+            disturbance_observer_ = std::make_unique<DisturbanceObserver>(Eigen::MatrixXd::Identity(dof_, dof_) * Y_, Eigen::VectorXd::Ones(dof_) * 10.0, true, 50);
             return CallbackReturn::SUCCESS;
         }
 
@@ -147,14 +131,14 @@ namespace controllers
             Jh_ = Thb_ * Jb_;
             dJh_ = dThb_ * Jb_ + Thb_ * dJb_;
 
-            autodiff::Array3var p = {p_[0], p_[1], p_[2]};
-            // 计算梯度和Hessian
+            // 计算Ju, dJu, ue
             for (int i = 0; i < u_num_; i++)
             {
-                Hessian_[i] = autodiff::hessian(func_[i](p), p, gradient_[i]);
-                Ju_.row(i) = gradient_[i].transpose() * Jh_.bottomRows(3);
-                dJu_.row(i) = (Jh_.bottomRows(3) * dq).transpose() * Hessian_[i] * Jh_.bottomRows(3) + gradient_[i].transpose() * dJh_.bottomRows(3);
-                ue_[i] = autodiff::val(func_[i](p));
+                const Eigen::Vector3d &grad = sym_diff_[i]->compute_gradient(p_);
+                const Eigen::Matrix3d &hessian = sym_diff_[i]->compute_hessian(p_);
+                Ju_.row(i) = grad.transpose() * Jh_.bottomRows(3);
+                dJu_.row(i) = (Jh_.bottomRows(3) * dq).transpose() * hessian * Jh_.bottomRows(3) + grad.transpose() * dJh_.bottomRows(3);
+                ue_[i] = -sym_diff_[i]->compute_value(p_);
             }
             due_ = -Ju_ * dq;
 
@@ -164,8 +148,7 @@ namespace controllers
             tau_null_ = M_ * null_proj(Ju_, M_, ddqd_ + ldlt.solve(Bn_.asDiagonal() * dqe_ + Kn_.asDiagonal() * qe_));
             tau_dist_ = disturbance_observer_->computeTorqueDisturbance(Ju_, dq, tau_task_ + tau_null_, M_, period.seconds());
             tau_cmd = tau_task_ + tau_null_ + C_ * dq - tau_dist_;
-            tau_cmd = MathUtils::saturateTorque(tau_cmd, tau_d, 2.0);
-
+            tau_cmd = MathUtils::saturateTorque(tau_cmd, tau_d, 1.0);
             q_ = q;
             dq_ = dq;
             tau_cmd_ = tau_cmd;
@@ -177,32 +160,30 @@ namespace controllers
             robot_data_.t = time_;
             DataComm::getInstance()->sendRobotStatus(robot_data_);
             visual_tools_->publishLineMarker(p_, "base", 1);
-            tau_cmd.setZero();
-            cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
             data_logger_->record();
+            cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
         }
 
     protected:
         int dof_, u_num_;
         Eigen::MatrixXd M_, C_, Jb_, dJb_, dM_, Jh_, dJh_, Ju_, dJu_;
+        Eigen::Matrix6d Thb_, dThb_;
         Eigen::VectorXd g_, q_, dq_;
         Eigen::Matrix4d Tb_, dTb_;
         Eigen::VectorXd Ku_, Bu_, Kn_, Bn_;
         Eigen::VectorXd tau_cmd_, tau_task_, tau_null_, tau_dist_;
         Eigen::VectorXd qd_, dqd_, ddqd_, qe_, dqe_, ue_, due_, dduc_;
         Eigen::Matrix3d R0_, R_;
-        Eigen::Matrix6d Thb_, dThb_;
         Eigen::Vector3d p0_, p_;
-        double success_rate_, cal_time_, z0_, x0_;
+        double success_rate_, cal_time_;
         double Y_, time_;
         std::vector<double> Ku_vec_, Bu_vec_, Kn_vec_, Bn_vec_;
-        DataLogger *data_logger_;
-        DisturbanceObserver *disturbance_observer_;
-        ROS2VisualTools *visual_tools_;
         RobotData robot_data_;
-        std::vector<std::function<autodiff::var(const autodiff::ArrayXvar &)>> func_;
-        std::vector<Eigen::Vector3d> gradient_;
-        std::vector<Eigen::Matrix3d> Hessian_;
+        std::unique_ptr<DataLogger> data_logger_;
+        std::unique_ptr<DisturbanceObserver> disturbance_observer_;
+        std::unique_ptr<ROS2VisualTools> visual_tools_;
+        std::vector<std::unique_ptr<SymbolicDifferentiator>> sym_diff_;
+        GiNaC::symbol x, y, z;
     };
 } // namespace controllers
 
