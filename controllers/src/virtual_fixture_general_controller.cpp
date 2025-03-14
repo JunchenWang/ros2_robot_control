@@ -62,12 +62,12 @@ namespace controllers
             // f0_(x, y, z) = z - z0;
             sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(z - p0_[2], x, y, z));
             // f1_(x, y, z) = x - x0;
-            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(x - p0_[0], x, y, z));
+            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(x - p0_[0], x, y, z));
 
-            // f1_(x, y, z) = (x - x0 - 0.03)^2 + (y - y0)^2 - 0.03^2;
-            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>((x - x0 - 0.03)*(x - x0 - 0.03) + (y - y0)*(y - y0) - 0.03*0.03, x, y, z));
-            // f1_(x, y, z) = 0.05*sin((6/0.05) * (x - x0)) - (y - y0);
-            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(0.05*sin((6/0.05) * (x - x0)) - (y - y0), x, y, z));
+            // f1_(x, y, z) = (x - x0)*(x - x0) + (y - y0)*(y - y0) - 0.01;
+            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>((x - p0_[0] - 0.1)*(x - p0_[0] - 0.1) + (y - p0_[1])*(y - p0_[1]) - 0.01, x, y, z));
+            // f1_(x, y, z) = 0.1*sin((6/0.2) * (x - x0)) - (y - y0);
+            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(0.1*sin((6/0.2) * (x - p0_[0])) - (y - p0_[1]), x, y, z));
 
             Ju_ = Eigen::MatrixXd::Zero(u_num_, dof_);
             dJu_ = Eigen::MatrixXd::Zero(u_num_, dof_);
