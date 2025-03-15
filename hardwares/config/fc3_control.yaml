@@ -15,6 +15,7 @@ control_node:
       - controllers::VirtualFixturePlaneController
       - controllers::VirtualFixtureLineController
       - controllers::VirtualFixtureGeneralController
+      - controllers::VirtualFixtureGeneralPoseController
 
 FC3Robot:
   ros__parameters:
@@ -74,8 +75,16 @@ VirtualFixtureLineController:
 
 VirtualFixtureGeneralController:
   ros__parameters:
-    Ku: [2000.0, 2000.0]
-    Bu: [50.0, 50.0]
+    Ku: [3300.0, 3300.0] # 2800 - 3300
+    Bu: [70.0, 70.0] # 60 - 80
+    Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
+    Y: 3.5 # 3.0
+
+VirtualFixtureGeneralPoseController:
+  ros__parameters:
+    Ku: [3000.0, 3000.0, 300.0, 300.0, 300.0]
+    Bu: [70.0, 70.0, 40.0, 40.0, 40.0]
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
     Y: 1.0

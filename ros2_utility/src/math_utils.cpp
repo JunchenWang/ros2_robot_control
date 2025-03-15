@@ -30,3 +30,21 @@ Eigen::VectorXd MathUtils::saturateTorque(const Eigen::VectorXd &tau_d_calculate
 
     return tau_d_saturated;
 }
+
+// 限制死区
+Eigen::VectorXd MathUtils::limitDeadZone(const Eigen::VectorXd &dq, double limit)
+{
+    if (limit < 0)
+        throw std::invalid_argument("limit must be a positive value");
+    Eigen::VectorXd dq_limited = Eigen::VectorXd::Zero(dq.size());
+    for (int i = 0; i < dq.size(); i++)
+    {
+        if (std::abs(dq(i)) < limit)
+            dq_limited(i) = 0;
+        else if (dq(i) >= limit)
+            dq_limited(i) = dq(i) - limit;
+        else
+            dq_limited(i) = dq(i) + limit;
+    }
+    return dq_limited;
+}

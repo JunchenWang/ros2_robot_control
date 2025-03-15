@@ -41,4 +41,7 @@
   <class type="controllers::VirtualFixtureGeneralController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a general virtual fixture controller plugin.</description>
   </class>
+  <class type="controllers::VirtualFixtureGeneralPoseController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a general pose-fixed virtual fixture controller plugin.</description>
+  </class>
 </library>

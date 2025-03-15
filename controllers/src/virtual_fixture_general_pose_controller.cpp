@@ -15,23 +15,23 @@
 using namespace robot_math;
 namespace controllers
 {
-    class VirtualFixtureGeneralController : public controller_interface::ControllerInterface
+    class VirtualFixtureGeneralPoseController : public controller_interface::ControllerInterface
     {
     public:
-        VirtualFixtureGeneralController() : x("x"), y("y"), z("z") {}
-        ~VirtualFixtureGeneralController()
+        VirtualFixtureGeneralPoseController() : x("x"), y("y"), z("z") {}
+        ~VirtualFixtureGeneralPoseController()
         {
             if (data_logger_)
-                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/vf_general/", "vf_general");
+                data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/vf_general_pose/", "vf_general_pose");
         }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             dof_ = robot_->dof;
-            u_num_ = 2;
+            u_num_ = 5;
 
-            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {1500.0, 1500.0});
-            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {50.0, 50.0});
+            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {1500.0, 1500.0, 400.0, 400.0, 400.0});
+            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {50.0, 50.0, 40.0, 40.0, 40.0});
             node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
             node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
             node_->get_parameter_or("Y", Y_, 1.0);
@@ -138,8 +138,11 @@ namespace controllers
             Jh_ = Thb_ * Jb_;
             dJh_ = dThb_ * Jb_ + Thb_ * dJb_;
 
+            Eigen::Vector3d re = logR(R_.transpose() * R0_);
+            Eigen::Vector3d dre = -(Jh_ * dq).head(3);
+
             // 计算Ju, dJu, ue
-            for (int i = 0; i < u_num_; i++)
+            for (int i = 0; i < u_num_ - 3; i++)
             {
                 const Eigen::Vector3d &grad = sym_diff_[i]->compute_gradient(p_);
                 const Eigen::Matrix3d &hessian = sym_diff_[i]->compute_hessian(p_);
@@ -148,6 +151,12 @@ namespace controllers
                 ue_[i] = -sym_diff_[i]->compute_value(p_);
             }
             due_ = -Ju_ * dq;
+
+            // 姿态控制
+            Ju_.bottomRows(3) = Jh_.topRows(3);
+            dJu_.bottomRows(3) = dJh_.topRows(3);
+            ue_.tail(3) = re;
+            due_.tail(3) = dre;
 
             dduc_ = Bu_.asDiagonal() * due_ + Ku_.asDiagonal() * ue_ - dJu_ * dq;
             tau_task_ = M_ * J_sharp(Ju_, M_) * dduc_;
@@ -160,7 +169,7 @@ namespace controllers
             dq_ = dq;
             tau_cmd_ = tau_cmd;
 
-            log2Channel(robot_data_, 0, ue_.data(), u_num_);
+            log2Channel(robot_data_, 0, ue_.data(), 5);
             log2Channel(robot_data_, 1, tau_dist_.data(), dof_);
             log2Channel(robot_data_, 2, tau_task_.data(), dof_);
             log2Channel(robot_data_, 3, tau_cmd_.data(), dof_);
@@ -194,4 +203,4 @@ namespace controllers
 } // namespace controllers
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(controllers::VirtualFixtureGeneralController, controller_interface::ControllerInterface)
+PLUGINLIB_EXPORT_CLASS(controllers::VirtualFixtureGeneralPoseController, controller_interface::ControllerInterface)

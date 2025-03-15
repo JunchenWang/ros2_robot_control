@@ -26,6 +26,9 @@ public:
     static Eigen::VectorXd saturateTorque(const Eigen::VectorXd &tau_d_calculated,
                                           const Eigen::VectorXd &tau_d_last,
                                           double threshold);
+
+    // 限制死区
+    static Eigen::VectorXd limitDeadZone(const Eigen::VectorXd &dq, double limit=0.003);
 };
 
 #endif // MATH_UTILS
