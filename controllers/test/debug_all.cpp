@@ -359,23 +359,37 @@ public:
     // 测试 GiNaC 库
     void test_ginac()
     {
-        GiNaC::symbol x("x"), y("y"), z("z");
-        GiNaC::ex expr = (x - 0.03)*(x - 0.03) + (y - 0.02)*(y - 0.02) - 0.03*0.03;
-        SymbolicDifferentiator diff(expr, x, y, z); 
-        diff.print_symbolic_results();
-        std::cout << diff.compute_gradient({1, 2, 3}) << std::endl;
-        std::cout << diff.compute_hessian({1, 2, 3}) << std::endl;
-        std::cout << diff.compute_value({1, 2, 3}) << std::endl;
-        auto start_time_ = std::chrono::steady_clock::now();
-        for (int i = 0; i < 1000; i++)
+        std::vector<string> expr_str = {"(x - x0)*(x - x0) + (y - y0)*(y - y0) - 0.03*0.03",
+                                        "pow(x - x0, 2) + pow(y - y0, 2) - 0.03*0.03",
+                                        "cos(x*y) + exp(x/y) - sin(x*z) + x0 * x"};
+        GiNaC::symbol x("x"), y("y"), z("z"), x0("x0"), y0("y0"), z0("z0");
+        // GiNaC::ex expr = (x - 0.03)*(x - 0.03) + (y - 0.02)*(y - 0.02) - 0.03*0.03;
+        Eigen::Vector3d p0(77, 88, 99);
+        GiNaC::symtab table{{"x", x}, {"y", y}, {"z", z}, {"x0", x0}, {"y0", y0}, {"z0", z0}};
+        GiNaC::parser reader(table);
+        for (size_t i = 0; i < expr_str.size(); i++)
         {
-            Eigen::Vector3d point(i, i, i);
-            Eigen::Vector3d grad = diff.compute_gradient(point);
-            Eigen::Matrix3d hess = diff.compute_hessian(point);
-            double value = diff.compute_value(point);
+            GiNaC::ex expr = reader(expr_str[i]);
+            expr = expr.subs({{x0, p0[0]}, {y0, p0[1]}, {z0, p0[2]}});
+            SymbolicDifferentiator diff(expr, x, y, z);
+            // diff.print_symbolic_results();
         }
-        auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_);
-        cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
+        // GiNaC::ex expr = reader("(x - 0.03)*(x - 0.03) + (y - 0.02)*(y - 0.02) - 0.03*0.03");
+        // SymbolicDifferentiator diff(expr, x, y, z); 
+        // diff.print_symbolic_results();
+        // std::cout << diff.compute_gradient({1, 2, 3}) << std::endl;
+        // std::cout << diff.compute_hessian({1, 2, 3}) << std::endl;
+        // std::cout << diff.compute_value({1, 2, 3}) << std::endl;
+        // auto start_time_ = std::chrono::steady_clock::now();
+        // for (int i = 0; i < 1000; i++)
+        // {
+        //     Eigen::Vector3d point(i, i, i);
+        //     Eigen::Vector3d grad = diff.compute_gradient(point);
+        //     Eigen::Matrix3d hess = diff.compute_hessian(point);
+        //     double value = diff.compute_value(point);
+        // }
+        // auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_);
+        // cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
     }
     unique_ptr<TransformInterpolator> interpolator_;
     DataLogger *data_logger_;

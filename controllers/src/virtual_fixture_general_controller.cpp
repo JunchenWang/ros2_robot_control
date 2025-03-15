@@ -18,7 +18,7 @@ namespace controllers
     class VirtualFixtureGeneralController : public controller_interface::ControllerInterface
     {
     public:
-        VirtualFixtureGeneralController() : x("x"), y("y"), z("z") {}
+        VirtualFixtureGeneralController() : x("x"), y("y"), z("z"), x0("x0"), y0("y0"), z0("z0") {}
         ~VirtualFixtureGeneralController()
         {
             if (data_logger_)
@@ -28,12 +28,18 @@ namespace controllers
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             dof_ = robot_->dof;
-            u_num_ = 2;
 
-            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {1500.0, 1500.0});
-            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {50.0, 50.0});
-            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
-            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+            node_->get_parameter_or<std::vector<std::string>>("Expressions", expressions_, {});
+            u_num_ = expressions_.size();
+            if (u_num_ == 0)
+            {
+                RCLCPP_ERROR(node_->get_logger(), "No expressions are provided.");
+                return CallbackReturn::FAILURE;
+            }
+            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, std::vector<double>(u_num_, 1500.0));
+            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, std::vector<double>(u_num_, 50.0));
+            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, std::vector<double>(dof_, 0.0));
+            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, std::vector<double>(dof_, 4.0));
             node_->get_parameter_or("Y", Y_, 1.0);
 
             Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_);
@@ -63,18 +69,21 @@ namespace controllers
             p0_ = T.block(0, 3, 3, 1);
 
             sym_diff_.clear();
-
-            // 平面 f(x, y, z) = z - z0;
-            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(z - p0_[2], x, y, z));
-
-            // 平面 f(x, y, z) = x - x0;
-            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(x - p0_[0], x, y, z));
-
-            // 圆柱面 f(x, y, z) = (x - x0 - r)*(x - x0 - r) + (y - y0)*(y - y0) - r^2;
-            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>((x - p0_[0] - 0.07)*(x - p0_[0] - 0.07) + (y - p0_[1])*(y - p0_[1]) - 0.07*0.07, x, y, z));
-            
-            // 正弦柱面 f(x, y, z) = A*sin((2π/T) * (y - y0)) - (x - x0);
-            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(0.04*sin((6.28/0.12) * (y - p0_[1])) - (x - p0_[0]), x, y, z));
+            GiNaC::parser reader({{"x", x}, {"y", y}, {"z", z}, {"x0", x0}, {"y0", y0}, {"z0", z0}});
+            for (size_t i = 0; i < u_num_; i++)
+            {
+                try
+                {
+                    GiNaC::ex expr = reader(expressions_[i]);
+                    expr = expr.subs({{x0, p0_[0]}, {y0, p0_[1]}, {z0, p0_[2]}});
+                    sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(expr, x, y, z));
+                }
+                catch (const GiNaC::parse_error &e)
+                {
+                    RCLCPP_ERROR(node_->get_logger(), "Expression parsing failed: %s (index: %zu)", e.what(), i);
+                    return CallbackReturn::FAILURE;
+                }
+            }
 
             Ju_ = Eigen::MatrixXd::Zero(u_num_, dof_);
             dJu_ = Eigen::MatrixXd::Zero(u_num_, dof_);
@@ -189,7 +198,8 @@ namespace controllers
         std::unique_ptr<DisturbanceObserver> disturbance_observer_;
         std::unique_ptr<ROS2VisualTools> visual_tools_;
         std::vector<std::unique_ptr<SymbolicDifferentiator>> sym_diff_;
-        GiNaC::symbol x, y, z;
+        std::vector<std::string> expressions_;
+        GiNaC::symbol x, y, z, x0, y0, z0;
     };
 } // namespace controllers
 

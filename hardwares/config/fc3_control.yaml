@@ -6,7 +6,7 @@ control_node:
     sim_real_time: false
     publish_joint_state: true
     robot: hardwares::FC3Robot
-    controllers: 
+    controllers:
       - controllers::TorqueController
       - controllers::RCMController
       - controllers::JointImpedanceController
@@ -23,7 +23,7 @@ FC3Robot:
     end_effector: ""
     # joint interface:
     joint_command_interface:
-      - torque 
+      - torque
     joint_state_interface:
       - position
       - velocity
@@ -80,6 +80,11 @@ VirtualFixtureGeneralController:
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
     Y: 3.5 # 3.0
+    Expressions:
+      - z - z0 # 平面 f(x, y, z) = z - z0
+      - x - x0 # 平面 f(x, y, z) = x - x0
+      # - pow(x - x0 - 0.07, 2) + pow(y - y0, 2) - 0.07 * 0.07 # 圆柱面 f(x, y, z) = (x - x0 - r)*(x - x0 - r) + (y - y0)*(y - y0) - r^2
+      # - 0.04*sin((6.28/0.12) * (y - y0)) - (x - x0) # 正弦柱面 f(x, y, z) = A*sin((2π/T) * (y - y0)) - (x - x0)
 
 VirtualFixtureGeneralPoseController:
   ros__parameters:
@@ -88,3 +93,8 @@ VirtualFixtureGeneralPoseController:
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
     Y: 1.0
+    Expressions:
+      - z - z0 # 平面 f(x, y, z) = z - z0
+      - x - x0 # 平面 f(x, y, z) = x - x0
+      # - pow(x - x0 - 0.07, 2) + pow(y - y0, 2) - 0.07 * 0.07 # 圆柱面 f(x, y, z) = (x - x0 - r)*(x - x0 - r) + (y - y0)*(y - y0) - r^2
+      # - 0.04*sin((6.28/0.12) * (y - y0)) - (x - x0) # 正弦柱面 f(x, y, z) = A*sin((2π/T) * (y - y0)) - (x - x0)

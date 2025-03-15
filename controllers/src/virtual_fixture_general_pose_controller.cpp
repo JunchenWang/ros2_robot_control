@@ -28,16 +28,22 @@ namespace controllers
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             dof_ = robot_->dof;
-            u_num_ = 5;
 
-            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, {1500.0, 1500.0, 400.0, 400.0, 400.0});
-            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, {50.0, 50.0, 40.0, 40.0, 40.0});
-            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
-            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, {4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0});
+            node_->get_parameter_or<std::vector<std::string>>("Expressions", expressions_, {});
+            u_num_ = expressions_.size();
+            if (u_num_ == 0)
+            {
+                RCLCPP_ERROR(node_->get_logger(), "No expressions are provided.");
+                return CallbackReturn::FAILURE;
+            }
+            node_->get_parameter_or<std::vector<double>>("Ku", Ku_vec_, std::vector<double>(u_num_ + 3, 1500.0));
+            node_->get_parameter_or<std::vector<double>>("Bu", Bu_vec_, std::vector<double>(u_num_ + 3, 50.0));
+            node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, std::vector<double>(dof_, 0.0));
+            node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, std::vector<double>(dof_, 4.0));
             node_->get_parameter_or("Y", Y_, 1.0);
 
-            Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_);
-            Bu_ = Eigen::Map<Eigen::VectorXd>(Bu_vec_.data(), u_num_);
+            Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_ + 3);
+            Bu_ = Eigen::Map<Eigen::VectorXd>(Bu_vec_.data(), u_num_ + 3);
             Kn_ = Eigen::Map<Eigen::VectorXd>(Kn_vec_.data(), dof_);
             Bn_ = Eigen::Map<Eigen::VectorXd>(Bn_vec_.data(), dof_);
 
@@ -63,23 +69,26 @@ namespace controllers
             p0_ = T.block(0, 3, 3, 1);
 
             sym_diff_.clear();
+            GiNaC::parser reader({{"x", x}, {"y", y}, {"z", z}, {"x0", x0}, {"y0", y0}, {"z0", z0}});
+            for (size_t i = 0; i < u_num_; i++)
+            {
+                try
+                {
+                    GiNaC::ex expr = reader(expressions_[i]);
+                    expr = expr.subs({{x0, p0_[0]}, {y0, p0_[1]}, {z0, p0_[2]}});
+                    sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(expr, x, y, z));
+                }
+                catch (const GiNaC::parse_error &e)
+                {
+                    RCLCPP_ERROR(node_->get_logger(), "Expression parsing failed: %s (index: %zu)", e.what(), i);
+                    return CallbackReturn::FAILURE;
+                }
+            }
 
-            // 平面 f(x, y, z) = z - z0;
-            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(z - p0_[2], x, y, z));
-
-            // 平面 f(x, y, z) = x - x0;
-            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(x - p0_[0], x, y, z));
-
-            // 圆柱面 f(x, y, z) = (x - x0 - r)*(x - x0 - r) + (y - y0)*(y - y0) - r^2;
-            // sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>((x - p0_[0] - 0.07)*(x - p0_[0] - 0.07) + (y - p0_[1])*(y - p0_[1]) - 0.07*0.07, x, y, z));
-            
-            // 正弦柱面 f(x, y, z) = A*sin((2π/T) * (y - y0)) - (x - x0);
-            sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(0.04*sin((6.28/0.12) * (y - p0_[1])) - (x - p0_[0]), x, y, z));
-
-            Ju_ = Eigen::MatrixXd::Zero(u_num_, dof_);
-            dJu_ = Eigen::MatrixXd::Zero(u_num_, dof_);
-            ue_ = Eigen::VectorXd::Zero(u_num_);
-            due_ = Eigen::VectorXd::Zero(u_num_);
+            Ju_ = Eigen::MatrixXd::Zero(u_num_ + 3, dof_);
+            dJu_ = Eigen::MatrixXd::Zero(u_num_ + 3, dof_);
+            ue_ = Eigen::VectorXd::Zero(u_num_ + 3);
+            due_ = Eigen::VectorXd::Zero(u_num_ + 3);
 
             Thb_ = Eigen::Matrix6d::Identity();
             dThb_ = Eigen::Matrix6d::Zero();
@@ -142,7 +151,7 @@ namespace controllers
             Eigen::Vector3d dre = -(Jh_ * dq).head(3);
 
             // 计算Ju, dJu, ue
-            for (int i = 0; i < u_num_ - 3; i++)
+            for (int i = 0; i < u_num_ + 3; i++)
             {
                 const Eigen::Vector3d &grad = sym_diff_[i]->compute_gradient(p_);
                 const Eigen::Matrix3d &hessian = sym_diff_[i]->compute_hessian(p_);
@@ -198,7 +207,8 @@ namespace controllers
         std::unique_ptr<DisturbanceObserver> disturbance_observer_;
         std::unique_ptr<ROS2VisualTools> visual_tools_;
         std::vector<std::unique_ptr<SymbolicDifferentiator>> sym_diff_;
-        GiNaC::symbol x, y, z;
+        std::vector<std::string> expressions_;
+        GiNaC::symbol x, y, z, x0, y0, z0;
     };
 } // namespace controllers
 
