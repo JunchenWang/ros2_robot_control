@@ -14,8 +14,10 @@ namespace controllers
             auto &cmd_torque = command_->get<double>("torque");
             std::fill(cmd_torque.begin(), cmd_torque.end(), 0);
             // auto &q = state_->get<double>("position");
-            // auto &dq = state_->get<double>("velocity");
-            // int n = robot_->dof;
+            auto &dq = state_->get<double>("velocity");
+            int n = robot_->dof;
+            for(int i = 0; i < n; i++)
+                cmd_torque[i] = -dq[i];
             // Eigen::MatrixXd M, C, Jb, dJb, dM;
             // Eigen::VectorXd g;
             // Eigen::Matrix4d Tb, dTb;
