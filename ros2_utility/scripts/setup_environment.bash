@@ -34,7 +34,7 @@ sudo apt install -y \
     libfftw3-dev \
     gnuplot \
 
-# install autodiff lib
+# install autodiff lib from source
 cd ~/Downloads
 git clone https://github.com/autodiff/autodiff
 cd autodiff
@@ -43,11 +43,13 @@ cmake .. -DAUTODIFF_BUILD_PYTHON=OFF
 make -j4    
 sudo make install
 
-# install ginac lib
+# install ginac lib using apt (recommended)
 sudo apt install -y \ 
     texinfo \
     libcln-dev \
     libginac-dev \
+
+# install ginac lib from source (optional)
 # cd ~/Downloads
 # wget https://www.ginac.de/ginac-1.8.8.tar.bz2
 # tar -xvf ginac-1.8.8.tar.bz2
@@ -55,3 +57,12 @@ sudo apt install -y \
 # ./configure
 # make
 # sudo make install
+
+# install opencamlib lib from source (recommended)
+cd ~/Downloads
+git clone https://github.com/aewallin/opencamlib
+cd opencamlib
+mkdir build && cd build
+cmake .. -D BUILD_CXX_LIB="ON"
+make -j4
+sudo make install

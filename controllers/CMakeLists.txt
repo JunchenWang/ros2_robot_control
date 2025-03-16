@@ -23,27 +23,11 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "visualization_msgs"
   "geometry_msgs"
   "std_srvs"
-  "PkgConfig"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
-
-pkg_check_modules(GINAC REQUIRED ginac)
-include_directories(${GINAC_INCLUDE_DIRS})
-link_directories(${GINAC_LIBRARY_DIRS})
-
-# find dependencies
-# find_package(ament_cmake REQUIRED)
-# find_package(ament_cmake_ros REQUIRED)
-# find_package(controller_interface REQUIRED)
-# find_package(hardware_interface REQUIRED)
-# find_package(robot_math REQUIRED)
-# find_package(urdf REQUIRED)
-# find_package(rclcpp_lifecycle)
-# find_package(realtime_tools)
-# find_package(pluginlib REQUIRED)
 
 pluginlib_export_plugin_description_file(controller_interface plugins.xml)
 
@@ -73,7 +57,6 @@ ament_target_dependencies(
   controllers
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
-target_link_libraries(controllers ${GINAC_LIBRARIES})
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
@@ -108,7 +91,6 @@ ament_target_dependencies(
   debug_all
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
-target_link_libraries(debug_all ${GINAC_LIBRARIES})
 
 install(TARGETS test_controller debug_all
   DESTINATION lib/${PROJECT_NAME})

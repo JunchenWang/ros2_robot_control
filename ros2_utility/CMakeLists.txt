@@ -19,9 +19,10 @@ find_package(visualization_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(jsoncpp REQUIRED)
 find_package(ur_rtde REQUIRED)
-
 find_package(PkgConfig REQUIRED)
+find_package(OpenCAMLib REQUIRED)
 pkg_check_modules(FFTW3 REQUIRED IMPORTED_TARGET fftw3)
+pkg_check_modules(GINAC REQUIRED IMPORTED_TARGET ginac)
 
 # 递归 glob 所有源文件
 file(GLOB_RECURSE ALL_SRCS src/*.cpp)
@@ -35,9 +36,10 @@ target_include_directories(ros2_utility PUBLIC
     ${EIGEN3_INCLUDE_DIR} # 添加 Eigen3 的头文件路径
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+    ${GINAC_INCLUDE_DIRS}
 )
 
-ament_target_dependencies(ros2_utility
+ament_target_dependencies(ros2_utility PUBLIC
     rclcpp
     rclcpp_lifecycle
     ament_index_cpp
@@ -51,7 +53,14 @@ ament_target_dependencies(ros2_utility
     ur_rtde
     PkgConfig
     FFTW3
+    GINAC
 )
+target_link_libraries(ros2_utility
+  PUBLIC OpenCAMLib::ocl
+)
+
+# 导出给下游包
+ament_export_dependencies(OpenCAMLib)
 
 # 安装头文件到目标路径，将源代码的 include 目录安装到项目的 include/${PROJECT_NAME} 目录下
 install(

@@ -10,6 +10,8 @@
 #include <autodiff/reverse/var.hpp>
 #include <autodiff/reverse/var/eigen.hpp>
 #include <ginac/ginac.h>
+#include <opencamlib/numeric.hpp>
+#include <opencamlib/point.hpp>
 
 #include <chrono>
 #include <iostream>
@@ -42,8 +44,9 @@ public:
         // vec_pub1_ = this->create_publisher<control_msgs::msg::VectorData>("plot1", 10);
         // vec_pub2_ = this->create_publisher<control_msgs::msg::VectorData>("plot2", 10);
         // test_publisher();
-        // test_hessian();
-        test_ginac();
+        // test_autodiff();
+        // test_ginac();
+        test_opencamlib();
     }
 
     // 测试 OnlineTrajPlanner 类
@@ -332,8 +335,8 @@ public:
         FileUtils::modifyYamlValue(yaml_file_path, "offset", {1.2, 4.6, 6, 8, 9, 12.5});
     }
 
-    // 测试计算数值梯度和Hessian矩阵
-    void test_hessian()
+    // 测试 test_autodiff 库计算数值梯度和Hessian矩阵
+    void test_autodiff()
     {
         auto start_time_ = std::chrono::steady_clock::now();
         autodiff::VectorXvar x(3); // Define the input variable x
@@ -372,10 +375,10 @@ public:
             GiNaC::ex expr = reader(expr_str[i]);
             expr = expr.subs({{x0, p0[0]}, {y0, p0[1]}, {z0, p0[2]}});
             SymbolicDifferentiator diff(expr, x, y, z);
-            // diff.print_symbolic_results();
+            diff.print_symbolic_results();
         }
         // GiNaC::ex expr = reader("(x - 0.03)*(x - 0.03) + (y - 0.02)*(y - 0.02) - 0.03*0.03");
-        // SymbolicDifferentiator diff(expr, x, y, z); 
+        // SymbolicDifferentiator diff(expr, x, y, z);
         // diff.print_symbolic_results();
         // std::cout << diff.compute_gradient({1, 2, 3}) << std::endl;
         // std::cout << diff.compute_hessian({1, 2, 3}) << std::endl;
@@ -391,6 +394,36 @@ public:
         // auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_);
         // cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
     }
+
+    // 测试 opencamlib 库
+    void test_opencamlib()
+    {
+        ocl::Point p1;
+        p1.x = 1.2;
+        p1.y = sqrt(p1.x);
+        p1.z = p1.x + p1.y;
+        std::cout << "p1=" << p1 << "\n";
+        ocl::Point p2(1.23, 4.56, 3.219);
+        std::cout << "p2=" << p2 << "\n";
+
+        std::cout << "addition:\n";
+        std::cout << "  " << p1 << " + " << p2 << " = " << p1 + p2 << "\n";
+        std::cout << "subtraction:\n";
+        std::cout << "  " << p1 << " - " << p2 << " = " << p1 - p2 << "\n";
+        std::cout << "dot product:\n";
+        std::cout << "  " << p1 << " dot " << p2 << " = " << p1.dot(p2) << "\n";
+        std::cout << "cross product:\n";
+        std::cout << "  " << p1 << " cross " << p2 << " = " << p1.cross(p2) << "\n";
+        std::cout << "scalar multiplication:\n";
+        std::cout << "  " << p1 << " * 0.1  = " << 0.1 * p1 << "\n";
+        std::cout << "norm:\n";
+        std::cout << "  norm( " << p1 << " )  = " << p1.norm() << "\n";
+        std::cout << "normalize:\n";
+        ocl::Point p3 = p1;
+        p3.normalize();
+        std::cout << "  " << p1 << ".normalize()  = " << p3 << " norm=" << p3.norm() << "\n";
+    }
+
     unique_ptr<TransformInterpolator> interpolator_;
     DataLogger *data_logger_;
     rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub1_;
