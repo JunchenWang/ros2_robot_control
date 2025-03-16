@@ -18,7 +18,7 @@ namespace controllers
     class VirtualFixtureGeneralPoseController : public controller_interface::ControllerInterface
     {
     public:
-        VirtualFixtureGeneralPoseController() : x("x"), y("y"), z("z") {}
+        VirtualFixtureGeneralPoseController() : x("x"), y("y"), z("z"), x0("x0"), y0("y0"), z0("z0") {}
         ~VirtualFixtureGeneralPoseController()
         {
             if (data_logger_)
@@ -41,6 +41,7 @@ namespace controllers
             node_->get_parameter_or<std::vector<double>>("Kn", Kn_vec_, std::vector<double>(dof_, 0.0));
             node_->get_parameter_or<std::vector<double>>("Bn", Bn_vec_, std::vector<double>(dof_, 4.0));
             node_->get_parameter_or("Y", Y_, 1.0);
+            node_->get_parameter_or<std::vector<double>>("Tcp", Tcp_vec_, {0.0, 0.0, 0.0});
 
             Ku_ = Eigen::Map<Eigen::VectorXd>(Ku_vec_.data(), u_num_ + 3);
             Bu_ = Eigen::Map<Eigen::VectorXd>(Bu_vec_.data(), u_num_ + 3);
@@ -55,34 +56,23 @@ namespace controllers
             DataComm::getInstance()->setDestAddress("127.0.0.1", 7755);
             time_ = 0;
             const std::vector<double> &q_vec = state_->get<double>("position");
-            qd_ = Eigen::Map<const Eigen::VectorXd>(q_vec.data(), dof_).eval();
+            qd_ = Eigen::Map<const Eigen::VectorXd>(q_vec.data(), dof_).eval(); // 深拷贝
             dqd_ = Eigen::VectorXd::Zero(dof_);
             ddqd_ = Eigen::VectorXd::Zero(dof_);
 
             // 强制修改 TCP，必须放在 on_activate 中
             Eigen::Map<Eigen::Matrix4d> TCP(const_cast<double *>(robot_->TCP));
-            TCP(2, 3) = 0.15;
+            TCP.block(0, 3, 3, 1) = Eigen::Vector3d(Tcp_vec_[0], Tcp_vec_[1], Tcp_vec_[2]);
 
             Eigen::Matrix4d T;
             forward_kin_general(robot_, q_vec, T);
             R0_ = T.block(0, 0, 3, 3);
             p0_ = T.block(0, 3, 3, 1);
 
-            sym_diff_.clear();
-            GiNaC::parser reader({{"x", x}, {"y", y}, {"z", z}, {"x0", x0}, {"y0", y0}, {"z0", z0}});
-            for (size_t i = 0; i < u_num_; i++)
+            if (!initializeSymbolicDifferentiators())
             {
-                try
-                {
-                    GiNaC::ex expr = reader(expressions_[i]);
-                    expr = expr.subs({{x0, p0_[0]}, {y0, p0_[1]}, {z0, p0_[2]}});
-                    sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(expr, x, y, z));
-                }
-                catch (const GiNaC::parse_error &e)
-                {
-                    RCLCPP_ERROR(node_->get_logger(), "Expression parsing failed: %s (index: %zu)", e.what(), i);
-                    return CallbackReturn::FAILURE;
-                }
+                RCLCPP_ERROR(node_->get_logger(), "Failed to initialize symbolic differentiators.");
+                return CallbackReturn::FAILURE;
             }
 
             Ju_ = Eigen::MatrixXd::Zero(u_num_ + 3, dof_);
@@ -189,6 +179,27 @@ namespace controllers
             cal_time_ = 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
         }
 
+        bool initializeSymbolicDifferentiators()
+        {
+            sym_diff_.clear();
+            GiNaC::parser reader({{"x", x}, {"y", y}, {"z", z}, {"x0", x0}, {"y0", y0}, {"z0", z0}});
+            for (size_t i = 0; i < u_num_; i++)
+            {
+                try
+                {
+                    GiNaC::ex expr = reader(expressions_[i]);
+                    expr = expr.subs({{x0, p0_[0]}, {y0, p0_[1]}, {z0, p0_[2]}});
+                    sym_diff_.push_back(std::make_unique<SymbolicDifferentiator>(expr, x, y, z));
+                }
+                catch (const GiNaC::parse_error &e)
+                {
+                    RCLCPP_ERROR(node_->get_logger(), "Expression parsing failed: %s (index: %zu)", e.what(), i);
+                    return false;
+                }
+            }
+            return true;
+        }
+
     protected:
         int dof_, u_num_;
         Eigen::MatrixXd M_, C_, Jb_, dJb_, dM_, Jh_, dJh_, Ju_, dJu_;
@@ -201,7 +212,7 @@ namespace controllers
         Eigen::Matrix3d R0_, R_;
         Eigen::Vector3d p0_, p_;
         double success_rate_, cal_time_, Y_, time_;
-        std::vector<double> Ku_vec_, Bu_vec_, Kn_vec_, Bn_vec_;
+        std::vector<double> Ku_vec_, Bu_vec_, Kn_vec_, Bn_vec_, Tcp_vec_;
         RobotData robot_data_;
         std::unique_ptr<DataLogger> data_logger_;
         std::unique_ptr<DisturbanceObserver> disturbance_observer_;

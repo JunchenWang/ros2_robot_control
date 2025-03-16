@@ -80,6 +80,7 @@ VirtualFixtureGeneralController:
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
     Y: 3.5 # 3.0
+    Tcp: [0.0, 0.0, 0.15]
     Expressions:
       - z - z0 # 平面 f(x, y, z) = z - z0
       - x - x0 # 平面 f(x, y, z) = x - x0
@@ -93,6 +94,7 @@ VirtualFixtureGeneralPoseController:
     Kn: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Bn: [6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0]
     Y: 1.0
+    Tcp: [0.0, 0.0, 0.15]
     Expressions:
       - z - z0 # 平面 f(x, y, z) = z - z0
       - x - x0 # 平面 f(x, y, z) = x - x0
