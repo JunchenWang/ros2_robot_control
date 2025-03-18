@@ -76,6 +76,7 @@ install(
 
 add_executable(test_controller test/test_controller.cpp)
 add_executable(debug_all test/debug_all.cpp)
+add_executable(tool_path_planning_test test/tool_path_planning_test.cpp)
 
 target_include_directories(test_controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -92,9 +93,14 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-install(TARGETS test_controller debug_all
-  DESTINATION lib/${PROJECT_NAME})
+ament_target_dependencies(
+  tool_path_planning_test
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
 
+install(TARGETS test_controller debug_all tool_path_planning_test
+  DESTINATION lib/${PROJECT_NAME})
+  
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

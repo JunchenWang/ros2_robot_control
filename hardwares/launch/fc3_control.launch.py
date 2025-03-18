@@ -57,10 +57,10 @@ def generate_launch_description():
             robot_xacro_filepath,
             " ",
             "hand:=",
-            "false",
+            "true",
             " ",
             "ee_id:=",
-            "frank_hand",
+            "surgical_tool",
         ]
     )
     robot_description = ParameterValue(robot_description_content, value_type=str)

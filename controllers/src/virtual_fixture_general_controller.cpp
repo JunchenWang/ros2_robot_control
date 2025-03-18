@@ -61,8 +61,8 @@ namespace controllers
             ddqd_ = Eigen::VectorXd::Zero(dof_);
 
             // 强制修改 TCP，必须放在 on_activate 中
-            Eigen::Map<Eigen::Matrix4d> TCP(const_cast<double *>(robot_->TCP));
-            TCP.block(0, 3, 3, 1) = Eigen::Vector3d(Tcp_vec_[0], Tcp_vec_[1], Tcp_vec_[2]);
+            // Eigen::Map<Eigen::Matrix4d> TCP(const_cast<double *>(robot_->TCP));
+            // TCP.block(0, 3, 3, 1) = Eigen::Vector3d(Tcp_vec_[0], Tcp_vec_[1], Tcp_vec_[2]);
 
             Eigen::Matrix4d T;
             forward_kin_general(robot_, q_vec, T);
