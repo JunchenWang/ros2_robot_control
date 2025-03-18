@@ -17,7 +17,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "std_msgs"
   "robot_math"
   "pluginlib"
-  "control_msgs"
+  "robot_control_msgs"
   "ros2_utility"
   "tf2_ros"
   "visualization_msgs"

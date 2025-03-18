@@ -10,7 +10,7 @@
 #include "hardware_interface/robot_interface.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include <pluginlib/class_loader.hpp>
-#include "control_msgs/srv/control_command.hpp"
+#include "robot_control_msgs/srv/control_command.hpp"
 #include <functional>
 #include <chrono>
 #include <atomic>
@@ -38,8 +38,8 @@ namespace control_node
         void prepare_loop();
         void end_loop();
         void interrupt();
-        void command_callback(const std::shared_ptr<control_msgs::srv::ControlCommand::Request> request,
-                              std::shared_ptr<control_msgs::srv::ControlCommand::Response> response);
+        void command_callback(const std::shared_ptr<robot_control_msgs::srv::ControlCommand::Request> request,
+                              std::shared_ptr<robot_control_msgs::srv::ControlCommand::Response> response);
         bool activate_controller(const std::string &controller_name);
         void shutdown_robot();
         void read(const rclcpp::Time &t, const rclcpp::Duration &period);
@@ -63,7 +63,7 @@ namespace control_node
         std::string robot_description_;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
         std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::msg::JointState>> real_time_publisher_;
-        rclcpp::Service<control_msgs::srv::ControlCommand>::SharedPtr service_;
+        rclcpp::Service<robot_control_msgs::srv::ControlCommand>::SharedPtr service_;
         rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stop_service_;
         bool is_simulation_;
         bool is_sim_real_time_;

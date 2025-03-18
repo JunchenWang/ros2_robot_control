@@ -64,7 +64,7 @@ namespace control_node
             RCLCPP_INFO(this->get_logger(), "%s", ex.what());
             throw ex;
         }
-        service_ = create_service<control_msgs::srv::ControlCommand>("~/control_command",
+        service_ = create_service<robot_control_msgs::srv::ControlCommand>("~/control_command",
                                                                      std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
 
         auto stop_callback = [=](const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
@@ -132,8 +132,8 @@ namespace control_node
         return false;
     }
 
-    void ControlManager::command_callback(const std::shared_ptr<control_msgs::srv::ControlCommand::Request> request,
-                                          std::shared_ptr<control_msgs::srv::ControlCommand::Response> response)
+    void ControlManager::command_callback(const std::shared_ptr<robot_control_msgs::srv::ControlCommand::Request> request,
+                                          std::shared_ptr<robot_control_msgs::srv::ControlCommand::Response> response)
     {
         std::string cmd = request->cmd_name;
         response->result = false;

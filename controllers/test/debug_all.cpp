@@ -1,6 +1,6 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "robot_math/OnlineTrajPlanner.h"
-#include "control_msgs/msg/vector_data.hpp"
+#include "robot_control_msgs/msg/vector_data.hpp"
 #include "ros2_utility/data_logger.hpp"
 #include "ros2_utility/file_utils.hpp"
 #include "ros2_utility/sliding_window.hpp"
@@ -26,8 +26,8 @@ public:
         // test_fileutils();
         // test_datalogger();
         test_editYAML();
-        vec_pub1_ = this->create_publisher<control_msgs::msg::VectorData>("plot1", 10);
-        vec_pub2_ = this->create_publisher<control_msgs::msg::VectorData>("plot2", 10);
+        vec_pub1_ = this->create_publisher<robot_control_msgs::msg::VectorData>("plot1", 10);
+        vec_pub2_ = this->create_publisher<robot_control_msgs::msg::VectorData>("plot2", 10);
         test_publisher();
     }
 
@@ -281,7 +281,7 @@ public:
         {
             auto t_start = high_resolution_clock::now();
             auto timestamp = std::chrono::duration<double>(t_start - t_zero).count();
-            control_msgs::msg::VectorData msg;
+            robot_control_msgs::msg::VectorData msg;
             // 数据分量生成复杂曲线
             // 使用 vector<double> 存储数据
             vector<double> data = {
@@ -318,8 +318,8 @@ public:
     }
     unique_ptr<TransformInterpolator> interpolator_;
     DataLogger *data_logger_;
-    rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub1_;
-    rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub2_;
+    rclcpp::Publisher<robot_control_msgs::msg::VectorData>::SharedPtr vec_pub1_;
+    rclcpp::Publisher<robot_control_msgs::msg::VectorData>::SharedPtr vec_pub2_;
 };
 
 int main(int argc, char *argv[])
