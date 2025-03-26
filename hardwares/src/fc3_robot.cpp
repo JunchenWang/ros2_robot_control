@@ -39,7 +39,7 @@ namespace hardwares
         {
             auto &&state = control_->readOnce().first;
             auto success_rate = state.control_command_success_rate;
-            auto && mass = franka_model_->mass(state);
+            auto &&mass = franka_model_->mass(state);
             auto &&coriolis = franka_model_->coriolis(state);
             auto &&gravity = franka_model_->gravity(state);
             auto &&T = state.O_T_EE;
@@ -112,7 +112,7 @@ namespace hardwares
                     {{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0}}, {{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0}},
                     {{200.0, 200.0, 200.0, 200.0, 200.0, 200.0}}, {{200.0, 200.0, 200.0, 200.0, 200.0, 200.0}},
                     {{100.0, 100.0, 100.0, 100.0, 100.0, 100.0}}, {{100.0, 100.0, 100.0, 100.0, 100.0, 100.0}});
-                franka_robot_->setLoad(0.4, {0, 0, 0.007}, {1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6}); // 设置负载，配置生效直到机器人断电
+                franka_robot_->setLoad(0.4, {0, 0, 0.04}, {1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6}); // 设置负载，配置生效直到机器人断电
                 franka_robot_->setJointImpedance({{3000, 3000, 3000, 2500, 2500, 200, 200}});
                 franka_robot_->setCartesianImpedance({{3000, 3000, 3000, 300, 300, 300}});
                 control_ = franka_robot_->startTorqueControl();

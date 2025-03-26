@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <fstream>
 #include <opencamlib/adaptivepathdropcutter.hpp>
 #include <opencamlib/adaptivewaterline.hpp>
 #include <opencamlib/ballcutter.hpp>
@@ -17,64 +18,53 @@
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
-void printXYZ(ocl::Point point)
+template <typename T>
+void printPoint(T point)
 {
-    printf("X%g ", round(point.x * 100000.0) / 100000.0);
-    printf("Y%g ", round(point.y * 100000.0) / 100000.0);
-    printf("Z%g", round(point.z * 100000.0) / 100000.0);
+    std::cout << "X: " << point.x << " Y: " << point.y << " Z: " << point.z << std::endl;
 }
 
-void linear(ocl::Point point)
+template <typename T>
+void printPoints(std::vector<T> points)
 {
-    printf("G01 ");
-    printXYZ(point);
-    printf("\n");
+    for (auto &point : points)
+        std::cout << "X: " << point.x << " Y: " << point.y << " Z: " << point.z << std::endl;
 }
 
-void moveSafely(ocl::Point point)
+template <typename T>
+void printLoops(std::vector<std::vector<T>> loops)
 {
-    // printf("G00 Z10\n");
-    // printf("G00 ");
-    // printf("X%g ", round(point.x * 100000.0) / 100000.0);
-    // printf("Y%g\n", round(point.y * 100000.0) / 100000.0);
-    // printf("G01 ");
-    // printf("Z%g", round(point.z * 100000.0) / 100000.0);
-    // printf(" F50\n");
-}
-
-void printPoints(std::vector<ocl::Point> points)
-{
-    for (auto j = 0; j < points.size(); j++)
+    for (auto &points : loops)
     {
-        auto point = points[j];
-        if (j == 0)
-            moveSafely(point);
-        else
-            linear(point);
+        printPoints(points);
+        std::cout << "-------------------" << std::endl;
     }
 }
 
-void printPoints(std::vector<ocl::CLPoint> points)
+template <typename T>
+void savePoints(std::vector<T> points, std::string path)
 {
-    for (auto j = 0; j < points.size(); j++)
-    {
-        auto point = points[j];
-        if (j == 0)
-            moveSafely(point);
-        else
-            linear(point);
-    }
+    std::ofstream file(path, std::ios::app);
+    for (auto &point : points)
+        file << point.x << " " << point.y << " " << point.z << std::endl;
+    file.close();
 }
 
-void printLoops(std::vector<std::vector<ocl::Point>> loops)
+template <typename T>
+void saveLoops(std::vector<std::vector<T>> loops, std::string path)
 {
-    for (auto i = 0; i < loops.size(); i++)
+    std::ofstream file(path, std::ios::app);
+    for (auto &points : loops)
     {
-        printPoints(loops[i]);
+        for (auto &point : points)
+            file << point.x << " " << point.y << " " << point.z << std::endl;
+        file << "-------------------" << std::endl;
     }
+    file << "===================" << std::endl;
+    file.close();
 }
 
-void waterline(ocl::STLSurf surface, ocl::MillingCutter *cutter, double z, double sampling)
+void waterline(ocl::STLSurf surface, ocl::MillingCutter *cutter, double z, double sampling, std::string cutterName = "")
 {
     ocl::Waterline wl = ocl::Waterline();
     wl.setSTL(surface);
@@ -86,11 +76,15 @@ void waterline(ocl::STLSurf surface, ocl::MillingCutter *cutter, double z, doubl
         wl.setZ(h);
         wl.run();
         auto loops = wl.getLoops();
+        if (loops.size() == 0)
+            break;
         printLoops(loops);
+        if (cutterName != "")
+            saveLoops(loops, "/home/eric/shared_data/stl/" + cutterName + ".txt");
     }
 }
 
-void adaptiveWaterline(ocl::STLSurf surface, ocl::MillingCutter *cutter, double z, double sampling, double minSampling)
+void adaptiveWaterline(ocl::STLSurf surface, ocl::MillingCutter *cutter, double z, double sampling, double minSampling, std::string cutterName = "")
 {
     ocl::AdaptiveWaterline awl = ocl::AdaptiveWaterline();
     awl.setSTL(surface);
@@ -104,6 +98,8 @@ void adaptiveWaterline(ocl::STLSurf surface, ocl::MillingCutter *cutter, double 
         awl.run();
         auto loops = awl.getLoops();
         printLoops(loops);
+        if (cutterName != "")
+            saveLoops(loops, "/home/eric/shared_data/stl/" + cutterName + ".txt");
     }
 }
 
@@ -145,59 +141,54 @@ public:
     }
     void test()
     {
-        std::cout << "ocl version: " << ocl::version() << "\n";
-        std::cout << "max threads: " << ocl::max_threads() << "\n";
         ocl::STLSurf surface = ocl::STLSurf();
-        std::wstring stlPath = L"/home/eric/shared_data/stl/before.stl";
+        std::wstring stlPath = L"~/shared_data/models/stl/after.stl";
         ocl::STLReader(stlPath, surface);
         std::cout << "surface size: " << surface.size() << "\n";
 
-        ocl::CylCutter cylCutter = ocl::CylCutter(0.4, 10);
-        ocl::BallCutter ballCutter = ocl::BallCutter(4, 20);
-        ocl::BullCutter bullCutter = ocl::BullCutter(4, 0.05, 20);
-        ocl::ConeCutter coneCutter = ocl::ConeCutter(4, 0.05, 20);
+        ocl::CylCutter cylCutter = ocl::CylCutter(0.4, 10);        // 圆柱立铣刀 0.4mm 直径 10mm 长度
+        ocl::ConeCutter coneCutter = ocl::ConeCutter(4, 0.05, 20); // 圆锥立铣刀 4mm 锥角 0.05rad 长度 20mm
         std::vector<ocl::MillingCutter *> cutters;
         cutters.push_back(&cylCutter);
-        cutters.push_back(&ballCutter);
-        cutters.push_back(&bullCutter);
-        cutters.push_back(&coneCutter);
-        double z = 0.5;
-        double sampling = 0.1;
+        // cutters.push_back(&coneCutter);
+        double z = 15;
+        double sampling = 0.3;
         for (auto cutter : cutters)
         {
             std::cout << "WL + Cutter: " << cutter->str() << "\n";
-            waterline(surface, cutter, z, sampling);
+            waterline(surface, cutter, z, sampling, cutter->str());
         }
-        double minSampling = 0.01;
-        for (auto cutter : cutters)
-        {
-            std::cout << "AWL + Cutter: " << cutter->str() << "\n";
-            adaptiveWaterline(surface, cutter, z, sampling, minSampling);
-        }
-        ocl::Path path = ocl::Path();
-        int i = 0;
-        for (double y = 0; y <= 0.2; y = y + 0.1)
-        {
-            bool ltr = ((int)i % 2) == 0;
-            ocl::Point p1 = ocl::Point(ltr ? -2 : 11, y, 0);
-            ocl::Point p2 = ocl::Point(ltr ? 11 : -2, y, 0);
-            ocl::Line l = ocl::Line(p1, p2);
-            path.append(l);
-            ocl::Point p3 = ocl::Point(ltr ? 11 : -2, y + 1, 0);
-            ocl::Line l2 = ocl::Line(p2, p3);
-            path.append(l2);
-            i++;
-        }
-        for (auto cutter : cutters)
-        {
-            std::cout << "PDC + Cutter: " << cutter->str() << "\n";
-            pathDropCutter(surface, cutter, sampling, &path);
-        }
-        for (auto cutter : cutters)
-        {
-            std::cout << "APDC: " << cutter->str() << "\n";
-            adaptivePathDropCutter(surface, cutter, sampling, minSampling, &path);
-        }
+        // double minSampling = 0.01;
+        // for (auto cutter : cutters)
+        // {
+        //     std::cout << "AWL + Cutter: " << cutter->str() << "\n";
+        //     adaptiveWaterline(surface, cutter, z, sampling, minSampling);
+        // }
+        // ocl::Path path = ocl::Path();
+        // int i = 0;
+        // for (double y = 0; y <= 0.2; y = y + 0.1)
+        // {
+        //     bool ltr = ((int)i % 2) == 0;
+        //     ocl::Point p1 = ocl::Point(ltr ? -2 : 11, y, 0);
+        //     ocl::Point p2 = ocl::Point(ltr ? 11 : -2, y, 0);
+        //     ocl::Line l = ocl::Line(p1, p2);
+        //     path.append(l);
+        //     ocl::Point p3 = ocl::Point(ltr ? 11 : -2, y + 1, 0);
+        //     ocl::Line l2 = ocl::Line(p2, p3);
+        //     path.append(l2);
+        //     i++;
+        // }
+        // for (auto cutter : cutters)
+        // {
+        //     std::cout << "PDC + Cutter: " << cutter->str() << "\n";
+        //     pathDropCutter(surface, cutter, sampling, &path);
+        // }
+        // for (auto cutter : cutters)
+        // {
+        //     std::cout << "APDC: " << cutter->str() << "\n";
+        //     adaptivePathDropCutter(surface, cutter, sampling, minSampling, &path);
+        // }
+        std::cout << "Done!" << std::endl;
     }
 };
 

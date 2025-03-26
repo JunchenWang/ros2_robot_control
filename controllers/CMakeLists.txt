@@ -83,22 +83,21 @@ target_include_directories(test_controller PUBLIC
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 target_compile_features(test_controller PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-ament_target_dependencies(
+# 将所有需要添加相同依赖的目标定义为一个列表
+set(EXECUTABLE_TARGETS
   test_controller
-  ${THIS_PACKAGE_INCLUDE_DEPENDS}
-)
-
-ament_target_dependencies(
   debug_all
-  ${THIS_PACKAGE_INCLUDE_DEPENDS}
-)
-
-ament_target_dependencies(
   tool_path_planning_test
-  ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-install(TARGETS test_controller debug_all tool_path_planning_test
+# 循环遍历列表，为每个目标添加依赖
+foreach(TARGET ${EXECUTABLE_TARGETS})
+  ament_target_dependencies(${TARGET}
+    ${THIS_PACKAGE_INCLUDE_DEPENDS}
+  )
+endforeach()
+
+install(TARGETS ${EXECUTABLE_TARGETS}
   DESTINATION lib/${PROJECT_NAME})
   
 if(BUILD_TESTING)
