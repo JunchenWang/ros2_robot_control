@@ -21,6 +21,20 @@ TransformInterpolator::TransformInterpolator(const vector<Matrix4d> &T_traj, dou
     V_ = logT(T_traj_[current_index_].inverse() * T_traj_[current_index_ + 1]);
 }
 
+// 构造函数：支持二维轨迹，直接展平
+TransformInterpolator::TransformInterpolator(const vector<vector<Matrix4d>> &T_traj_2d, double k, double dt, bool print_detail)
+    : TransformInterpolator(
+          [&]
+          {
+              vector<Matrix4d> flat;
+              for (const auto &vec : T_traj_2d)
+                  flat.insert(flat.end(), vec.begin(), vec.end());
+              return flat;
+          }(),                 // 立即执行lambda展平二维vector
+          k, dt, print_detail) // 调用上面的构造函数
+{
+}
+
 // 追加一个变换矩阵
 void TransformInterpolator::addTransform(const Matrix4d &T)
 {
@@ -33,28 +47,35 @@ void TransformInterpolator::addTransform(const Matrix4d &T)
     }
 }
 
-// 追加正弦轨迹，生成在xoy平面，并支持正弦波大小比例调节及自定义周期
+// 追加多个变换矩阵
+void TransformInterpolator::addTransforms(const vector<Matrix4d> &Ts)
+{
+    for (const auto &T : Ts)
+        addTransform(T);
+}
+
+// 追加正弦轨迹，生成在xoy平面，并支持正弦波大小比例调节及自定义周期，单位为米
 void TransformInterpolator::appendSineTrajectory(int total_sine_points, double amplitude, double period)
 {
     // 基于最后一个点生成正弦轨迹
     Matrix4d last_transform = T_traj_.back();
-    double last_x = last_transform(0, 3); // 获取最后一个变换矩阵的x坐标
-    double last_y = last_transform(1, 3); // 获取最后一个变换矩阵的y坐标
-    double last_z = last_transform(2, 3); // 获取最后一个变换矩阵的z坐标
+    double last_x = last_transform(0, 3);               // 获取最后一个变换矩阵的x坐标
+    double last_y = last_transform(1, 3);               // 获取最后一个变换矩阵的y坐标
+    double last_z = last_transform(2, 3);               // 获取最后一个变换矩阵的z坐标
     Matrix3d last_R = last_transform.block(0, 0, 3, 3); // 获取最后一个变换矩阵的旋转矩阵
-    double step = period / (total_sine_points - 1); // 步长，x从0到period
+    double step = period / (total_sine_points - 1);     // 步长，x从0到period
     for (int i = 1; i < total_sine_points; ++i)
     {
-        double x = last_x + i * step; // x轴从0到period
+        double x = last_x + i * step;                                      // x轴从0到period
         double y = last_y + amplitude * sin(2 * M_PI * i * step / period); // y坐标根据自定义周期生成正弦波
-        double z = last_z; // z坐标保持不变
+        double z = last_z;                                                 // z坐标保持不变
 
         // 创建齐次变换矩阵
         Matrix4d T = Matrix4d::Identity();
         T.block(0, 0, 3, 3) = last_R; // 设置旋转矩阵
-        T(0, 3) = x; // 设置x轴位移
-        T(1, 3) = y; // 设置y轴位移，应用正弦波
-        T(2, 3) = z; // 设置z轴位移，保持不变
+        T(0, 3) = x;                  // 设置x轴位移
+        T(1, 3) = y;                  // 设置y轴位移，应用正弦波
+        T(2, 3) = z;                  // 设置z轴位移，保持不变
 
         T_traj_.push_back(T);
     }
@@ -90,11 +111,11 @@ Matrix4d TransformInterpolator::step()
     while (t_ >= 1.0)
     {
         double t_remainder = t_ - 1.0; // 计算剩余插值因子
-        if (!setNextTransform())      // 切换到下一个轨迹段
+        if (!setNextTransform())       // 切换到下一个轨迹段
         {
-            return T_traj_.back();    // 如果所有轨迹完成，返回最后一个目标变换
+            return T_traj_.back(); // 如果所有轨迹完成，返回最后一个目标变换
         }
-        t_ = t_remainder;             // 将剩余因子应用到新轨迹段
+        t_ = t_remainder; // 将剩余因子应用到新轨迹段
     }
 
     // 计算插值变换矩阵

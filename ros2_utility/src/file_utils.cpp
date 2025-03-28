@@ -141,7 +141,9 @@ string FileUtils::getPackageDirectory(const std::string &packageName, const std:
     string package_share_directory = ament_index_cpp::get_package_share_directory(packageName);
     // 推导出工作空间的根目录
     string workspace_directory = package_share_directory + "/../../../../";
-    return workspace_directory + "src/" + folderName + "/" + packageName;
+    if (folderName.empty())
+        return std::filesystem::canonical(workspace_directory + "src/" + packageName);
+    return std::filesystem::canonical(workspace_directory + "src/" + folderName + "/" + packageName);
 }
 
 // 修改 YAML 文件指定节点的值

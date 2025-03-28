@@ -17,8 +17,14 @@ public:
     // 构造函数
     TransformInterpolator(const std::vector<Eigen::Matrix4d> &T_traj, double k = 0.1, double dt = 0.002, bool print_detail = false);
 
+    // 构造函数：支持二维轨迹，直接展平
+    TransformInterpolator(const std::vector<std::vector<Eigen::Matrix4d>> &T_traj_2d, double k = 0.1, double dt = 0.002, bool print_detail = false);
+
     // 追加一个变换矩阵
     void addTransform(const Eigen::Matrix4d &T);
+
+    // 追加多个变换矩阵
+    void addTransforms(const std::vector<Eigen::Matrix4d> &Ts);
 
     // 追加正弦轨迹，生成在xoy平面，并支持正弦波大小比例调节
     void appendSineTrajectory(int total_sine_points, double amplitude, double period);
@@ -47,15 +53,15 @@ public:
     // 将 T_traj_ 的后 num 个齐次变换矩阵乘以 Tdip 倒序追加到 T_traj_ 末尾
     void appendNumTransform(int num, const Eigen::Matrix4d &Tdip);
 
-// private:
+    // private:
     std::vector<Eigen::Matrix4d> T_traj_; // 轨迹点集合
-    double k_;                // 当前速度比例
-    double dt_;               // 时间步长
-    bool print_detail_;       // 是否打印详细信息
-    size_t current_index_;    // 当前轨迹段的索引
-    double t_;                // 当前插值因子
-    double distance_;         // 起始到目标的距离
-    Eigen::Vector6d V_;              // T1 到 T2 的对数映射
+    double k_;                            // 当前速度比例
+    double dt_;                           // 时间步长
+    bool print_detail_;                   // 是否打印详细信息
+    size_t current_index_;                // 当前轨迹段的索引
+    double t_;                            // 当前插值因子
+    double distance_;                     // 起始到目标的距离
+    Eigen::Vector6d V_;                   // T1 到 T2 的对数映射
 };
 
 #endif // TRANSFORM_INTERPOLATOR
