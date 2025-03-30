@@ -74,6 +74,7 @@ namespace hardwares
             }
             else
             {
+                pre_dq_ =  dq;
                 std::fill(ddq.begin(), ddq.end(), 0);
             }
             // std::cerr << "ddq:" << ddq[0] << " " << ddq[1] << " " << ddq[2] << " " << ddq[3] << " " << ddq[4] << " " << ddq[5] << std::endl;
