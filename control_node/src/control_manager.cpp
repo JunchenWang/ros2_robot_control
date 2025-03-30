@@ -1,6 +1,7 @@
 #include "control_node/control_manager.h"
 #include "lifecycle_msgs/msg/state.hpp"
 #include <boost/numeric/odeint.hpp>
+#include "rclcpp/rclcpp.hpp"
 using namespace std::chrono_literals;
 using namespace boost::numeric::odeint;
 namespace control_node
@@ -65,7 +66,7 @@ namespace control_node
             throw ex;
         }
         service_ = create_service<robot_control_msgs::srv::ControlCommand>("~/control_command",
-                                                                     std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
+                                                                           std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
 
         auto stop_callback = [=](const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
                                  std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/)
@@ -80,7 +81,7 @@ namespace control_node
     }
 
     void ControlManager::interrupt()
-    {   
+    {
         keep_running_ = false;
         running_box_ = false;
     }
@@ -91,7 +92,7 @@ namespace control_node
     bool ControlManager::activate_controller(const std::string &controller_name)
     {
         bool running = false;
-        active_controller_box_.get([=, &running](auto const &value)
+        active_controller_box_.get([=, &running](const auto &value)
                                    {
             if (value)
                 running = true; });
@@ -103,7 +104,7 @@ namespace control_node
 
         for (auto &controller : controllers_)
         {
-            if (controller->get_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE && controller->get_node()->get_name() == controller_name)
+            if (controller->get_node_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE && controller->get_node()->get_name() == controller_name)
             {
                 bool ret = true;
                 active_controller_box_.set([=, &ret, &controller](auto &value)
@@ -181,7 +182,7 @@ namespace control_node
             }
             joint_state->header.stamp = t;
             // this is faster but may block the rt thread
-            //joint_state_publisher_->publish(*joint_state);
+            // joint_state_publisher_->publish(*joint_state);
             if (real_time_publisher_->trylock())
             {
                 real_time_publisher_->msg_ = *joint_state;
@@ -234,6 +235,7 @@ namespace control_node
         auto time = sim_start_time_ + rclcpp::Duration::from_seconds(t); //(std::chrono::duration<double>(t));
         // auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(t));
         states->header.stamp = time; // rclcpp::Time(nano_time.count());//this->now(); // ;
+        // joint_state_publisher_->publish(*states);
         if (real_time_publisher_->trylock())
         {
             real_time_publisher_->msg_ = *states;
@@ -255,7 +257,7 @@ namespace control_node
 
     void ControlManager::start_simulation(double time)
     {
-        if(!running_)
+        if (!running_)
             return;
 
         typedef std::vector<double> state_type;
@@ -324,7 +326,7 @@ namespace control_node
             update(current_time, measured_period);
             write(current_time, measured_period);
             // get running state from box
-            running_box_.try_get([=](auto const &value)
+            running_box_.try_get([=](const auto &value)
                                  { running_ = value; });
 
             // wait until we hit the end of the period
@@ -335,13 +337,13 @@ namespace control_node
 
     void ControlManager::prepare_loop()
     {
-        auto state = robot_->get_state();
+        auto state = robot_->get_node_state();
         while (keep_running_ && state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
         {
             RCLCPP_WARN(this->get_logger(), "robot is not configured!");
             std::this_thread::sleep_for(1s);
         }
-        if(!keep_running_)
+        if (!keep_running_)
         {
             running_ = false;
             return;
@@ -356,41 +358,42 @@ namespace control_node
         RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
         do
         {
-            if (!is_simulation_)
-                read(this->now(), rclcpp::Duration(0, 0));
-            while (!active_controller_box_.try_get([=](auto const &value)
-                                                   { active_controller_ = value; }))
-            {
-                std::this_thread::sleep_for(100ms);
-            }
             std::this_thread::sleep_for(1s);
+            read(this->now(), rclcpp::Duration::from_seconds(1.0));
+            active_controller_box_.get([=](auto const &value)
+                                       { active_controller_ = value; });
         } while (keep_running_ && !active_controller_);
-        if(!keep_running_)
+        if (!keep_running_)
         {
-            running_ = false;  
+            running_ = false;
             return;
         }
         running_box_ = true;
-        running_ = true;  
+        running_ = true;
     }
 
     void ControlManager::end_loop()
     {
         active_controller_box_.set([=](auto &value)
-        {
+                                   {
                 if (value)
                 {
-                    auto state = value->get_state();
+                    auto state = value->get_node_state();
                     if(state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
                         value->get_node()->deactivate();
        
                     value = nullptr;
-                } 
-        });
-        auto state = robot_->get_state();
-        if(state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+                } });
+        auto state = robot_->get_node_state();
+        if (state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
             robot_->get_node()->deactivate();
-      
+
+        // clear robot monitor
+        // rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client =
+        //     create_client<std_srvs::srv::Empty>("robot_monitor/clear");
+
+        // auto request = std::make_shared<std_srvs::srv::Empty::Request>();
+        // auto result = client->async_send_request(request);
     }
 
 }

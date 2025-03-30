@@ -16,14 +16,6 @@
 #include <atomic>
 namespace control_node
 {
-    class ShutDownException : public std::runtime_error
-    {
-        public:
-        ShutDownException(const std::string & msg): std::runtime_error(msg)
-        {
-
-        }
-    };
 
     class ControlManager : public rclcpp::Node
     {

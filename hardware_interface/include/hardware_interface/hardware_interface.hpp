@@ -23,7 +23,7 @@ namespace hardware_interface
         void write_state(const std::string& name, const std::vector<double> &s);
         virtual void read(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) {}
         virtual void write(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) {}
-        const rclcpp_lifecycle::State &get_state() const { return node_->get_current_state(); }
+        const rclcpp_lifecycle::State &get_node_state() const { return node_->get_current_state(); }
         CommandInterface &get_command_interface() { return command_; }
         const StateInterface &get_state_interface() const { return state_; }
 

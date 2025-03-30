@@ -36,7 +36,7 @@ namespace controller_interface
                              std::map<std::string, hardware_interface::CommandInterface*>* com_command,
                              const std::map<std::string, const hardware_interface::StateInterface*>* com_state);
 
-        const rclcpp_lifecycle::State &get_state() const { return node_->get_current_state(); }
+        const rclcpp_lifecycle::State &get_node_state() const { return node_->get_current_state(); }
 
         std::shared_ptr<rclcpp_lifecycle::LifecycleNode> get_node() { return node_; }
 
