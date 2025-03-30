@@ -7,8 +7,8 @@
 #include "std_srvs/srv/empty.hpp"
 #include "urdf/model.h"
 #include "robot_math/robot_math.hpp"
-#include "hardware_interface/robot_interface.hpp"
-#include "controller_interface/controller_interface.hpp"
+#include "robot_hardware_interface/robot_interface.hpp"
+#include "robot_controller_interface/controller_interface.hpp"
 #include <pluginlib/class_loader.hpp>
 #include "robot_control_msgs/srv/control_command.hpp"
 #include <functional>

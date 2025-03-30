@@ -69,7 +69,7 @@ bool CSRICommTCPClient::OpenTCP(const std::string &ipRemote, int portRemote, con
 
 
 	}
-	catch(std::exception ex)
+	catch(std::exception &ex)
 	{
 		mLastError = ex.what();
 		return false;
@@ -147,7 +147,7 @@ bool CSRICommTCPClient::ConnectTCP()
 	bool isConnected = false;
 	if (connect(mSocket, (struct sockaddr*) &mRemoteAddr, sizeof(mRemoteAddr)) == -1)
 	{
-		struct timeval timeout = { 0 };
+		struct timeval timeout = { 0, 0 };
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
 
@@ -315,7 +315,7 @@ bool CSRICommTCPClient::CloseThread()
 	}
 	return true;
 }
-void CSRICommTCPClient::TCPClientReceiverThread(int code)
+void CSRICommTCPClient::TCPClientReceiverThread(int /*code*/)
 {
 	mIsStopThread = false;
 	mIsTreadStoped = false;
@@ -437,7 +437,7 @@ bool CSRICommTCPClient::OnSendData(BYTE* data, int dataLen)
 			return false;
 		}
 	}
-	catch (std::exception ex)
+	catch (std::exception &ex)
 	{
 		mLastError = ex.what();
 		OnNetworkFailure();

@@ -29,8 +29,8 @@ namespace control_node
 
         std::string robot_class = this->get_parameter_or<std::string>("robot", "");
         std::vector<std::string> controller_class = this->get_parameter_or<std::vector<std::string>>("controllers", std::vector<std::string>());
-        robot_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::RobotInterface>>("hardware_interface", "hardware_interface::RobotInterface");
-        controller_loader_ = std::make_unique<pluginlib::ClassLoader<controller_interface::ControllerInterface>>("controller_interface", "controller_interface::ControllerInterface");
+        robot_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::RobotInterface>>("robot_hardware_interface", "hardware_interface::RobotInterface");
+        controller_loader_ = std::make_unique<pluginlib::ClassLoader<controller_interface::ControllerInterface>>("robot_controller_interface", "controller_interface::ControllerInterface");
         rclcpp::NodeOptions node_options;
         node_options.allow_undeclared_parameters(true);
         node_options.automatically_declare_parameters_from_overrides(true);

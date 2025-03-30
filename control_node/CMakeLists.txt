@@ -21,8 +21,8 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "std_msgs"
   "std_srvs"
   "robot_math"
-  "hardware_interface"
-  "controller_interface"
+  "robot_hardware_interface"
+  "robot_controller_interface"
   "pluginlib"
   "robot_control_msgs"
 )

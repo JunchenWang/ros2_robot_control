@@ -1,4 +1,4 @@
-#include "hardware_interface/sensor_interface.hpp"
+#include "robot_hardware_interface/sensor_interface.hpp"
 
 using namespace robot_math;
 

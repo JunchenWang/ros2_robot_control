@@ -10,8 +10,8 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "ament_cmake"
   "ament_cmake_ros"
   "realtime_tools"
-  "hardware_interface"
-  "controller_interface"
+  "robot_hardware_interface"
+  "robot_controller_interface"
   "sensor_msgs"
   "urdf"
   "std_msgs"
@@ -40,7 +40,7 @@ endforeach()
 # find_package(realtime_tools)
 # find_package(pluginlib REQUIRED)
 
-pluginlib_export_plugin_description_file(controller_interface plugins.xml)
+pluginlib_export_plugin_description_file(robot_controller_interface plugins.xml)
 
 add_library(controllers 
             src/torque_controller.cpp
@@ -52,7 +52,7 @@ add_library(controllers
             src/admittance_controller.cpp
             src/rcm_controller.cpp)
 
-add_library(controllers::controllers ALIAS controllers)
+# add_library(controllers::controllers ALIAS controllers)
 target_compile_features(controllers PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(controllers PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

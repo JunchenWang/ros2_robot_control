@@ -9,8 +9,8 @@
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
 
-  <depend>controller_interface</depend>
-  <depend>hardware_interface</depend>
+  <depend>robot_controller_interface</depend>
+  <depend>robot_hardware_interface</depend>
   <depend>realtime_tools</depend>
   <depend>robot_math</depend>
   <depend>urdf</depend>

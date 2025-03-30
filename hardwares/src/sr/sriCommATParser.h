@@ -13,7 +13,7 @@ public:
 	bool SetATCallbackFunction(SRICommATCallbackFunction atCallbackFunction);
 
 	bool OnReceivedData(BYTE* data, int dataLen);
-	bool OnNetworkFailure(std::string infor);
+	bool OnNetworkFailure(std::string &infor);
 
 private:
 	CSRICommCircularBuffer mCircularBuffer;

@@ -29,7 +29,7 @@ add_library(robot_math SHARED
            src/OnlineTrajPlanner.cpp
           )
 
-add_library(robot_math::robot_math ALIAS robot_math)
+# add_library(robot_math::robot_math ALIAS robot_math)
 target_compile_features(robot_math PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(robot_math PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

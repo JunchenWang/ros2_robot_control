@@ -27,7 +27,7 @@ bool CSRICommParser::OnReceivedData(BYTE* data, int dataLen)
 	return true;
 }
 
-bool CSRICommParser::OnNetworkFailure(std::string infor)
+bool CSRICommParser::OnNetworkFailure(std::string& /*infor*/)
 {
 	return true;
 }

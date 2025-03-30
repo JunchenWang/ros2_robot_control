@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_INTERFACE_HPP
 #define CONTROLLER_INTERFACE_HPP
-#include "hardware_interface/command_interface.hpp"
-#include "hardware_interface/state_interface.hpp"
+#include "robot_hardware_interface/command_interface.hpp"
+#include "robot_hardware_interface/state_interface.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "robot_math/robot_math.hpp"

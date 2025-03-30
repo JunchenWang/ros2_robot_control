@@ -51,7 +51,7 @@ bool CSRICommM8218Parser::OnReceivedData(BYTE* data, int dataLen)
 	return true;
 }
 
-bool CSRICommM8218Parser::OnNetworkFailure(std::string infor)
+bool CSRICommM8218Parser::OnNetworkFailure(std::string &/*infor*/)
 {
 	return true;
 }

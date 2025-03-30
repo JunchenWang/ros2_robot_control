@@ -1,4 +1,4 @@
-#include "hardware_interface/robot_interface.hpp"
+#include "robot_hardware_interface/robot_interface.hpp"
 #include "robot_math/robot_math.hpp"
 #include <franka/active_torque_control.h>
 #include <franka/duration.h>
@@ -24,7 +24,7 @@ namespace hardwares
         {
             // RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
             hardware_interface::RobotInterface::write(t, period);
-            double dt = 1.0 / update_rate_;
+            //double dt = 1.0 / update_rate_;
             auto &cmd = command_.get<double>("torque");
             // std::cerr << "torque:" << cmd[0] << " " << cmd[1] << " " << cmd[2] << " " << cmd[3] << " "
             //           << cmd[4] << " " << cmd[5] << " " << cmd[6] << std::endl;
@@ -35,7 +35,7 @@ namespace hardwares
         {
             return false;
         }
-        void read(const rclcpp::Time &t, const rclcpp::Duration &period) override
+        void read(const rclcpp::Time &/*t*/, const rclcpp::Duration &/*period*/) override
         {
             auto &&state = control_->readOnce().first;
             auto success_rate = state.control_command_success_rate;

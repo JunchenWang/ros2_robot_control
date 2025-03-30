@@ -2,9 +2,9 @@
 #define ROBOT_INTERFACE_HPP
 
 #include "pluginlib/class_loader.hpp"
-#include "hardware_interface/command_interface.hpp"
-#include "hardware_interface/sensor_interface.hpp"
-#include "hardware_interface/state_interface.hpp"
+#include "robot_hardware_interface/command_interface.hpp"
+#include "robot_hardware_interface/sensor_interface.hpp"
+#include "robot_hardware_interface/state_interface.hpp"
 #include "robot_math/robot_math.hpp"
 #include "urdf/model.h"
 

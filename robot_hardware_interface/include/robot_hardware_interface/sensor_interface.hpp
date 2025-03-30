@@ -1,7 +1,7 @@
 #ifndef SENSOR_INTERFACE_HPP
 #define SENSOR_INTERFACE_HPP
 
-#include "hardware_interface/hardware_interface.hpp"
+#include "robot_hardware_interface/hardware_interface.hpp"
 #include "robot_math/robot_math.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include <atomic>

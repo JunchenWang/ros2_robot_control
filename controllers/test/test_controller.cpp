@@ -1,4 +1,4 @@
-#include <controller_interface/controller_interface.hpp>
+#include <robot_controller_interface/controller_interface.hpp>
 #include <pluginlib/class_loader.hpp>
 
 int main(int argc, char **argv)
@@ -6,7 +6,7 @@ int main(int argc, char **argv)
     // To avoid unused parameter warnings
     rclcpp::init(argc, argv);
 
-    pluginlib::ClassLoader<controller_interface::ControllerInterface> loader("controller_interface", "controller_interface::ControllerInterface");
+    pluginlib::ClassLoader<controller_interface::ControllerInterface> loader("robot_controller_interface", "controller_interface::ControllerInterface");
     std::shared_ptr<controller_interface::ControllerInterface> my_hard;
     try
     {
