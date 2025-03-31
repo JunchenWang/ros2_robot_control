@@ -9,7 +9,7 @@ namespace hardware_interface
 
     RobotInterface::RobotInterface() : dof_(0), update_rate_(0)
     {
-        sensor_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::SensorInterface>>("hardware_interface", "hardware_interface::SensorInterface");
+        sensor_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::SensorInterface>>("robot_hardware_interface", "hardware_interface::SensorInterface");
     }
 
     int RobotInterface::configure_urdf(const std::string &robot_description)
