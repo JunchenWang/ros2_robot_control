@@ -19,6 +19,8 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "robot_math"
   "robot_hardware_interface"
   "pluginlib"
+  "orocos_kdl_vendor"
+  "kdl_parser"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})

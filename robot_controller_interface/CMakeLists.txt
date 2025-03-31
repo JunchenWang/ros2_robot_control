@@ -14,6 +14,8 @@ find_package(urdf REQUIRED)
 find_package(robot_math REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(realtime_tools REQUIRED)
+find_package(orocos_kdl_vendor REQUIRED)
+find_package(kdl_parser REQUIRED)
 
 add_library(robot_controller_interface SHARED
             src/controller_interface.cpp)
@@ -34,6 +36,8 @@ ament_target_dependencies(robot_controller_interface
     "robot_hardware_interface"
     "geometry_msgs"
     "realtime_tools"
+    "orocos_kdl_vendor"
+    "kdl_parser"
   )
 
   

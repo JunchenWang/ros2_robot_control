@@ -33,7 +33,7 @@ namespace robot_math
                       const Eigen::Vector3d &p1_F, const Eigen::Vector3d &p2_F, const Eigen::Vector3d &rcm,
                       const Eigen::MatrixXd &Jb, const Eigen::MatrixXd &dJb, const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT,
                       Eigen::MatrixXd &J, Eigen::MatrixXd &dJ, Eigen::Vector3d &x);
-	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name);
+	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name, std::string &base_link);
 	void print_robot(const Robot &robot);
     // pose: first three are position
 	Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose);
@@ -61,7 +61,7 @@ namespace robot_math
 	void jacobian_matrix(const Robot *robot, const std::vector<double> &q, Eigen::MatrixXd &J, Eigen::Matrix4d &T);
 	void jacobian_matrix_all(const Robot *robot, const std::vector<double> &q, std::shared_ptr<double[]> &J);
 	//void inverse_kin_general(const Robot *robot, Eigen::Matrix4d Td, const std::vector<double> &qref, const double tol[2], std::vector<double> &q, double *flag);
-	void forward_kin_general(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T);
+	void forward_kinematics(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T);
 
 	Eigen::MatrixXd J_sharp(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M); // X x 6
 	Eigen::MatrixXd d_J_sharp(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &dM);

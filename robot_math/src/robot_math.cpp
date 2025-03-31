@@ -158,12 +158,13 @@ namespace robot_math
         }
     }
     
-    Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name)
+    Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name, std::string &base_link)
     {
         urdf::Model urdf_model;
         urdf_model.initString(description);
         std::vector<urdf::LinkSharedPtr> bodies;
         urdf::LinkSharedPtr last_link;
+        Robot robot;
         for (auto link : urdf_model.links_)
         {
             last_link = link.second;
@@ -189,10 +190,11 @@ namespace robot_math
             bodies.push_back(last_link);
         }
         std::reverse(bodies.begin(), bodies.end());
+        base_link = bodies[0]->name;
         bodies.erase(bodies.begin()); // remove base
         int n = bodies.size();
         int dof = 0;
-        Robot robot;
+        
         auto &mass = robot.mass;
         auto &inertia = robot.inertia;
         auto &A = robot.A;
@@ -762,7 +764,7 @@ namespace robot_math
     //     ::inverse_kin_general(robot, Td.data(), qref, tol, q_array, flag);
     // }
 
-    void forward_kin_general(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T)
+    void forward_kinematics(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T)
     {
         int n = robot->dof;
         Eigen::Map<const Eigen::Matrix4d> ME(robot->ME);

@@ -10,8 +10,8 @@ int main()
     std::string description((std::istreambuf_iterator<char>(fin)),
                             std::istreambuf_iterator<char>());
     std::vector<std::string> joint_names;
-    std::string end_effector;
-    Robot robot = urdf_to_robot(description, joint_names, end_effector);
+    std::string end_effector, base;;
+    Robot robot = urdf_to_robot(description, joint_names, end_effector, base);
     print_robot(robot);
     std::vector<double> q{1, 2, 3, 4, 5, 6, 7};
     std::vector<double> dq{1, 2, 3, 4, 5, 6, 7};
@@ -54,7 +54,7 @@ int main()
     std::cout << dTb << "\n";
     std::cout << "\nTb:\n";
     std::cout << Tb << "\n";
-    forward_kin_general(&robot, q, T);
+    forward_kinematics(&robot, q, T);
     std::cout << "\nT:\n";
     std::cout << T << "\n";
     // std::cout << "\ndTb:\n";

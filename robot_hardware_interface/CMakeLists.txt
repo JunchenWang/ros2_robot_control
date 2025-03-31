@@ -15,6 +15,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(orocos_kdl_vendor REQUIRED)
+find_package(kdl_parser REQUIRED)
+
 add_library(robot_hardware_interface SHARED
             src/hardware_interface.cpp
             src/robot_interface.cpp
@@ -25,7 +28,8 @@ add_library(robot_hardware_interface SHARED
 target_compile_features(robot_hardware_interface PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(robot_hardware_interface PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+  )
 
 
 ament_target_dependencies(
@@ -37,6 +41,8 @@ ament_target_dependencies(
   "geometry_msgs"
   "pluginlib"
   "realtime_tools"
+  "orocos_kdl_vendor"
+  "kdl_parser"
 )
 
 target_compile_definitions(robot_hardware_interface PRIVATE "HARDWARE_INTERFACE_BUILDING_LIBRARY")

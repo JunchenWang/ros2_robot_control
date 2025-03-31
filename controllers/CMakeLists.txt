@@ -23,6 +23,8 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "visualization_msgs"
   "geometry_msgs"
   "std_srvs"
+  "orocos_kdl_vendor"
+  "kdl_parser"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})

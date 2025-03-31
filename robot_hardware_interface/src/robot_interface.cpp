@@ -1,5 +1,9 @@
 #include "robot_hardware_interface/robot_interface.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
+#include "kdl/frames.hpp"
+#include "kdl/jntarray.hpp"
+#include "kdl_parser/kdl_parser.hpp"
+
 namespace hardware_interface
 {
 
@@ -16,7 +20,11 @@ namespace hardware_interface
             node_->get_parameter_or<std::string>("end_effector", end_effector_, "");
             node_->get_parameter_or<std::vector<std::string>>("joint_state_interface", joint_state_names, std::vector<std::string>());
             node_->get_parameter_or<std::vector<std::string>>("joint_command_interface", joint_command_names, std::vector<std::string>());
-            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector_);
+            std::string base;
+            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector_, base);
+            kdl_parser::treeFromString(robot_description, tree_);
+            tree_.getChain(base, end_effector_, chain_);
+            solver_ = std::make_unique<KDL::ChainIkSolverPos_LMA>(chain_);
             RCLCPP_INFO(node_->get_logger(), "set end_effector to be %s", end_effector_.c_str());
             dof_ = joint_names_.size();
             std::stringstream ss;
@@ -35,6 +43,18 @@ namespace hardware_interface
             {
                 command_.get<double>().emplace(std::move(name), std::vector<double>(dof_, 0.0));
             }
+
+            std::vector<double> q {0.1,0.2,0.3,0.4,0.5,0.6,0.7};
+            Eigen::Matrix4d T, T2;
+            robot_math::forward_kinematics(&robot_, q, T);
+            std::cerr << " T :\n" << T << std::endl;
+            auto t1 = node_->now();
+            auto qq = inverse_kinematics({0.5, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65}, T);
+            auto t = node_->now() - t1;
+            std::cerr << " t1 : " << t.nanoseconds() / 1000000.0 << std::endl;
+            robot_math::forward_kinematics(&robot_, qq, T2);
+            std::cerr << " T2 :\n" << T2 << std::endl;
+          
             return 1;
         }
         return 0;
@@ -146,5 +166,25 @@ namespace hardware_interface
             damping(i) = dq[i] * robot_model_.joints_.at(joint_names_[i])->dynamics->damping;
         Eigen::Map<Eigen::VectorXd>(&dx[n], n) = M.ldlt().solve(tau - gvtao - damping);
         std::copy(cmd.begin() + n, cmd.end(), dx.begin() + 2 * n);
+    }
+
+    std::vector<double> RobotInterface::inverse_kinematics(const std::vector<double> &q, const Eigen::Matrix4d &Td)
+    {
+        KDL::JntArray q_in(dof_);
+        KDL::JntArray q_out(dof_);
+        for (int i = 0; i < dof_; i++)
+            q_in(i) = q[i];
+        KDL::Frame T;
+        T.p.x(Td(0,3));
+        T.p.y(Td(1,3));
+        T.p.z(Td(2,3));
+        T.M = KDL::Rotation(Td(0,0), Td(0,1), Td(0,2),
+                           Td(1,0), Td(1,1), Td(1,2),
+                           Td(2,0), Td(2,1), Td(2,2));
+        solver_->CartToJnt(q_in, T, q_out);
+        std::vector<double> result(dof_);
+        for (int i = 0; i < dof_; i++)
+            result[i] = q_out(i);
+        return result;
     }
 }
