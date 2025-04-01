@@ -20,12 +20,11 @@ namespace hardware_interface
             node_->get_parameter_or<std::string>("end_effector", end_effector_, "");
             node_->get_parameter_or<std::vector<std::string>>("joint_state_interface", joint_state_names, std::vector<std::string>());
             node_->get_parameter_or<std::vector<std::string>>("joint_command_interface", joint_command_names, std::vector<std::string>());
-            std::string base;
-            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector_, base);
+            robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector_, base_link_);
             kdl_parser::treeFromString(robot_description, tree_);
-            tree_.getChain(base, end_effector_, chain_);
+            tree_.getChain(base_link_, end_effector_, chain_);
             solver_ = std::make_unique<KDL::ChainIkSolverPos_LMA>(chain_);
-            RCLCPP_INFO(node_->get_logger(), "set end_effector to be %s", end_effector_.c_str());
+            RCLCPP_INFO(node_->get_logger(), "the robot chain is from %s to %s", base_link_.c_str(), end_effector_.c_str());
             dof_ = joint_names_.size();
             std::stringstream ss;
             ss << "dof: " << dof_ << " ";
@@ -43,17 +42,17 @@ namespace hardware_interface
             {
                 command_.get<double>().emplace(std::move(name), std::vector<double>(dof_, 0.0));
             }
-
-            std::vector<double> q {0.1,0.2,0.3,0.4,0.5,0.6,0.7};
-            Eigen::Matrix4d T, T2;
-            robot_math::forward_kinematics(&robot_, q, T);
-            std::cerr << " T :\n" << T << std::endl;
-            auto t1 = node_->now();
-            auto qq = inverse_kinematics({0.5, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65}, T);
-            auto t = node_->now() - t1;
-            std::cerr << " t1 : " << t.nanoseconds() / 1000000.0 << std::endl;
-            robot_math::forward_kinematics(&robot_, qq, T2);
-            std::cerr << " T2 :\n" << T2 << std::endl;
+            
+            // std::vector<double> q {0.1,0.2,0.3,0.4,0.5,0.6,0.7};
+            // Eigen::Matrix4d T, T2;
+            // robot_math::forward_kinematics(&robot_, q, T);
+            // std::cerr << " T :\n" << T << std::endl;
+            // auto t1 = node_->now();
+            // auto qq = inverse_kinematics({0.5, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65}, T);
+            // auto t = node_->now() - t1;
+            // std::cerr << " t1 : " << t.nanoseconds() / 1000000.0 << std::endl;
+            // robot_math::forward_kinematics(&robot_, qq, T2);
+            // std::cerr << " T2 :\n" << T2 << std::endl;
           
             return 1;
         }

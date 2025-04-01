@@ -2,10 +2,23 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include "robot_math/ScaleFunction.hpp"
+#include "robot_math/JointTrajectoryPlanner.hpp"
 using namespace robot_math;
 
 int main()
 {
+    ScaleFunction s;
+    s.generate(5);
+    std::ofstream fout("data.txt");
+    for(int i = 0; i <= 500; i++)
+    {
+        double t = i * 0.01;
+        double s_, ds_, dds_;
+        s.evaluate(t, s_, ds_, dds_);
+        fout << t << " " << s_ << " " << ds_ << " " << dds_ << std::endl;
+    }
+    return 0;
     std::ifstream fin("/home/wjc/ros2_ws/urdf/fr3.urdf");
     std::string description((std::istreambuf_iterator<char>(fin)),
                             std::istreambuf_iterator<char>());

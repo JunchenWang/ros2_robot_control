@@ -1,0 +1,32 @@
+control_node:
+  ros__parameters:
+    update_rate: 500
+    lock_memory: true
+    simulation: false
+    sim_real_time: false
+    publish_joint_state: true
+    robot: hardwares::SimulationRobot
+    controllers: 
+      - controllers::JointMotionController
+      - controllers::RealtimeTestController
+    default_controller: JointMotionController
+
+SimulationRobot:
+  ros__parameters:
+    end_effector: ""
+    joint_command_interface:
+      - position
+      - velocity
+      - torque
+    joint_state_interface:
+      - position
+      - velocity
+      - torque
+    command_interface: [mode, pose]
+    command_length: [1, 6] # mode = 0: cartesian, 1: joint position 2: joint velocity 3: joint torque
+    command_type: [int, double]
+
+
+JointMotionController:
+  ros__parameters:
+    cmd_name: "position"

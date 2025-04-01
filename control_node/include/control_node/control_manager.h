@@ -48,6 +48,7 @@ namespace control_node
         pluginlib::UniquePtr<pluginlib::ClassLoader<controller_interface::ControllerInterface>> controller_loader_;
         std::shared_ptr<hardware_interface::RobotInterface> robot_;
         std::vector<controller_interface::ControllerInterface::SharedPtr> controllers_;
+        std::string default_controller_;
         std::shared_ptr<controller_interface::ControllerInterface> active_controller_;
         realtime_tools::RealtimeBox<controller_interface::ControllerInterface::SharedPtr> active_controller_box_;
         std::shared_ptr<rclcpp::Executor> executor_;

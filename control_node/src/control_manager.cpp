@@ -29,6 +29,7 @@ namespace control_node
 
         std::string robot_class = this->get_parameter_or<std::string>("robot", "");
         std::vector<std::string> controller_class = this->get_parameter_or<std::vector<std::string>>("controllers", std::vector<std::string>());
+        default_controller_ = this->get_parameter_or<std::string>("default_controller", "");
         robot_loader_ = std::make_unique<pluginlib::ClassLoader<hardware_interface::RobotInterface>>("robot_hardware_interface", "hardware_interface::RobotInterface");
         controller_loader_ = std::make_unique<pluginlib::ClassLoader<controller_interface::ControllerInterface>>("robot_controller_interface", "controller_interface::ControllerInterface");
         rclcpp::NodeOptions node_options;
@@ -356,12 +357,20 @@ namespace control_node
             ss << controller->get_node()->get_name() << " ";
         }
         RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
+        
         do
         {
             std::this_thread::sleep_for(1s);
             read(this->now(), rclcpp::Duration::from_seconds(1.0));
             active_controller_box_.get([=](auto const &value)
                                        { active_controller_ = value; });
+            // read should be executed first
+            if(!default_controller_.empty())
+            {
+                activate_controller(default_controller_);
+                default_controller_.clear();
+            }
+
         } while (keep_running_ && !active_controller_);
         if (!keep_running_)
         {

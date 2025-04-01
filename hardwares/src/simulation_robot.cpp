@@ -15,33 +15,37 @@ namespace hardwares
             hardware_interface::RobotInterface::read(t, period);
             // auto &force = com_state_["ft_sensor"]->get<double>("force");
             // std::cerr << "raw force: " << force[0] << " " << force[1] << " " << force[2] << " " << force[3] << " " << force[4] << " " << force[5] << std::endl;
-            
         }
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override
         {
             hardware_interface::RobotInterface::write(t, period);
             auto &cmd = command_.get<double>();
             auto &state = state_.get<double>();
-            auto it = cmd.find("position");
-            if(it != cmd.end())
+            auto mode = command_.get<int>("mode")[0];
+            if (mode == 0) // cartisan space
             {
-                state["position"] = it->second;
-                it = cmd.find("velocity");
-                if(it != cmd.end())
+                auto it = cmd.find("pose");
+                if (it != cmd.end())
                 {
-                    state["velocity"] = it->second;
+                    Eigen::Map<Eigen::Matrix4d> T(&it->second[0]);
+                    auto jt = inverse_kinematics(state["position"], T);
+                    for (int i = 0; i < dof_; i++)
+                        state["velocity"][i] = (jt[i] - state["position"][i]) / period.seconds();
+                    state["position"] = jt;
                 }
             }
-            else
+            else if (mode == 1) // joint space
             {
-                it = cmd.find("velocity");
-                if(it != cmd.end())
-                {
-                    auto &p = state["position"];
-                    for(int i = 0; i < dof_; i++)
-                       p[i] += it->second[i] * period.seconds();
-                    state["velocity"] = it->second;
-                }
+                for (int i = 0; i < dof_; i++)
+                    state["velocity"][i] = (cmd["position"][i] - state["position"][i]) / period.seconds();
+                state["position"] = cmd["position"];
+                //state["velocity"] = cmd["velocity"];
+            }
+            else if (mode == 2) // velocity
+            {
+                state["velocity"] = cmd["velocity"];
+                for (int i = 0; i < dof_; i++)
+                    state["position"][i] += cmd["velocity"][i] * period.seconds();
             }
         }
     };

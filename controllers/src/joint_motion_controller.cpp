@@ -1,68 +1,53 @@
 #include "robot_controller_interface/controller_interface.hpp"
 #include <iostream>
 #include "robot_math/robot_math.hpp"
+#include "robot_math/JointTrajectoryPlanner.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 namespace controllers
 {
 
-    class ForwardController : public controller_interface::ControllerInterface
+    class JointMotionController : public controller_interface::ControllerInterface
     {
     public:
         using CmdType = std_msgs::msg::Float64MultiArray;
-        ForwardController() : real_time_buffer_(nullptr)
+        JointMotionController() : real_time_buffer_(nullptr)
         {
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
         {
             auto js = *real_time_buffer_.readFromRT();
-            auto &cmd_interface = command_->get<double>(cmd_name_);
-            command_->get<int>("mode")[0] = mode_;
+            auto &cmd = command_->get<double>("position");
+            auto &cmd_v = command_->get<double>("velocity");
+            auto &q = state_->get<double>("position");
+            auto &dq = state_->get<double>("velocity");
+            command_->get<int>("mode")[0] = 1;
             if (js)
             {
-                if (js->data.size() != cmd_interface.size())
+                auto goal = js->data;
+                if (!planner.has_same_goal(goal))
                 {
-                    RCLCPP_ERROR(node_->get_logger(), "Size of command does not match size of joint state");
-                    return;
+                    planner.generate_speed(q, dq, goal, 1.5);
+                    
+                    last_time_ = node_->now();
                 }
-                for (std::size_t i = 0; i < js->data.size(); ++i)
+                auto dt = node_->now() - last_time_;
+                std::vector<double> q, dq, ddq;
+                if (planner.evaluate(dt.seconds(), q, dq, ddq))
                 {
-                    cmd_interface[i] = js->data[i];
+                    cmd = q;
+                    cmd_v = dq;
                 }
             }
             else
             {
-                if (mode_ == 0)
-                {
-                    cmd_interface = robot_math::tform_to_pose(T0_);
-                }
-                else
-                    for (std::size_t i = 0; i < cmd_interface.size(); ++i)
-                    {
-
-                        if (mode_ == 1)
-                            cmd_interface[i] = q0_[i];
-                        else if (mode_ == 2)
-                            cmd_interface[i] = dq0_[i];
-                    }
+                cmd = q0_;
+                cmd_v = dq0_;
             }
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            node_->get_parameter_or<std::string>("cmd_name", cmd_name_, "");
-            if (cmd_name_ == "pose")
-                mode_ = 0;
-            else if (cmd_name_ == "position")
-                mode_ = 1;
-            else if (cmd_name_ == "velocity")
-                mode_ = 2;
-            else
-            {
-                RCLCPP_ERROR(node_->get_logger(), "cmd_name %s is not supported!", cmd_name_.c_str());
-                return CallbackReturn::FAILURE;
-            }
-
             command_receiver_ = node_->create_subscription<CmdType>(
                 "~/commands", rclcpp::SystemDefaultsQoS(),
                 [this](const CmdType::SharedPtr msg)
@@ -88,15 +73,15 @@ namespace controllers
     protected:
         rclcpp::Subscription<CmdType>::SharedPtr command_receiver_;
         realtime_tools::RealtimeBuffer<CmdType::SharedPtr> real_time_buffer_;
-        std::string cmd_name_;
-        int mode_;
         std::vector<double> q0_;
         std::vector<double> dq0_;
         Eigen::Matrix4d T0_;
+        robot_math::JointTrajectoryPlanner planner;
+        rclcpp::Time last_time_;
     };
 
 } // namespace controllers
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(controllers::ForwardController, controller_interface::ControllerInterface)
+PLUGINLIB_EXPORT_CLASS(controllers::JointMotionController, controller_interface::ControllerInterface)

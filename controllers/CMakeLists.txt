@@ -52,13 +52,15 @@ add_library(controllers
             src/force_drag_controller.cpp
             src/force_drag_dev_controller.cpp
             src/admittance_controller.cpp
-            src/rcm_controller.cpp)
+            src/rcm_controller.cpp
+            src/joint_motion_controller.cpp)
 
 # add_library(controllers::controllers ALIAS controllers)
 target_compile_features(controllers PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(controllers PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+
 ament_target_dependencies(
   controllers
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
@@ -82,11 +84,12 @@ install(
 
 add_executable(test_controller test/test_controller.cpp)
 add_executable(debug_all test/debug_all.cpp)
+add_executable(test_forward_controller test/test_forward_controller.cpp)
 
-target_include_directories(test_controller PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(test_controller PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+# target_include_directories(test_controller PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+# target_compile_features(test_controller PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
 ament_target_dependencies(
   test_controller
@@ -98,7 +101,12 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-install(TARGETS test_controller debug_all
+ament_target_dependencies(
+  test_forward_controller
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+install(TARGETS test_controller debug_all test_forward_controller
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
