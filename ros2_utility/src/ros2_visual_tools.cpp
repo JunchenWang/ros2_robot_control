@@ -30,6 +30,13 @@ ROS2VisualTools::ROS2VisualTools(const std::shared_ptr<rclcpp_lifecycle::Lifecyc
     line_marker_.color.g = 216.0f / 255.0f;
     line_marker_.color.b = 230.0f / 255.0f;
     line_marker_.color.a = 1.0; // 不透明
+
+    // STL Marker初始化
+    stl_marker_.ns = "stl_models";
+    stl_marker_.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+    stl_marker_.action = visualization_msgs::msg::Marker::ADD;
+    stl_marker_.mesh_use_embedded_materials = true; // 启用模型内置材质
+    stl_marker_.color.a = 1.0;                      // 默认透明度
 }
 
 // 广播TF变换，更新坐标系之间的转换关系
@@ -88,7 +95,8 @@ void ROS2VisualTools::publishPointMarker(const Vector3d &position, const std::st
     point_marker_.scale.z = 0.005 * marker_size; // z轴缩放
 
     // 发布Marker
-    marker_pub_->publish(point_marker_);
+    if (marker_pub_->get_subscription_count() > 0)
+        marker_pub_->publish(point_marker_);
 }
 
 // 发布线Marker，用于Rviz等可视化工具显示位置
@@ -117,30 +125,60 @@ void ROS2VisualTools::publishLineMarker(const Vector3d &position, const std::str
     line_marker_.scale.x = 0.003 * marker_size; // 线宽
 
     // 发布线段
-    marker_pub_->publish(line_marker_);
+    if (marker_pub_->get_subscription_count() > 0)
+        marker_pub_->publish(line_marker_);
 }
 
-void ROS2VisualTools::saveToFile(const VectorXd &data, const std::string &file_path)
+// STL模型发布函数
+// @param stl_path STL模型的路径
+// @param position 模型的位置
+// @param rotation 模型的旋转矩阵
+// @param frame_id 模型所在的坐标系ID
+// @param color 模型的颜色，默认为白色
+// @param scale 模型的缩放因子，默认为(1, 1, 1)
+void ROS2VisualTools::publishSTLMarker(
+    const std::string &stl_path,
+    const Eigen::Vector3d &position,
+    const Eigen::Matrix3d &rotation,
+    const std::string &frame_id,
+    const std::array<float, 4> &color,
+    const Eigen::Vector3d &scale)
 {
-    // 打开文件流
-    std::ofstream fout(file_path, std::ios::app); // 使用追加模式
-    if (!fout.is_open())
+    // 设置动态属性
+    stl_marker_.header.stamp = rclcpp::Clock().now();
+    stl_marker_.id = std::hash<std::string>{}(stl_path); // 路径哈希作为唯一ID
+
+    stl_marker_.header.frame_id = frame_id; // 坐标系ID
+    stl_marker_.pose.position.x = position.x();
+    stl_marker_.pose.position.y = position.y();
+    stl_marker_.pose.position.z = position.z();
+
+    // 设置旋转
+    Quaterniond quaternion(rotation);
+    stl_marker_.pose.orientation.w = quaternion.w();
+    stl_marker_.pose.orientation.x = quaternion.x();
+    stl_marker_.pose.orientation.y = quaternion.y();
+    stl_marker_.pose.orientation.z = quaternion.z();
+
+    // 资源路径处理
+    if (stl_path.find("package://") == std::string::npos)
     {
-        RCLCPP_ERROR(rclcpp::get_logger("ROS2VisualTools"), "Failed to open file: %s", file_path.c_str());
+        RCLCPP_ERROR(rclcpp::get_logger("ROS2VisualTools"),
+                     "Invalid STL path format. Must use package:// URI");
         return;
     }
+    stl_marker_.mesh_resource = stl_path;
 
-    // 遍历向量元素，按空格分隔写入
-    for (int i = 0; i < data.size(); ++i)
-    {
-        fout << data(i);
-        if (i != data.size() - 1)
-        {
-            fout << " "; // 元素间空格分隔
-        }
-    }
-    fout << std::endl; // 换行
+    // 视觉参数设置
+    stl_marker_.scale.x = scale.x();
+    stl_marker_.scale.y = scale.y();
+    stl_marker_.scale.z = scale.z();
+    stl_marker_.color.r = color[0];
+    stl_marker_.color.g = color[1];
+    stl_marker_.color.b = color[2];
+    stl_marker_.color.a = color[3];
 
-    // 关闭文件流
-    fout.close();
+    // 发布前有效性检查
+    if (marker_pub_->get_subscription_count() > 0)
+        marker_pub_->publish(stl_marker_);
 }

@@ -26,14 +26,26 @@ public:
         const std::string &frame_id,
         const std::string &child_frame_id);
     // 发布点和线Marker，用于可视化
-    // @param position Marker的位置，Eigen::Vector3d 格式
+    // @param position Marker的位置
     // @param frame_id Marker所在的坐标系ID
     // @param marker_size Marker的大小，默认为1.0
     void publishPointMarker(const Eigen::Vector3d &position, const std::string &frame_id, double marker_size = 1.0);
     void publishLineMarker(const Eigen::Vector3d &position, const std::string &frame_id, double marker_size = 1.0);
 
-    // 保存任意长度的向量数据到文件
-    void saveToFile(const Eigen::VectorXd &data, const std::string &file_path);
+    // STL模型发布函数
+    // @param stl_path STL模型的路径
+    // @param position 模型的位置
+    // @param rotation 模型的旋转矩阵
+    // @param frame_id 模型所在的坐标系ID
+    // @param color 模型的颜色，默认为白色
+    // @param scale 模型的缩放因子，默认为(1, 1, 1)
+    void publishSTLMarker(
+        const std::string &stl_path,
+        const Eigen::Vector3d &position,
+        const Eigen::Matrix3d &rotation,
+        const std::string &frame_id,
+        const std::array<float, 4> &color = {1.0f, 1.0f, 1.0f, 1.0f},
+        const Eigen::Vector3d &scale = Eigen::Vector3d(1.0, 1.0, 1.0));
 
 private:
     // 发布器，用于发送Marker消息到Rviz等可视化工具
@@ -43,6 +55,7 @@ private:
     size_t publish_counter_ = 0;                         // 发布计数器
     visualization_msgs::msg::Marker line_marker_;        // 线段Marker对象
     visualization_msgs::msg::Marker point_marker_;       // 点Marker对象
+    visualization_msgs::msg::Marker stl_marker_;         // STL模型Marker对象
     std::vector<geometry_msgs::msg::Point> path_points_; // 存储历史点
 
     // TF广播器，用于广播TF变换

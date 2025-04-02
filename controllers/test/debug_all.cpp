@@ -7,6 +7,7 @@
 #include "ros2_utility/sliding_window.hpp"
 #include "ros2_utility/symbolic_diffentiator.hpp"
 #include "ros2_utility/transform_interpolator.hpp"
+#include "ros2_utility/ros2_visual_tools.hpp"
 #include <autodiff/reverse/var.hpp>
 #include <autodiff/reverse/var/eigen.hpp>
 #include <ginac/ginac.h>
@@ -46,7 +47,8 @@ public:
         // test_publisher();
         // test_autodiff();
         // test_ginac();
-        test_opencamlib();
+        // test_opencamlib();
+        test_visual_tools();
     }
 
     // 测试 OnlineTrajPlanner 类
@@ -424,7 +426,32 @@ public:
         std::cout << "  " << p1 << ".normalize()  = " << p3 << " norm=" << p3.norm() << "\n";
     }
 
+    // 测试 visual_tools
+    void test_visual_tools()
+    {
+        auto node = std::make_shared<rclcpp_lifecycle::LifecycleNode>("visual_tools_node");
+        visual_tools_ = std::make_unique<ROS2VisualTools>(node);
+        Eigen::Vector3d position(0.1, 0.2, 0.3);
+        Eigen::Matrix3d rotation = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX()).toRotationMatrix();
+        visual_tools_->publishSTLMarker(
+            "package://franka_description/meshes/robot_ee/surgical_tool/collision/surgical_tool.stl",
+            position,
+            rotation,
+            "base",
+            {1.0f, 1.0f, 1.0f, 1.0f},
+            Vector3d(0.001, 0.001, 0.001));
+        position << -0.2, 0.3, 0.4;
+        rotation = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY()).toRotationMatrix();
+        visual_tools_->publishSTLMarker(
+            "package://franka_description/meshes/robot_ee/cobot_pump/collision/cobot_pump.stl",
+            position,
+            rotation,
+            "base",
+            {1.0f, 1.0f, 1.0f, 1.0f},
+            Vector3d(1.0, 1.0, 1.0));
+    }
     unique_ptr<TransformInterpolator> interpolator_;
+    unique_ptr<ROS2VisualTools> visual_tools_;
     DataLogger *data_logger_;
     rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub1_;
     rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub2_;
