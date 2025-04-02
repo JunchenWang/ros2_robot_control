@@ -23,7 +23,7 @@ namespace hardware_interface
         const std::vector<std::string> &get_joint_names() const { return joint_names_; }
         int get_dof() const { return dof_; }
         const urdf::Model &get_urdf_model() const { return robot_model_; }
-        virtual std::vector<double> inverse_kinematics(const std::vector<double> &q, const Eigen::Matrix4d &Td);
+        virtual int inverse_kinematics(const std::vector<double> &q, const Eigen::Matrix4d &Td, std::vector<double> &qd);
         virtual bool is_stop() {return false;};
         void set_update_rate(int rate) { update_rate_ = rate; }
         std::vector<rclcpp::node_interfaces::NodeBaseInterface::SharedPtr> get_all_nodes();

@@ -167,7 +167,7 @@ namespace hardware_interface
         std::copy(cmd.begin() + n, cmd.end(), dx.begin() + 2 * n);
     }
 
-    std::vector<double> RobotInterface::inverse_kinematics(const std::vector<double> &q, const Eigen::Matrix4d &Td)
+    int RobotInterface::inverse_kinematics(const std::vector<double> &q, const Eigen::Matrix4d &Td, std::vector<double> &qd)
     {
         KDL::JntArray q_in(dof_);
         KDL::JntArray q_out(dof_);
@@ -180,10 +180,14 @@ namespace hardware_interface
         T.M = KDL::Rotation(Td(0,0), Td(0,1), Td(0,2),
                            Td(1,0), Td(1,1), Td(1,2),
                            Td(2,0), Td(2,1), Td(2,2));
-        solver_->CartToJnt(q_in, T, q_out);
+        if (solver_->CartToJnt(q_in, T, q_out) != 0)
+        {
+            return 0;
+        }
+        qd.resize(dof_);
         std::vector<double> result(dof_);
         for (int i = 0; i < dof_; i++)
-            result[i] = q_out(i);
-        return result;
+            qd[i] = q_out(i);
+        return 1;
     }
 }

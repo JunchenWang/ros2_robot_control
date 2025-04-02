@@ -10,6 +10,15 @@ namespace robot_math
         CartesianTrajectoryPlanner()
         {
         }
+        bool has_same_goal(const std::vector<double> &goal)
+        {
+            Eigen::Matrix4d G = pose_to_tform(goal);
+            Eigen::Vector3d re = logR(Re_.transpose() * G.block<3,3>(0,0));
+            Eigen::Vector3d pe = G.block<3,1>(0,3) - pe_; 
+            if(re.norm() < 1e-6 && pe.norm() < 1e-6)
+                return true;
+            return false;
+        }
         bool evaluate(double t, Eigen::Matrix4d &T, Eigen::Vector6d &V, Eigen::Vector6d &dV)
         {
             double s, ds, dds;
@@ -27,9 +36,17 @@ namespace robot_math
             return false;
         }
 
-        int generate(const Eigen::Matrix4d &Ts, const Eigen::Matrix4d &Te, double time)
+        void generate_speed(const Eigen::Matrix4d &Ts, const Eigen::Matrix4d &Te, double v)
         {
-            s_.generate(time);
+            auto t1 = (Ts.block<3, 1>(0, 3) - Te.block<3, 1>(0, 3)).norm() / v;
+            auto t2 = logR(Ts.block<3, 3>(0, 0).transpose() * Te.block<3, 3>(0, 0)).norm() / v;
+            time_ = t1 > t2 ? t1 : t2;
+            
+            generate(Ts, Te, time_);
+            
+        }
+        void generate(const Eigen::Matrix4d &Ts, const Eigen::Matrix4d &Te, double time)
+        {
             Rs_ = Ts.block<3, 3>(0, 0);
             Re_ = Te.block<3, 3>(0, 0);
             ps_ = Ts.block<3, 1>(0, 3);
@@ -38,6 +55,7 @@ namespace robot_math
             Rsre_ = Rs_ * re_;
             pse_ = pe_ - ps_;
             time_ = time;
+            s_.generate(time_);
         }
 
     protected:

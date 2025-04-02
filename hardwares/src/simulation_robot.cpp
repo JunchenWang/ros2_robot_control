@@ -24,15 +24,16 @@ namespace hardwares
             auto mode = command_.get<int>("mode")[0];
             if (mode == 0) // cartisan space
             {
-                auto it = cmd.find("pose");
-                if (it != cmd.end())
+                std::vector<double> jt;
+                if(inverse_kinematics(state["position"],robot_math::pose_to_tform(cmd["pose"]), jt))
                 {
-                    Eigen::Map<Eigen::Matrix4d> T(&it->second[0]);
-                    auto jt = inverse_kinematics(state["position"], T);
                     for (int i = 0; i < dof_; i++)
                         state["velocity"][i] = (jt[i] - state["position"][i]) / period.seconds();
                     state["position"] = jt;
                 }
+                else
+                    throw std::runtime_error("ik error");
+                
             }
             else if (mode == 1) // joint space
             {

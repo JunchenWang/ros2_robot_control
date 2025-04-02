@@ -26,4 +26,7 @@
   <class type="controllers::JointMotionController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a joint motion controller plugin.</description>
   </class>
+  <class type="controllers::CartesianMotionController" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a Cartesian motion controller plugin.</description>
+  </class>
 </library>

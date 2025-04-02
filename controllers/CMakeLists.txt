@@ -53,7 +53,8 @@ add_library(controllers
             src/force_drag_dev_controller.cpp
             src/admittance_controller.cpp
             src/rcm_controller.cpp
-            src/joint_motion_controller.cpp)
+            src/joint_motion_controller.cpp
+            src/cartesian_motion_controller.cpp)
 
 # add_library(controllers::controllers ALIAS controllers)
 target_compile_features(controllers PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
@@ -85,7 +86,8 @@ install(
 add_executable(test_controller test/test_controller.cpp)
 add_executable(debug_all test/debug_all.cpp)
 add_executable(test_forward_controller test/test_forward_controller.cpp)
-
+add_executable(movel utility/movel.cpp)
+add_executable(movej utility/movej.cpp)
 # target_include_directories(test_controller PUBLIC
 #   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 #   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
@@ -106,7 +108,17 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-install(TARGETS test_controller debug_all test_forward_controller
+ament_target_dependencies(
+  movej
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+ament_target_dependencies(
+  movel
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+install(TARGETS test_controller debug_all test_forward_controller movej movel
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
