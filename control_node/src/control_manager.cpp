@@ -99,8 +99,15 @@ namespace control_node
                 running = true; });
         if (running)
         {
-            RCLCPP_WARN(get_logger(), "controller is running, please stop first!");
-            return false;
+            running_box_.set(false);
+            do
+            {
+                active_controller_box_.get([=, &running](const auto &value)
+                                           {
+            if (!value)
+                running = false; });
+                std::this_thread::sleep_for(1ms);
+            } while (running);
         }
 
         for (auto &controller : controllers_)
@@ -357,7 +364,7 @@ namespace control_node
             ss << controller->get_node()->get_name() << " ";
         }
         RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
-        
+
         do
         {
             std::this_thread::sleep_for(1s);
@@ -365,7 +372,7 @@ namespace control_node
             active_controller_box_.get([=](auto const &value)
                                        { active_controller_ = value; });
             // read should be executed first
-            if(!default_controller_.empty())
+            if (!default_controller_.empty())
             {
                 activate_controller(default_controller_);
                 default_controller_.clear();
