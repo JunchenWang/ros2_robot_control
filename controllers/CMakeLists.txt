@@ -7,8 +7,6 @@ endif()
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   "rclcpp_lifecycle"
-  "ament_cmake"
-  "ament_cmake_ros"
   "realtime_tools"
   "robot_hardware_interface"
   "robot_controller_interface"
