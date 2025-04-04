@@ -70,6 +70,44 @@ namespace robot_math
         T << R, t, 0, 0, 0, 1;
         return T;
     }
+
+    std::vector<double> quaternion_pose_to_rv_pose(const std::vector<double> &q_pose)
+    {
+        std::vector<double> rv_pose(6);
+        rv_pose[0] = q_pose[0];
+        rv_pose[1] = q_pose[1];
+        rv_pose[2] = q_pose[2];
+        Eigen::Quaterniond q(q_pose[3], q_pose[4], q_pose[5], q_pose[6]);
+        Eigen::AngleAxisd a(q);
+        Eigen::Vector3d rv = a.axis() * a.angle();
+        rv_pose[3] = rv(0);
+        rv_pose[4] = rv(1);
+        rv_pose[5] = rv(2);
+        return rv_pose;
+    }
+	std::vector<double> rv_pose_to_quaternion_pose(const std::vector<double> &rv_pose)
+    {
+        std::vector<double> q_pose(7);
+        q_pose[0] = rv_pose[0];
+        q_pose[1] = rv_pose[1];
+        q_pose[2] = rv_pose[2];
+        Eigen::Vector3d rv(rv_pose[3], rv_pose[4], rv_pose[5]);
+        Eigen::Quaterniond q(exp_r(rv));
+        q_pose[3] = q.w();
+        q_pose[4] = q.x();
+        q_pose[5] = q.y();
+        q_pose[6] = q.z();
+        return q_pose;
+    }
+
+    Eigen::Matrix4d quaternion_pose_to_tform(const std::vector<double> &pose)
+    {
+        Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+        T.block(0, 3, 3, 1) << pose[0], pose[1], pose[2];
+        Eigen::Quaterniond q(pose[3], pose[4], pose[5], pose[6]);
+        T.block(0, 0, 3, 3) = q.toRotationMatrix();
+        return T;
+    }
     Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose)
     {
         Eigen::Vector3d rv(pose[3], pose[4], pose[5]);
@@ -338,7 +376,12 @@ namespace robot_math
 
         return V;
     }
-
+    std::vector<double> tform_to_quaternion_pose(const Eigen::Matrix4d &T)
+    {
+        Eigen::Matrix3d R = T.block(0, 0, 3, 3);
+        Eigen::Quaterniond q(R);
+        return {T(0, 3), T(1, 3), T(2, 3), q.w(), q.x(), q.y(), q.z()};
+    }
     std::vector<double> tform_to_pose(const Eigen::Matrix4d &T)
     {
         Eigen::Vector3d w;
