@@ -46,6 +46,7 @@ def generate_launch_description():
         [
             FindPackageShare("applications"),
             "config",
+            "fr3",
             "visualize_franka.rviz",
         ]
     )
