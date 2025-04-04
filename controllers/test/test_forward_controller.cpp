@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     auto node = std::make_shared<rclcpp::Node>("test_forward_controller");
     auto publisher_ = node->create_publisher<std_msgs::msg::Float64MultiArray>("JointMotionController/commands", rclcpp::SystemDefaultsQoS());
     rclcpp::Time start = node->now();
-    int cnt = 1;
+    int cnt = 0;
     auto timer_callback =
       [=,&cnt]() -> void {
         std_msgs::msg::Float64MultiArray msg;
@@ -19,11 +19,11 @@ int main(int argc, char **argv)
             msg.data = {3.1415926, 0, 0, 0, 0, 0};
         else 
             msg.data = {0, 0, 0, 0, 0, 0};
-        msg.data = {y, 0, 0, 0, 0, 0};
-        cnt++;
+        
+        RCLCPP_INFO(node->get_logger(), "send: %d", ++cnt);
         publisher_->publish(msg);
       };
-    auto timer_ = node->create_wall_timer(0.02s, timer_callback);
+    auto timer_ = node->create_wall_timer(1s, timer_callback);
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

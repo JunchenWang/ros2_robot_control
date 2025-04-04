@@ -1,4 +1,4 @@
 string cmd_name
-string[] cmd_params
+string cmd_params
 ---
 bool result

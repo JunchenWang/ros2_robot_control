@@ -147,7 +147,7 @@ namespace control_node
         std::string cmd = request->cmd_name;
         response->result = false;
         if (cmd == "activate")
-            response->result = activate_controller(request->cmd_params[0]);
+            response->result = activate_controller(request->cmd_params);
     }
 
     int ControlManager::get_update_rate()

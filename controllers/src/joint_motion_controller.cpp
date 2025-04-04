@@ -48,10 +48,13 @@ namespace controllers
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
+
             command_receiver_ = node_->create_subscription<CmdType>(
-                "~/commands", rclcpp::SystemDefaultsQoS(),
+                "~/commands",rclcpp::SystemDefaultsQoS(),
                 [this](const CmdType::SharedPtr msg)
                 {
+                    static int cnt = 0;
+                    RCLCPP_INFO(node_->get_logger(), "received: %d", ++cnt);
                     real_time_buffer_.writeFromNonRT(msg);
                 });
             return CallbackReturn::SUCCESS;
