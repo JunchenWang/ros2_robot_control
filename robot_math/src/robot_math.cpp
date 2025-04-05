@@ -92,11 +92,22 @@ namespace robot_math
         q_pose[1] = rv_pose[1];
         q_pose[2] = rv_pose[2];
         Eigen::Vector3d rv(rv_pose[3], rv_pose[4], rv_pose[5]);
-        Eigen::Quaterniond q(exp_r(rv));
-        q_pose[3] = q.w();
-        q_pose[4] = q.x();
-        q_pose[5] = q.y();
-        q_pose[6] = q.z();
+        if(rv.norm() > std::numeric_limits<double>::epsilon())
+        {
+            Eigen::Quaterniond q(Eigen::AngleAxisd(rv.norm(), rv.normalized()));
+            q_pose[3] = q.w();
+            q_pose[4] = q.x();
+            q_pose[5] = q.y();
+            q_pose[6] = q.z();
+        }
+        else
+        {
+            q_pose[3] = 1;
+            q_pose[4] = 0;
+            q_pose[5] = 0;
+            q_pose[6] = 0;
+        }
+        
         return q_pose;
     }
 
