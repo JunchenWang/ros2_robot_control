@@ -1,6 +1,7 @@
 #include "robot_controller_interface/controller_interface.hpp"
 #include <iostream>
 #include "robot_math/robot_math.hpp"
+#include "ros2_utility/ros2_visual_tools.hpp"
 #include "robot_math/trajectory.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
@@ -49,6 +50,7 @@ namespace controllers
                     Eigen::Vector6d V, dV;
                     trajectory.evaluate(dt.seconds(), T, V, dV);
                     cmd = robot_math::tform_to_pose(T);
+                    visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
                     
                 }
                
@@ -72,6 +74,7 @@ namespace controllers
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
+            visual_tools_ = std::make_shared<ROS2VisualTools>(node_);
             new_arrival_ = false;
             real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
             q0_ = state_->get<double>("position");
@@ -98,6 +101,7 @@ namespace controllers
         rclcpp::Time last_time_;
         std::mutex mutex_;
         bool new_arrival_ = false;
+        std::shared_ptr<ROS2VisualTools> visual_tools_;
     };
 
 } // namespace controllers
