@@ -62,6 +62,18 @@ namespace controllers
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
+            visual_tools_ = std::make_shared<ROS2VisualTools>(node_);
+            return CallbackReturn::SUCCESS;
+        }
+        CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        {
+            new_arrival_ = false;
+            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
+            q0_ = state_->get<double>("position");
+            dq0_ = state_->get<double>("velocity");
+            robot_math::forward_kinematics(robot_, q0_, T0_);
+            pose0_ = robot_math::tform_to_pose(T0_);
+            //RCLCPP_INFO(node_->get_logger(), "%f %f %f %f %f %f", pose0_[0], pose0_[1], pose0_[2], pose0_[3], pose0_[4], pose0_[5]);
             command_receiver_ = node_->create_subscription<CmdType>(
                 "~/commands", rclcpp::SystemDefaultsQoS(),
                 [this](const CmdType::SharedPtr msg)
@@ -72,20 +84,9 @@ namespace controllers
                 });
             return CallbackReturn::SUCCESS;
         }
-        CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
-        {
-            visual_tools_ = std::make_shared<ROS2VisualTools>(node_);
-            new_arrival_ = false;
-            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
-            q0_ = state_->get<double>("position");
-            dq0_ = state_->get<double>("velocity");
-            robot_math::forward_kinematics(robot_, q0_, T0_);
-            pose0_ = robot_math::tform_to_pose(T0_);
-            RCLCPP_INFO(node_->get_logger(), "%f %f %f %f %f %f", pose0_[0], pose0_[1], pose0_[2], pose0_[3], pose0_[4], pose0_[5]);
-            return CallbackReturn::SUCCESS;
-        }
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
+            command_receiver_ = nullptr;
             real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
             return CallbackReturn::SUCCESS;
         }
