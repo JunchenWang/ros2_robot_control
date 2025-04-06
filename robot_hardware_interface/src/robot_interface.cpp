@@ -38,22 +38,25 @@ namespace hardware_interface
             {
                 state_.get<double>().emplace(std::move(name), std::vector<double>(dof_, 0.0));
             }
+
             for (auto &name : joint_command_names)
             {
                 command_.get<double>().emplace(std::move(name), std::vector<double>(dof_, 0.0));
             }
-            
-            // std::vector<double> q {0.1,0.2,0.3,0.4,0.5,0.6,0.7};
-            // Eigen::Matrix4d T, T2;
-            // robot_math::forward_kinematics(&robot_, q, T);
-            // std::cerr << " T :\n" << T << std::endl;
-            // auto t1 = node_->now();
-            // auto qq = inverse_kinematics({0.5, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65}, T);
-            // auto t = node_->now() - t1;
-            // std::cerr << " t1 : " << t.nanoseconds() / 1000000.0 << std::endl;
-            // robot_math::forward_kinematics(&robot_, qq, T2);
-            // std::cerr << " T2 :\n" << T2 << std::endl;
-          
+
+            std::vector<double> init_pose(6, 0);
+            if (node_->get_parameter_or<std::vector<double>>("init_pose", init_pose, init_pose))
+            {
+                std::vector<double> j0(dof_, 0);
+                if (inverse_kinematics(state_.get<double>("position"), robot_math::pose_to_tform(init_pose), j0))
+                {
+                    state_.get<double>("position") = j0;
+                }
+                else
+                {
+                    RCLCPP_ERROR(node_->get_logger(), "init_pose can not be reached!");
+                }
+            }
             return 1;
         }
         return 0;
@@ -68,9 +71,9 @@ namespace hardware_interface
         }
         return nodes;
     }
-    CallbackReturn RobotInterface::on_configure(const rclcpp_lifecycle::State & previous_state)
+    CallbackReturn RobotInterface::on_configure(const rclcpp_lifecycle::State &previous_state)
     {
-        if(SuperClass::on_configure(previous_state) != CallbackReturn::SUCCESS)
+        if (SuperClass::on_configure(previous_state) != CallbackReturn::SUCCESS)
             return CallbackReturn::FAILURE;
 
         std::string robot_description;
@@ -110,14 +113,14 @@ namespace hardware_interface
         return CallbackReturn::SUCCESS;
     }
 
-    CallbackReturn RobotInterface::on_shutdown(const rclcpp_lifecycle::State &/*previous_state*/)
+    CallbackReturn RobotInterface::on_shutdown(const rclcpp_lifecycle::State & /*previous_state*/)
     {
         for (auto &c : components_)
             c.second->finalize();
         return CallbackReturn::SUCCESS;
     }
 
-    CallbackReturn RobotInterface::on_activate(const rclcpp_lifecycle::State &/*previous_state*/)
+    CallbackReturn RobotInterface::on_activate(const rclcpp_lifecycle::State & /*previous_state*/)
     {
         for (auto &c : components_)
             if (c.second->get_node()->activate().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
@@ -125,7 +128,7 @@ namespace hardware_interface
         return CallbackReturn::SUCCESS;
     }
 
-    CallbackReturn RobotInterface::on_deactivate(const rclcpp_lifecycle::State &/*previous_state*/)
+    CallbackReturn RobotInterface::on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
     {
         for (auto &c : components_)
             c.second->get_node()->deactivate();
@@ -174,12 +177,12 @@ namespace hardware_interface
         for (int i = 0; i < dof_; i++)
             q_in(i) = q[i];
         KDL::Frame T;
-        T.p.x(Td(0,3));
-        T.p.y(Td(1,3));
-        T.p.z(Td(2,3));
-        T.M = KDL::Rotation(Td(0,0), Td(0,1), Td(0,2),
-                           Td(1,0), Td(1,1), Td(1,2),
-                           Td(2,0), Td(2,1), Td(2,2));
+        T.p.x(Td(0, 3));
+        T.p.y(Td(1, 3));
+        T.p.z(Td(2, 3));
+        T.M = KDL::Rotation(Td(0, 0), Td(0, 1), Td(0, 2),
+                            Td(1, 0), Td(1, 1), Td(1, 2),
+                            Td(2, 0), Td(2, 1), Td(2, 2));
         if (solver_->CartToJnt(q_in, T, q_out) != 0)
         {
             return 0;

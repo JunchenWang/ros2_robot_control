@@ -1,7 +1,7 @@
 #include "robot_controller_interface/controller_interface.hpp"
 #include <iostream>
 #include "robot_math/robot_math.hpp"
-#include "robot_math/CartesianTrajectoryPlanner.hpp"
+#include "robot_math/trajectory.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
@@ -26,21 +26,32 @@ namespace controllers
             command_->get<int>("mode")[0] = 0;
             if (js)
             {
-                auto goal = js->data;
-                
-                if (!planner.has_same_goal(goal))
                 {
-                    auto Te = robot_math::pose_to_tform(goal);
-                    planner.generate_speed(T, Te, 0.2);
-                    last_time_ = node_->now();
+                    std::unique_lock<std::mutex> guard(mutex_, std::try_to_lock);
+                    if (guard.owns_lock())
+                    {
+                        if (new_arrival_)
+                        {
+                            trajectory.set_traj(js->data);
+                            new_arrival_ = false;
+                            last_time_ = node_->now();
+                        }
+                    }
                 }
-                auto dt = node_->now() - last_time_;
-                Eigen::Matrix4d T;
-                Eigen::Vector6d V, dV;
-                if (planner.evaluate(dt.seconds(), T, V, dV))
+                if(trajectory.is_empty())
                 {
+                    cmd = pose0_;
+                }
+                else 
+                {
+                    auto dt = node_->now() - last_time_;
+                    Eigen::Matrix4d T;
+                    Eigen::Vector6d V, dV;
+                    trajectory.evaluate(dt.seconds(), T, V, dV);
                     cmd = robot_math::tform_to_pose(T);
+                    
                 }
+               
             }
             else
             {
@@ -54,17 +65,20 @@ namespace controllers
                 [this](const CmdType::SharedPtr msg)
                 {
                     real_time_buffer_.writeFromNonRT(msg);
+                    std::lock_guard<std::mutex> guard(mutex_);
+                    new_arrival_ = true;
                 });
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
+            new_arrival_ = false;
             real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
             q0_ = state_->get<double>("position");
             dq0_ = state_->get<double>("velocity");
             robot_math::forward_kinematics(robot_, q0_, T0_);
             pose0_ = robot_math::tform_to_pose(T0_);
-            RCLCPP_INFO(node_->get_logger(), "%f %f %f %f %f %f", pose0_[0], pose0_[1],pose0_[2],pose0_[3],pose0_[4],pose0_[5]);
+            RCLCPP_INFO(node_->get_logger(), "%f %f %f %f %f %f", pose0_[0], pose0_[1], pose0_[2], pose0_[3], pose0_[4], pose0_[5]);
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -80,8 +94,10 @@ namespace controllers
         std::vector<double> dq0_;
         std::vector<double> pose0_;
         Eigen::Matrix4d T0_;
-        robot_math::CartesianTrajectoryPlanner planner;
+        robot_math::CartesianTrajectory trajectory;
         rclcpp::Time last_time_;
+        std::mutex mutex_;
+        bool new_arrival_ = false;
     };
 
 } // namespace controllers

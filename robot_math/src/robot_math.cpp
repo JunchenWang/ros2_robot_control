@@ -70,7 +70,15 @@ namespace robot_math
         T << R, t, 0, 0, 0, 1;
         return T;
     }
-
+    Eigen::Vector3d dual_rotation_vector(const Eigen::Vector3d &r)
+    {
+        double r_norm = r.norm();
+        if(r_norm > 0)
+        {
+            return (r_norm - 2*std::acos(-1)) * r.normalized();
+        }
+        return r;
+    }
     std::vector<double> quaternion_pose_to_rv_pose(const std::vector<double> &q_pose)
     {
         std::vector<double> rv_pose(6);
@@ -1200,6 +1208,42 @@ namespace robot_math
         return adjoint_T(Tcp).transpose() * Fext;
     }
 
+    Eigen::Matrix3d A_r(const Eigen::Vector3d &r)
+    {
+        Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
+        double r_norm = r.norm();
+        if (r_norm > 0)
+        {
+            Eigen::Matrix3d S = so_w(r);
+            double r_norm2 = r_norm * r_norm;
+            double r_norm3 = r_norm2 * r_norm;
+            A = Eigen::Matrix3d::Identity() - (1 - std::cos(r_norm)) / r_norm2 * S + (r_norm - std::sin(r_norm)) / r_norm3 * S * S;
+        }
+        return A;
+    }
+
+    Eigen::Matrix3d dA_r(const Eigen::Vector3d &r, const Eigen::Vector3d &dr)
+    {
+        Eigen::Matrix3d S_r = so_w(r);
+        Eigen::Matrix3d S_dr = so_w(dr);
+        Eigen::Matrix3d dA = -S_dr;
+        double r_norm = r.norm();
+        if (r_norm > 0)
+        {
+            double r_norm2 = r_norm * r_norm;
+            double r_norm3 = r_norm2 * r_norm;
+            double r_norm4 = r_norm2 * r_norm2;
+            double d_r_norm = r.dot(dr) / r_norm;
+            double B = (std::cos(r_norm) - 1) / r_norm2;
+            double dB = (-r_norm * std::sin(r_norm) - 2 * (std::cos(r_norm) - 1)) / r_norm3 * d_r_norm;
+            double C = (r_norm - std::sin(r_norm)) / r_norm3;
+            double dC = (r_norm * (1 - std::cos(r_norm)) - 3 * (r_norm - std::sin(r_norm))) / r_norm4 * d_r_norm;
+            dA = dB * S_r + B * S_dr + dC * S_r * S_r + C * (S_dr * S_r + S_r * S_dr);
+        }
+        return dA;
+    }
+
+
     void admittance_error_cal(const Robot *robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Td, const Eigen::Vector6d &Vd,
                               const std::vector<double> &q, const std::vector<double> &qd, Eigen::Vector3d &re, Eigen::Vector3d &pe, Eigen::Vector3d &red, Eigen::Vector3d &ped, bool flag)
     {
@@ -1220,15 +1264,7 @@ namespace robot_math
         Eigen::JacobiSVD<Eigen::Matrix3d> svd(R.transpose() * Rd, Eigen::ComputeFullU | Eigen::ComputeFullV);
         Eigen::Matrix3d tem = svd.matrixU() * svd.matrixV().transpose();
         re = logR(tem);
-        double re_norm = re.norm();
-        Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
-        if (re_norm > 0)
-        {
-            Eigen::Matrix3d S = so_w(re);
-            double re_norm2 = re_norm * re_norm;
-            double re_norm3 = re_norm2 * re_norm;
-            A = Eigen::Matrix3d::Identity() - (1 - cos(re_norm)) / re_norm2 * S + (re_norm - sin(re_norm)) / re_norm3 * S * S;
-        }
+        Eigen::Matrix3d A = A_r(re);
         red = A.colPivHouseholderQr().solve(Rd.transpose() * Vd.topRows(3) - Rd.transpose() * R * V.topRows(3));
     }
 

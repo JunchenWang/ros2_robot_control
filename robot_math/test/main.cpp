@@ -9,20 +9,25 @@ using namespace robot_math;
 
 int main()
 {
-    std::vector<double> traj = {0, 1, 1, 2, 0, 0, 0,
-                                1, 2, 2, 2, 0, 0, 0,
-                                2, 3, 2, 2, 0, 0, 0,
-                                3, 4, 1, 2, 0, 0, 0,
-                                4, 3, 0, 2, 0, 0, 0, 
-                                5, 2, 0, 2, 0, 0, 0};
+    // Eigen::Vector3d r(0, 0, 0);
+    // Eigen::Vector3d dr(0.12, 0.13, 0.32);
+    // std::cout << A_r(r) << "\n";
+    // std::cout << dA_r(r, dr) << "\n";
+    std::vector<double> traj = {0, 1, 1, 2, 0, 0, 3.14,
+                                1, 2, 2, 2, 0, 0, 3.15,
+                                2, 3, 2, 2, 0, 0, 3.16,
+                                3, 4, 1, 2, 0, 0, 4,
+                                4, 3, 0, 2, 0, 0, 5, 
+                                5, 2, 0, 2, 0, 0, 6};
     CartesianTrajectory trajectory(traj);
      std::ofstream fout("data.txt");
+     Eigen::Matrix4d Td;
+     Eigen::Vector6d V, dV;;
     for(int i = 0; i <= 500; i++)
     {
         double t = i * 0.01;
-        double p[6], v[6], a[6];
-        trajectory.evaluate(t, p, v, a);
-        fout << t << " " << p[0] << " " << p[1] << " " << v[0] << " " << v[1] << " " << a[0] << " " << a[1]<< std::endl;
+        trajectory.evaluate(t, Td, V, dV);
+        fout << t << " " << Td(0,3) << " " << Td(1,3) << " " << V.norm() << " " << dV.norm() << std::endl;
     }
     // std::vector<double> p0 = {-0.817259, -0.232391, 0.060765, 1.578384, -0.000002, 0.001729};
     // std::vector<double> p1 = {-0.417259, -0.432391, 0.160765, 0, -0.000002, 0.001729};

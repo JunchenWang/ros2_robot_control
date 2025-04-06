@@ -9,19 +9,21 @@ int main(int argc, char **argv)
   rclcpp::init(argc, argv);
 
   auto node = std::make_shared<rclcpp::Node>("movej");
-  auto publisher_ = node->create_publisher<std_msgs::msg::Float64MultiArray>("JointMotionController/commands",
+  auto publisher_ = node->create_publisher<std_msgs::msg::Float64MultiArray>("CartesianTrajectoryController/commands",
                                                                              rclcpp::SystemDefaultsQoS());
-  std::ifstream fin("data.txt");
-  std::thread t([=, &fin]
+  std::thread t([=]
                 {
-                  rclcpp::Rate r(0.1s);
+      
                   std_msgs::msg::Float64MultiArray msg;
-                  msg.data.resize(6);
-      while(fin >> msg.data[0] >> msg.data[1] >> msg.data[2] >> msg.data[3] >> msg.data[4] >> msg.data[5])
-      {
-        publisher_->publish(msg);
-        r.sleep();
-    } });
+                  msg.data = {
+                    0, -0.5, -.1, .1, 3.14, 0,  0,
+                    1, -0.5, 0, .2, 3.14, 0,  0,
+                    2, -0.5, .1, .2, 3.14, 0,  0,
+                    3, -0.5, .2, .1, 3.14, 0,  0,
+                    4, -0.5, .1, 0,  3.14,  0,  0, 
+                    5, -0.5, 0, 0,  3.14, 0, 0
+                  };
+                  publisher_->publish(msg); });
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

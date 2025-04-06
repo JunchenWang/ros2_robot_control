@@ -37,6 +37,7 @@ namespace robot_math
 	void print_robot(const Robot &robot);
     // pose: first three are position
 	Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose);
+	Eigen::Vector3d dual_rotation_vector(const Eigen::Vector3d &r);
 	std::vector<double> tform_to_pose(const Eigen::Matrix4d &T);
 	std::vector<double> quaternion_pose_to_rv_pose(const std::vector<double> &q_pose);
 	std::vector<double> rv_pose_to_quaternion_pose(const std::vector<double> &rv_pose);
@@ -55,7 +56,8 @@ namespace robot_math
 	Eigen::Matrix4d make_tform(const Eigen::Matrix3d &R, const Eigen::Vector3d &t);
 	Eigen::MatrixXd pinv(const Eigen::MatrixXd &matrix, double tol = 1e-9);
 	Eigen::Vector3d cond_matrix(const Eigen::MatrixXd &A);
-
+	Eigen::Matrix3d A_r(const Eigen::Vector3d &r);
+	Eigen::Matrix3d dA_r(const Eigen::Vector3d &r, const Eigen::Vector3d &dr);
 	void derivative_tform_inv(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix4d & dinvT, Eigen::Matrix4d & invT);
 	void derivative_adjoint_T(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix6d &dAdT, Eigen::Matrix6d &AdT);
 
