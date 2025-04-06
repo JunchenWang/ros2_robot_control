@@ -27,7 +27,7 @@ int main()
     {
         double t = i * 0.01;
         trajectory.evaluate(t, Td, V, dV);
-        fout << t << " " << Td(0,3) << " " << Td(1,3) << " " << V.norm() << " " << dV.norm() << std::endl;
+        fout << t << " " << Td(0,3) << " " << Td(1,3) << " " << V.tail(3).norm() << " " << dV.tail(3).norm() << std::endl;
     }
     // std::vector<double> p0 = {-0.817259, -0.232391, 0.060765, 1.578384, -0.000002, 0.001729};
     // std::vector<double> p1 = {-0.417259, -0.432391, 0.160765, 0, -0.000002, 0.001729};
