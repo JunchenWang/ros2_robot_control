@@ -105,7 +105,6 @@ namespace hardwares
                         struct timeval tv = {0, 0};
                         int i, len;
                         int ReceivedDataLangth;
-                        std::vector<double> force(6);
                         while (is_running_)
                         {
                             len = 0;
