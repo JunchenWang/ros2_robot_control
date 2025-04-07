@@ -13,7 +13,8 @@ int main(int argc, char **argv)
                                                                              rclcpp::SystemDefaultsQoS());
   std::thread t([=]
                 {
-      
+                  // note, wait for node registration, otherwise, the topic may not be sent
+                  std::this_thread::sleep_for(std::chrono::seconds(1));
                   std_msgs::msg::Float64MultiArray msg;
                   msg.data = {
                     0, -0.5, -.1, .1, 3.14, 0,  0,

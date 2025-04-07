@@ -19,6 +19,12 @@ namespace robot_math
         {
             return num_of_point_ == 0;
         }
+        void clear()
+        {
+            y_.clear();
+            time_.clear();
+            num_of_point_ = 0;
+        }
         void evaluate(double t, Eigen::Matrix4d &Td, Eigen::Vector6d &V, Eigen::Vector6d &dV)
         {
             std::vector<double> p(6), v(6), a(6);
@@ -44,7 +50,9 @@ namespace robot_math
         void set_traj(const std::vector<double> &traj)
         {
             num_of_point_ = traj.size() / 7;
+            y_.clear();
             y_.resize(6);
+            time_.clear();
             for (std::size_t i = 0; i < num_of_point_; i++)
             {
                 time_.push_back(traj[i * 7]);

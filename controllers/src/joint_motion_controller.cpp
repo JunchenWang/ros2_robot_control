@@ -53,9 +53,10 @@ namespace controllers
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
+            real_time_buffer_.reset();
             q0_ = state_->get<double>("position");
             dq0_ = state_->get<double>("velocity");
+            planner.generate(q0_, q0_, 1);
             robot_math::forward_kinematics(robot_, q0_, T0_);
             command_receiver_ = node_->create_subscription<CmdType>(
                 "~/commands",rclcpp::SystemDefaultsQoS(),
@@ -68,7 +69,6 @@ namespace controllers
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             command_receiver_ = nullptr;
-            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
             return CallbackReturn::SUCCESS;
         }
 

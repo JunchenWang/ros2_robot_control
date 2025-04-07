@@ -7,7 +7,7 @@ namespace robot_math
     class CartesianTrajectoryPlanner
     {
     public:
-        CartesianTrajectoryPlanner()
+        CartesianTrajectoryPlanner(double time_threshod = 0.04) : time_threshod_(time_threshod)
         {
         }
         bool has_same_goal(const std::vector<double> &goal)
@@ -41,7 +41,8 @@ namespace robot_math
             auto t1 = (Ts.block<3, 1>(0, 3) - Te.block<3, 1>(0, 3)).norm() / v;
             auto t2 = logR(Ts.block<3, 3>(0, 0).transpose() * Te.block<3, 3>(0, 0)).norm() / v;
             time_ = t1 > t2 ? t1 : t2;
-            
+            if(time_ < time_threshod_)
+                time_ = time_threshod_;
             generate(Ts, Te, time_);
             
         }
@@ -60,6 +61,7 @@ namespace robot_math
 
     protected:
         double time_;
+        double time_threshod_ = 0.04;
         ScaleFunction s_;
         Eigen::Vector3d ps_, pe_, re_, pse_, Rsre_;
         Eigen::Matrix3d Rs_, Re_;

@@ -7,7 +7,7 @@ namespace robot_math
     class JointTrajectoryPlanner
     {
     public:
-        JointTrajectoryPlanner()
+        JointTrajectoryPlanner(double time_threshod = 0.04) : time_threshod_(time_threshod)
         {
         }
         bool has_same_goal(const std::vector<double> &goal)
@@ -68,7 +68,7 @@ namespace robot_math
             for (std::size_t i = 0; i < n_; i++)
             {
                 double b = 0;
-                if(fabs(q1[i] - q0[i]) > 1e-6)
+                if(fabs(q1[i] - q0[i]) > 0)
                 {
                     b = dq0[i] / (q1[i] - q0[i]);
                 }
@@ -89,7 +89,7 @@ namespace robot_math
 
         void generate_speed(const std::vector<double> &q0, const std::vector<double> &q1, double v)
         {
-            time_ = 0;
+            time_ = time_threshod_;
             for(std::size_t i = 0; i < q0.size(); i++)
             {
                 double t = fabs(q1[i] - q0[i]) / v;
@@ -100,7 +100,7 @@ namespace robot_math
         }
         void generate_speed(const std::vector<double> &q0, const std::vector<double> &dq0, const std::vector<double> &q1, double v)
         {
-            time_ = 0;
+            time_ = time_threshod_;
             for(std::size_t i = 0; i < q0.size(); i++)
             {
                 double t = fabs(q1[i] - q0[i]) / v;
@@ -112,6 +112,7 @@ namespace robot_math
 
     protected:
         double time_;
+        double time_threshod_ = 0.04;
         std::size_t n_;
         ScaleFunction s_;
         std::vector<ScaleFunction> ss_;

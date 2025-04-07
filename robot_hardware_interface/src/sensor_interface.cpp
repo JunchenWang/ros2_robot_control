@@ -27,7 +27,7 @@ namespace hardware_interface
             bool ret = true;
             for (auto &s : get<double>())
             {
-                auto data = *s.second.readFromNonRT();
+                auto data = *s.second.readFromRT();
                 if (!data)
                 {
                     ret = false;
@@ -36,7 +36,7 @@ namespace hardware_interface
             }
             for (auto &s : get<int>())
             {
-                auto data = *s.second.readFromNonRT();
+                auto data = *s.second.readFromRT();
                 if (!data)
                 {
                     ret = false;
@@ -45,7 +45,7 @@ namespace hardware_interface
             }
             for (auto &s : get<bool>())
             {
-                auto data = *s.second.readFromNonRT();
+                auto data = *s.second.readFromRT();
                 if (!data)
                 {
                     ret = false;

@@ -18,46 +18,39 @@ namespace controllers
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
         {
-            auto js = *real_time_buffer_.readFromRT();
+            
             auto &cmd = command_->get<double>("pose");
             auto &q = state_->get<double>("position");
             Eigen::Matrix4d T;
             robot_math::forward_kinematics(robot_, q, T);
             auto &dq = state_->get<double>("velocity");
             command_->get<int>("mode")[0] = 0;
-            if (js)
             {
+                std::unique_lock<std::mutex> guard(mutex_, std::try_to_lock);
+                if (guard.owns_lock())
                 {
-                    std::unique_lock<std::mutex> guard(mutex_, std::try_to_lock);
-                    if (guard.owns_lock())
+                    if (new_arrival_)
                     {
-                        if (new_arrival_)
-                        {
-                            trajectory.set_traj(js->data);
-                            new_arrival_ = false;
-                            last_time_ = node_->now();
-                        }
+                        auto js = *real_time_buffer_.readFromRT();
+                        trajectory.set_traj(js->data);
+                        new_arrival_ = false;
+                        last_time_ = node_->now();
                     }
                 }
-                if(trajectory.is_empty())
-                {
-                    cmd = pose0_;
-                }
-                else 
-                {
-                    auto dt = node_->now() - last_time_;
-                    Eigen::Matrix4d T;
-                    Eigen::Vector6d V, dV;
-                    trajectory.evaluate(dt.seconds(), T, V, dV);
-                    cmd = robot_math::tform_to_pose(T);
-                    visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
-                    
-                }
-               
             }
-            else
+            if(trajectory.is_empty())
             {
                 cmd = pose0_;
+            }
+            else 
+            {
+                auto dt = node_->now() - last_time_;
+                Eigen::Matrix4d T;
+                Eigen::Vector6d V, dV;
+                trajectory.evaluate(dt.seconds(), T, V, dV);
+                cmd = robot_math::tform_to_pose(T);
+                visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
+                
             }
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -68,26 +61,26 @@ namespace controllers
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             new_arrival_ = false;
-            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
+            trajectory.clear();
+            real_time_buffer_.reset();
             q0_ = state_->get<double>("position");
             dq0_ = state_->get<double>("velocity");
             robot_math::forward_kinematics(robot_, q0_, T0_);
             pose0_ = robot_math::tform_to_pose(T0_);
-            //RCLCPP_INFO(node_->get_logger(), "%f %f %f %f %f %f", pose0_[0], pose0_[1], pose0_[2], pose0_[3], pose0_[4], pose0_[5]);
             command_receiver_ = node_->create_subscription<CmdType>(
                 "~/commands", rclcpp::SystemDefaultsQoS(),
                 [this](const CmdType::SharedPtr msg)
                 {
-                    real_time_buffer_.writeFromNonRT(msg);
                     std::lock_guard<std::mutex> guard(mutex_);
+                    real_time_buffer_.writeFromNonRT(msg);
                     new_arrival_ = true;
+                    
                 });
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             command_receiver_ = nullptr;
-            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
             return CallbackReturn::SUCCESS;
         }
 
