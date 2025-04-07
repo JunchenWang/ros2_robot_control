@@ -14,6 +14,7 @@ int main(int argc, char **argv)
     auto publisher_ = node->create_publisher<std_msgs::msg::Float64MultiArray>("CartesianMotionController/commands", rclcpp::SystemDefaultsQoS());
     std_msgs::msg::Float64MultiArray msg;
     msg.data = goal;
+    std::this_thread::sleep_for(1s);
     publisher_->publish(msg);
     rclcpp::shutdown();
     return 0;

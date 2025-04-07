@@ -9,8 +9,8 @@ control_node:
     controllers: 
       - controllers::JointMotionController
       - controllers::CartesianMotionController
-      - controllers::CartesianTrajectoryController
-    default_controller: CartesianTrajectoryController
+      # - controllers::CartesianTrajectoryController
+    default_controller: JointMotionController
 
 SimulationRobot:
   ros__parameters:
