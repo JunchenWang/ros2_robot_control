@@ -136,6 +136,7 @@ namespace hardwares
                                 ReceivedDataLangth = receiveddata.size(); // 缓存目前收到数据的长度，以免循环过程中有新数据写入或读出影响操作
                                 if ((ReceivedDataLangth >= 28) && (receiveddata.at(26) == 0x0d) && (receiveddata.at(27) == 0x0a))
                                 {
+                                    auto force = std::make_shared<std::vector<double>>(6);
                                     for (i = 0; i < 28; i++)
                                     {
                                         data[i] = receiveddata.front();
@@ -145,34 +146,34 @@ namespace hardwares
                                     {
                                         z.m[i] = data[i + 2];
                                     }
-                                    force[0] = 1000 * z.n;
+                                    force->at(0) = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 6];
                                     }
-                                    force[1] = 1000 * z.n;
+                                    force->at(1) = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 10];
                                     }
-                                    force[2] = 1000 * z.n;
+                                    force->at(2) = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 14];
                                     }
-                                    force[3] = 1000 * z.n;
+                                    force->at(3) = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 18];
                                     }
-                                    force[4] = 1000 * z.n;
+                                    force->at(4) = 1000 * z.n;
                                     for (i = 0; i < 4; i++)
                                     {
                                         z.m[i] = data[i + 22];
                                     }
-                                    force[5] = 1000 * z.n;
+                                    force->at(5) = 1000 * z.n;
                                     get<double>("force").writeFromNonRT(force);
-                                    is_data_comming_ = true;
+                                    
                                     // printf("Fx= %2f Kg,Fy= %2f Kg,Fz= %2f Kg,Mx= %2f Kg/M,My= %2f Kg/M,Mz= %2f Kg/M\n", Force[0], Force[1], Force[2], Force[3], Force[4], Force[5]);
                                     // geometry_msgs::msg::Wrench::UniquePtr msg = std::make_unique<geometry_msgs::msg::Wrench>();
                                     // msg->force.x = Force[0] * 1000;
@@ -209,7 +210,7 @@ namespace hardwares
                             }
                         }
                     });
-                if(!is_data_comming())
+                if(!wait_data_comming())
                     return CallbackReturn::FAILURE;
                 return CallbackReturn::SUCCESS;
             }

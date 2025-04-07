@@ -11,9 +11,12 @@ namespace hardware_interface
     class SensorInterface : public HardwareInterface
     {
     public:
-        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<double>>> RealtimeBufferDouble;
-        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<int>>> RealtimeBufferInt;
-        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<bool>>> RealtimeBufferBool;
+        typedef std::shared_ptr<std::vector<double>> DataDoublePtr;
+        typedef std::shared_ptr<std::vector<int>> DataIntPtr;
+        typedef std::shared_ptr<std::vector<bool>> DataBoolPtr;
+        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<DataDoublePtr>> RealtimeBufferDouble;
+        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<DataIntPtr>> RealtimeBufferInt;
+        typedef std::unordered_map<std::string, realtime_tools::RealtimeBuffer<DataBoolPtr>> RealtimeBufferBool;
         typedef std::tuple<RealtimeBufferDouble, RealtimeBufferInt, RealtimeBufferBool> RealtimeBufferType;
         using SuperClass = HardwareInterface;
         ~SensorInterface();
@@ -22,24 +25,23 @@ namespace hardware_interface
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
         void stop_thread();
-        bool is_data_comming();
+        bool wait_data_comming(double t = 10);
     protected:
         template <typename T>
-        realtime_tools::RealtimeBuffer<std::vector<T>> &get(const std::string &name)
+        realtime_tools::RealtimeBuffer<std::shared_ptr<std::vector<T>>> &get(const std::string &name)
         {
-            return std::get<std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<T>>>>(real_time_buffer_)[name];
+            return std::get<std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::shared_ptr<std::vector<T>>>>>(real_time_buffer_)[name];
         }
 
         template <typename T>
-        std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<T>>> &get()
+        std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::shared_ptr<std::vector<T>>>> &get()
         {
-            return std::get<std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::vector<T>>>>(real_time_buffer_);
+            return std::get<std::unordered_map<std::string, realtime_tools::RealtimeBuffer<std::shared_ptr<std::vector<T>>>>>(real_time_buffer_);
         }
     protected:
         int update_rate_;
         std::unique_ptr<std::thread> thread_;
         std::atomic_bool is_running_;
-        std::atomic_bool is_data_comming_;
         RealtimeBufferType real_time_buffer_;
     };
 

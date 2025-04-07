@@ -41,12 +41,13 @@ namespace hardwares
                         // msg->torque.z = 6;
                         //printf("Published message with address: %p\n",reinterpret_cast<std::uintptr_t>(msg.get()));
                         //publisher_->publish(std::move(msg));
-                        get<double>("force").writeFromNonRT({std::sin(t), std::cos(t), 3,4,5,6});
-                        is_data_comming_ = true;
+                        auto force = std::make_shared<std::vector<double>>(6);
+                        *force = {std::sin(t), std::cos(t), 3, 4, 5, 6};
+                        get<double>("force").writeFromNonRT(force);
                         loop_rate.sleep();
                     }
                 });
-            if(!is_data_comming())
+            if(!wait_data_comming())
                     return CallbackReturn::FAILURE;
 
             return CallbackReturn::SUCCESS;

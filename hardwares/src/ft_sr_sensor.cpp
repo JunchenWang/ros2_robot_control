@@ -22,8 +22,9 @@ namespace hardwares
 
         bool on_receive_data(float fx, float fy, float fz, float mx, float my, float mz)
         {
-             get<double>("force").writeFromNonRT({fx, fy, fz, mx, my, mz});
-             is_data_comming_ = true;
+            auto force = std::make_shared<std::vector<double>>(6);
+            *force = {fx, fy, fz, mx, my, mz};
+             get<double>("force").writeFromNonRT(force);
             //std::cerr << "FTSR Sensor: " << fx << " " << fy << " " << fz << " " << mx << " " << my << " " << mz << std::endl;
             return true;
         }
@@ -68,7 +69,7 @@ namespace hardwares
         {
             if(commManager.Run())
             {
-                if(!is_data_comming())
+                if(!wait_data_comming())
                     return CallbackReturn::FAILURE;
                 return CallbackReturn::SUCCESS;
             }

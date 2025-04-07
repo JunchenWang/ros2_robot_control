@@ -27,7 +27,15 @@ SimulationRobot:
     command_interface: [mode, pose]
     command_length: [1, 6] # mode = 0: cartesian, 1: joint position 2: joint velocity 3: joint torque
     command_type: [int, double]
+    # sensors: [ft_sensor]
+    # ft_sensor: hardwares::FTDummySensor
 
+# ft_sensor:
+#   ros__parameters:
+#     state_interface: [force]
+#     state_length: [6]
+#     sensor_ip: 192.168.110.101
+#     sensor_port: 4008
 
 JointMotionController:
   ros__parameters:

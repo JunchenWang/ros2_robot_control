@@ -113,28 +113,28 @@ namespace hardwares
                     {
                         socklen_t len = sizeof(addr_);
                         char readdata[36];
-                        std::vector<double> force(6);
+                        
                         RESPONSE resp;
                         while (is_running_)
                         {
+                            
                             int resv_num = recvfrom(handle_, readdata, 36, 0, (struct sockaddr *)&addr_, &len);
-
                             if (resv_num > 0)
                             {
+                                auto force = std::make_shared<std::vector<double>>(6);
                                 resp.rdt_sequence = ntohl(*(uint32 *)&readdata[0]);
                                 resp.ft_sequence = ntohl(*(uint32 *)&readdata[4]);
                                 resp.status = ntohl(*(uint32 *)&readdata[8]);
                                 for (int i = 0; i < 6; i++)
                                 {
                                     resp.FTData[i] = ntohl(*(int32 *)&readdata[12 + i * 4]);
-                                    force[i] = resp.FTData[i] / 1000000.0f;
+                                    force->at(i) = resp.FTData[i] / 1000000.0f;
                                 }
                                 get<double>("force").writeFromNonRT(force);
-                                is_data_comming_ = true;
                             }
                         }
                     });
-                if(!is_data_comming())
+                if(!wait_data_comming())
                     return CallbackReturn::FAILURE;
                 
                 return CallbackReturn::SUCCESS;
