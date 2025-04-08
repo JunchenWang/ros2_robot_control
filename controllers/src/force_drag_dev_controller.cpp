@@ -104,14 +104,14 @@ namespace controllers
             Vtcp_.setZero();
             dVtcp_.setZero();
 
-            command_->get<int>("mode")[0] = 0;
+            command_->get<int>("mode")[0] = -1;
 
             return CallbackReturn::SUCCESS;
         }
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            command_->get<int>("mode")[0] = 0;
+            command_->get<int>("mode")[0] = -1;
             return CallbackReturn::SUCCESS;
         }
 
@@ -168,7 +168,7 @@ namespace controllers
             dVtcp_.tail(3) = (Ftcp_.tail(3) - bv_ * Vtcp_.tail(3)).array() / mv_;
             Vtcp_ = Vtcp_ + dVtcp_ * period.seconds();
 
-            command_->get<int>("mode")[0] = 3; // speedJ
+            command_->get<int>("mode")[0] = 2; // speedJ
             Eigen::Map<Eigen::Vector6d> cmd_qd_map(&cmd_qd[0]);
             cmd_qd_map = damping_least_square(Jtcp_, Vtcp_, 1e6, 0.1);
             // RCLCPP_INFO(node_->get_logger(), "cmd_qd: %f, %f, %f, %f, %f, %f", cmd_qd[0], cmd_qd[1], cmd_qd[2], cmd_qd[3], cmd_qd[4], cmd_qd[5]);

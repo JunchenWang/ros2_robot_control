@@ -129,7 +129,7 @@ namespace controllers
             pedd_.setZero();
 
             inv_flag_ = 0;
-            command_->get<int>("mode")[0] = 0;
+            command_->get<int>("mode")[0] = -1;
 
             data_logger_ = new DataLogger(
                 {
@@ -153,7 +153,7 @@ namespace controllers
 
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            command_->get<int>("mode")[0] = 0;
+            command_->get<int>("mode")[0] = -1;
             data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/", "adm_ctrl");
             std::string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
             FileUtils::modifyYamlValue(yaml_file_path, "offset", offset_);
@@ -222,7 +222,7 @@ namespace controllers
             // 这里得到的是工具坐标系相对于基坐标系的变换矩阵，需要转化为参考末端法兰相对于基坐标系的变换矩阵
             Tref_ = Tref_ * inv_tform(Tcp_);
 
-            command_->get<int>("mode")[0] = 2;
+            command_->get<int>("mode")[0] = 0;
             cmd_pose = tform_to_pose(Tref_);
 
             // 修正力传感器读数，修正工具重力/重力矩及零点偏移，不考虑外力旋量和合力旋量（机器人运动）

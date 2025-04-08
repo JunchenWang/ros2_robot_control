@@ -30,7 +30,7 @@ namespace controllers
                 if (!planner.has_same_goal(goal))
                 {
                     auto Te = robot_math::pose_to_tform(goal);
-                    planner.generate_speed(T, Te, 0.2);
+                    planner.generate_speed(T, Te, 0.5);
                     last_time_ = node_->now();
                 }
                 auto dt = node_->now() - last_time_;

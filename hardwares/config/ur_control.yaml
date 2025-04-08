@@ -10,6 +10,8 @@ control_node:
       - controllers::ForceDragController
       - controllers::ForceDragDevController
       - controllers::AdmittanceController
+      - controllers::JointMotionController
+      - controllers::CartesianMotionController
 
 ForceDragController:
   ros__parameters:
@@ -36,6 +38,14 @@ AdmittanceController:
     offset: [0.567867, 2.65463, 1.75407, 0.0349296, -0.0622864, -0.0820951]
     sensor_pose: [.0, .0, .0475, .0, .0, .0]
     tcp_pose: [.0, .0, .0, .0, .0, .0]
+
+JointMotionController:
+  ros__parameters:
+    cmd_name: "position"
+
+CartesianMotionController:
+  ros__parameters:
+    cmd_name: "pose"
 
 URRobot:
   ros__parameters:

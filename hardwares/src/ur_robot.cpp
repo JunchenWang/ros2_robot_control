@@ -30,13 +30,13 @@ namespace hardwares
             int mode = command_.get<int>("mode")[0];
             switch (mode)
             {
+            case 0:
+                control_interface_->servoL(command_.get<double>("pose"), 1, 1, dt, 0.05, 1000);
+                break;
             case 1:
                 control_interface_->servoJ(command_.get<double>("position"), 1, 1, dt, 0.05, 1000);
                 break;
             case 2:
-                control_interface_->servoL(command_.get<double>("pose"), 1, 1, dt, 0.05, 1000);
-                break;
-            case 3:
                 control_interface_->speedJ(command_.get<double>("velocity"), 1.5, dt);
                 break;
             }
@@ -74,7 +74,7 @@ namespace hardwares
             }
             else
             {
-                pre_dq_ =  dq;
+                pre_dq_ = dq;
                 std::fill(ddq.begin(), ddq.end(), 0);
             }
             // std::cerr << "ddq:" << ddq[0] << " " << ddq[1] << " " << ddq[2] << " " << ddq[3] << " " << ddq[4] << " " << ddq[5] << std::endl;
