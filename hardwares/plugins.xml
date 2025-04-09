@@ -14,6 +14,9 @@
   <class type="hardwares::FC3Robot" base_class_type="hardware_interface::RobotInterface">
     <description>This is franka FC3 plugin.</description>
   </class>
+  <class type="hardwares::Med7Robot" base_class_type="hardware_interface::RobotInterface">
+    <description>This is kuka MED7 plugin.</description>
+  </class>
   <class type="hardwares::FTDummySensor" base_class_type="hardware_interface::SensorInterface">
     <description>This is dummy sensor plugin.</description>
   </class>

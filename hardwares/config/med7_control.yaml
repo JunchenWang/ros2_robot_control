@@ -1,0 +1,35 @@
+control_node:
+  ros__parameters:
+    update_rate: 500
+    lock_memory: true
+    simulation: false
+    sim_real_time: false
+    publish_joint_state: true
+    robot: hardwares::Med7Robot
+    controllers:
+      - controllers::JointImpedanceController
+
+Med7Robot:
+  ros__parameters:
+    robot_ip: 192.170.10.2
+    port: 30200
+    end_effector: ""
+    # joint interface:
+    joint_command_interface:
+      - position
+      - torque
+    joint_state_interface:
+      - position
+      - torque
+    # other interface:
+    command_interface: [mode, pose]
+    command_length: [2, 6]
+    command_type: [int, double]
+    state_interface: [T, c, g, external_torque, success, m]
+    state_length: [16, 7, 7, 7, 1, 49]
+    state_type: [double, double, double, double, double, double]
+
+JointImpedanceController:
+  ros__parameters:
+    K: [60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0]
+    B: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]

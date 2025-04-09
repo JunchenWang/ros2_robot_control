@@ -15,13 +15,24 @@ public:
         timer_ = this->create_wall_timer(
             std::chrono::milliseconds(2),
             [this]()
-            { read(); write(); });
-        deactivate();
+            {         
+                // if (!client_->connect(30200, "192.170.10.2"))
+                // {
+                //     RCLCPP_ERROR(this->get_logger(), "Failed to connect to KUKA robot!");
+                //     return;
+                // }
+                read(); write(); });
+        // deactivate();
     }
 
 private:
     void update_callback()
     {
+        if (!client_->connect(30200, "192.170.10.2"))
+        {
+            RCLCPP_ERROR(this->get_logger(), "Failed to connect to KUKA robot!");
+            return;
+        }
         if (!client_->updateFromRobot())
         {
             RCLCPP_WARN(this->get_logger(), "从机器人读取数据失败");
@@ -58,7 +69,7 @@ private:
 
     void deactivate()
     {
-        RCLCPP_INFO(this ->get_logger(), "Disconnecting from KUKA robot...");
+        RCLCPP_INFO(this->get_logger(), "Disconnecting from KUKA robot...");
         client_->disconnect();
         RCLCPP_INFO(this->get_logger(), "Disconnected from KUKA robot!");
     }
@@ -75,7 +86,7 @@ private:
             client_->getCurrentControllerState() != KUKA::FRI::MONITORING_WAIT)
         {
             client_->getRobotJointPosition(hw_states_position_);
-            client_->getRobotIpoJointPosition(hw_ipo_states_position_);
+            // client_->getRobotIpoJointPosition(hw_ipo_states_position_);
             client_->getRobotJointVelocity(hw_states_velocity_);
             client_->getRobotJointTorque(hw_states_effort_);
             client_->getRobotJointExternalTorque(hw_states_external_torque_sensor_);
@@ -88,7 +99,7 @@ private:
     }
     void write()
     {
-        hw_commands_ = hw_ipo_states_position_;
+        hw_commands_ = {};
         // write hw_commands_ to FRI
         bool isNan = false;
         for (auto i = 0ul; i < hw_commands_.size(); i++)

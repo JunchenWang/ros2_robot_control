@@ -36,7 +36,10 @@ add_library(hardwares::hardwares ALIAS hardwares)
 target_compile_features(hardwares PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(hardwares PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libfri/include>)
+
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/libfri/lib)
 
 ament_target_dependencies(
   hardwares
@@ -63,7 +66,6 @@ install(
   RUNTIME DESTINATION bin
 )
 
-
 add_executable(test_hardware test/test_hardware.cpp)
 target_include_directories(test_hardware PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -82,7 +84,6 @@ target_link_libraries(test_hardware
 
 install(TARGETS test_hardware
         DESTINATION lib/${PROJECT_NAME})
-
 
 install(
           DIRECTORY launch config urdf
