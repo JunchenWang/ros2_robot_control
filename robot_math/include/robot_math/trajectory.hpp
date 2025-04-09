@@ -30,13 +30,15 @@ namespace robot_math
             std::vector<double> p(6), v(6), a(6);
             for (int k = 0; k < 6; k++)
             {
-                p[k] = spl[k](t);
-                v[k] = spl[k].deriv(1, t);
-                a[k] = spl[k].deriv(2, t);
+                p[k] = spl_[k](t);
+                v[k] = spl_[k].deriv(1, t);
+                a[k] = spl_[k].deriv(2, t);
             }
             Td = pose_to_tform(p);
             V.tail(3) = Eigen::Vector3d(v[0], v[1], v[2]);
             dV.tail(3) = Eigen::Vector3d(a[0], a[1], a[2]);
+            
+
             Eigen::Matrix3d R = Td.block(0, 0, 3, 3);
             Eigen::Vector3d r(p[3], p[4], p[5]);
             Eigen::Vector3d dr(v[3], v[4], v[5]);
@@ -53,29 +55,39 @@ namespace robot_math
             y_.clear();
             y_.resize(6);
             time_.clear();
+            pos_waypoint_.clear();
+            orientation_waypoint_.clear();
             for (std::size_t i = 0; i < num_of_point_; i++)
             {
                 time_.push_back(traj[i * 7]);
-                for (int k = 0; k < 6; k++)
+                Eigen::Vector3d pos(traj[i * 7 + 1], traj[i * 7 + 2], traj[i * 7 + 3]);
+                Eigen::Quaterniond orientation = rv_to_quaternion(Eigen::Vector3d(traj[i * 7 + 4], traj[i * 7 + 5], traj[i * 7 + 6]));
+                pos_waypoint_.emplace_back(pos);
+                orientation_waypoint_.emplace_back(orientation);
+                for (int k = 0; k < 3; k++)
                 {
                     y_[k].push_back(traj[i * 7 + k + 1]);
                 }
             }
-            for (int k = 0; k < 6; k++)
+            for (int k = 0; k < 3; k++)
             {
-                spl[k].set_boundary(tk::spline::first_deriv, 0.0,
+                spl_[k].set_boundary(tk::spline::first_deriv, 0.0,
                                     tk::spline::first_deriv, 0.0);
-                spl[k].set_points(time_, y_[k]);
-                spl[k].make_monotonic();
+                spl_[k].set_points(time_, y_[k]);
+                //spl[k].make_monotonic();
             }
+            T_ = time_.back();
         }
 
     protected:
-        double T;
-        tk::spline spl[6];
+        double T_;
+        tk::spline spl_[3];
         std::vector<std::vector<double>> y_;
         std::vector<double> time_;
         std::size_t num_of_point_ = 0;
+        std::vector<Eigen::Vector3d> pos_waypoint_;
+        std::vector<Eigen::Quaterniond> orientation_waypoint_;
+
     };
 
 }

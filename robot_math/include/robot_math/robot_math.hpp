@@ -42,6 +42,8 @@ namespace robot_math
 	std::vector<double> quaternion_pose_to_rv_pose(const std::vector<double> &q_pose);
 	std::vector<double> rv_pose_to_quaternion_pose(const std::vector<double> &rv_pose);
 	std::vector<double> tform_to_quaternion_pose(const Eigen::Matrix4d &T);// w, x, y, z
+	Eigen::Vector3d quaternion_to_rv(const Eigen::Quaterniond &q);
+	Eigen::Quaterniond rv_to_quaternion(const Eigen::Vector3d &r);
 	Eigen::Matrix4d quaternion_pose_to_tform(const std::vector<double> &pose);
 	Eigen::Matrix3d so_w(const Eigen::Vector3d &w);
 	Eigen::Matrix4d se_twist(const Eigen::Vector6d &V);

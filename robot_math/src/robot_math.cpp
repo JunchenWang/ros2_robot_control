@@ -79,6 +79,25 @@ namespace robot_math
         }
         return r;
     }
+
+    Eigen::Vector3d quaternion_to_rv(const Eigen::Quaterniond &q)
+    {
+        Eigen::AngleAxisd a(q);
+        return a.axis() * a.angle();
+    }
+
+	Eigen::Quaterniond rv_to_quaternion(const Eigen::Vector3d &r)
+    {
+        if(r.norm() > std::numeric_limits<double>::epsilon())
+        {
+            return Eigen::Quaterniond(Eigen::AngleAxisd(r.norm(), r.normalized()));
+        }
+        else
+        {
+            return Eigen::Quaterniond(1, 0, 0, 0);
+        }
+    }
+
     std::vector<double> quaternion_pose_to_rv_pose(const std::vector<double> &q_pose)
     {
         std::vector<double> rv_pose(6);
