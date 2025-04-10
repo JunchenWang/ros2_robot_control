@@ -32,13 +32,13 @@ namespace controllers
                     if (new_arrival_)
                     {
                         auto js = *real_time_buffer_.readFromRT();
-                        trajectory.set_traj(js->data);
+                        trajectory_.set_traj(js->data);
                         new_arrival_ = false;
                         last_time_ = node_->now();
                     }
                 }
             }
-            if(trajectory.is_empty())
+            if(trajectory_.is_empty())
             {
                 cmd = pose0_;
             }
@@ -47,7 +47,7 @@ namespace controllers
                 auto dt = node_->now() - last_time_;
                 Eigen::Matrix4d T;
                 Eigen::Vector6d V, dV;
-                trajectory.evaluate(dt.seconds(), T, V, dV);
+                trajectory_.evaluate(dt.seconds(), T, V, dV);
                 cmd = robot_math::tform_to_pose(T);
                 visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
                 
@@ -61,7 +61,7 @@ namespace controllers
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             new_arrival_ = false;
-            trajectory.clear();
+            trajectory_.clear();
             real_time_buffer_.reset();
             q0_ = state_->get<double>("position");
             dq0_ = state_->get<double>("velocity");
@@ -91,7 +91,7 @@ namespace controllers
         std::vector<double> dq0_;
         std::vector<double> pose0_;
         Eigen::Matrix4d T0_;
-        robot_math::CartesianTrajectory trajectory;
+        robot_math::CartesianTrajectory trajectory_;
         rclcpp::Time last_time_;
         std::mutex mutex_;
         bool new_arrival_ = false;
