@@ -29,53 +29,39 @@ namespace KUKA::FRI
         }
     }
 
-    // void Med7Client::command()
-    // {
-    //     LBRClient::command();
-    //     auto &cmd = command_copy_.get<double>("position");
-    //     double jointPos[LBRState::NUMBER_OF_JOINTS];
-    //     memcpy(jointPos, robotState().getIpoJointPosition(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
-    //     robotCommand().setJointPosition(jointPos);
-    // }
-
-    // void Med7Client::setCommand(hardware_interface::CommandInterface &command)
-    // {
-    //     command_copy_ = command;
-    // }
-
     void Med7Client::setCommand(hardware_interface::CommandInterface &command)
     {
         this->command();
-        auto &cmd = command_copy_.get<double>("position");
+        auto &cmd = command.get<double>("position");
         double jointPos[LBRState::NUMBER_OF_JOINTS];
         memcpy(jointPos, robotState().getIpoJointPosition(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
         robotCommand().setJointPosition(jointPos);
     }
-
+    
     void Med7Client::getState(hardware_interface::StateInterface& state)
     {
-        auto &&mjp = robotState_.getMeasuredJointPosition();
+        auto &&mjp = robotState().getMeasuredJointPosition();
         std::copy(mjp, mjp + LBRState::NUMBER_OF_JOINTS,
             state.get<double>("position").begin());
-        if (robotState_.getSessionState() == COMMANDING_ACTIVE)
+        if (robotState().getSessionState() == COMMANDING_ACTIVE)
         {
-            auto &&ipop = robotState_.getIpoJointPosition();
+            auto &&ipop = robotState().getIpoJointPosition();
             std::copy(ipop, ipop + LBRState::NUMBER_OF_JOINTS,
                 state.get<double>("ipo_position").begin());
         }
     }
 
-    ClientData *Med7Client::createData()
-    {
-        ClientData *const data = new ClientData(robotState_.NUMBER_OF_JOINTS);
+    // ClientData *Med7Client::createData()
+    // {
+    //     ClientData *const data = new ClientData(robotState_.NUMBER_OF_JOINTS);
 
-        robotState_._message = &data->monitoringMsg;
-        robotCommand_._cmdMessage = &data->commandMsg;
-        robotCommand_._monMessage = &data->monitoringMsg;
+    //     robotState_._message = &data->monitoringMsg;
+    //     robotCommand_._cmdMessage = &data->commandMsg;
+    //     robotCommand_._monMessage = &data->monitoringMsg;
 
-        data->expectedMonitorMsgID = static_cast<uint32_t>(LBRState::LBRMONITORMESSAGEID);
-        data->commandMsg.header.messageIdentifier = static_cast<uint32_t>(LBRCommand::LBRCOMMANDMESSAGEID);
+    //     data->expectedMonitorMsgID = static_cast<uint32_t>(LBRState::LBRMONITORMESSAGEID);
+    //     data->commandMsg.header.messageIdentifier = static_cast<uint32_t>(LBRCommand::LBRCOMMANDMESSAGEID);
 
-        return data;
-    }
+    //     return data;
+    // }
 } // namespace KUKA::FRI

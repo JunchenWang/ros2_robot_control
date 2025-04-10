@@ -5,10 +5,10 @@ agreement or other license is obtained by KUKA Deutschland GmbH, Augsburg, Germa
 
 SCOPE
 
-The software “KUKA Sunrise.FRI Client SDK” is targeted to work in
-conjunction with the “KUKA Sunrise.FRI” toolkit.
-In the following, the term “software” refers to all material directly
-belonging to the provided SDK “Software development kit”, particularly source
+The software ï¿½KUKA Sunrise.FRI Client SDKï¿½ is targeted to work in
+conjunction with the ï¿½KUKA Sunrise.FRIï¿½ toolkit.
+In the following, the term ï¿½softwareï¿½ refers to all material directly
+belonging to the provided SDK ï¿½Software development kitï¿½, particularly source
 code, libraries, binaries, manuals and technical documentation.
 
 COPYRIGHT
@@ -124,18 +124,16 @@ namespace FRI
        */
       LBRCommand& robotCommand() { return _robotCommand; }
       
-   private:
-      
-      LBRState _robotState;      //!< wrapper class for the FRI monitoring message
-      LBRCommand _robotCommand;  //!< wrapper class for the FRI command message
-      
       /**
        * \brief Method to create and initialize the client data structure (used internally).
        * 
        * @return newly allocated client data structure
        */
       virtual ClientData* createData();
-      
+
+   protected:
+      LBRState _robotState;      //!< wrapper class for the FRI monitoring message
+      LBRCommand _robotCommand;  //!< wrapper class for the FRI command message
    };
    
 }

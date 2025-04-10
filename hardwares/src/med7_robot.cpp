@@ -43,31 +43,26 @@ namespace hardwares
             default:
                 break;
             }
-
             // Encode and send command message
             data_->lastSendCounter++;
             // check if its time to send an answer
             if (data_->lastSendCounter >= data_->monitoringMsg.connectionInfo.receiveMultiplier)
             {
                 data_->lastSendCounter = 0;
-
                 // set sequence counters
                 data_->commandMsg.header.sequenceCounter = data_->sequenceCounter++;
                 data_->commandMsg.header.reflectedSequenceCounter =
                     data_->monitoringMsg.header.sequenceCounter;
-
                 if (!data_->encoder.encode(data_->sendBuffer, size_))
                 {
                     return;
                 }
-
                 if (!connection_->send(data_->sendBuffer, size_))
                 {
                     printf("Error: failed while trying to send command message!\n");
                     return;
                 }
             }
-            std::cout << "write once for " << period.seconds() << std::endl;
         }
         bool is_stop() override
         {
@@ -132,6 +127,7 @@ namespace hardwares
             // for (size_t i = 0; i < state_.get<double>("position").size(); i++)
             //     std::cout << state_.get<double>("position")[i] << " ";
             // std::cout << std::endl;
+            // std::cout << "read once for " << period.seconds() << std::endl;
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override
         {
