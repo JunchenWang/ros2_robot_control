@@ -34,7 +34,7 @@ namespace KUKA::FRI
         this->command();
         auto &cmd = command.get<double>("position");
         double jointPos[LBRState::NUMBER_OF_JOINTS];
-        memcpy(jointPos, robotState().getIpoJointPosition(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
+        memcpy(jointPos, cmd.data(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
         robotCommand().setJointPosition(jointPos);
     }
     
