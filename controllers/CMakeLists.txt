@@ -85,6 +85,7 @@ install(
 add_executable(test_controller test/test_controller.cpp)
 add_executable(debug_all test/debug_all.cpp)
 add_executable(test_forward_controller test/test_forward_controller.cpp)
+add_executable(test_trajectory_controller test/test_trajectory_controller.cpp)
 add_executable(movel utility/movel.cpp)
 add_executable(movej utility/movej.cpp)
 # target_include_directories(test_controller PUBLIC
@@ -103,6 +104,11 @@ ament_target_dependencies(
 )
 
 ament_target_dependencies(
+  test_trajectory_controller
+  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+)
+
+ament_target_dependencies(
   test_forward_controller
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
@@ -117,7 +123,7 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-install(TARGETS test_controller debug_all test_forward_controller movej movel
+install(TARGETS test_controller debug_all test_forward_controller test_trajectory_controller movej movel
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

@@ -2,30 +2,20 @@
 #include <pluginlib/class_loader.hpp>
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include <chrono>
-#include <fstream>
 using namespace std::chrono_literals;
 int main(int argc, char **argv)
 {
-  rclcpp::init(argc, argv);
-
-  auto node = std::make_shared<rclcpp::Node>("movej");
-  auto publisher_ = node->create_publisher<std_msgs::msg::Float64MultiArray>("CartesianTrajectoryController/commands",
-                                                                             rclcpp::SystemDefaultsQoS());
-  std::thread t([=]
-                {
-                  // note, wait for node registration, otherwise, the topic may not be sent
-                  std::this_thread::sleep_for(std::chrono::seconds(1));
-                  std_msgs::msg::Float64MultiArray msg;
-                  msg.data = {
-                    0, -0.5, -.1, .1, 3.14, 0,  0,
-                    1, -0.5, 0, .2, 3.14, 0,  0,
-                    2, -0.5, .1, .2, 3.14, 0,  0,
-                    3, -0.5, .2, .1, 3.14, 0,  0,
-                    4, -0.5, .1, 0,  3.14,  0,  0, 
-                    5, -0.5, 0, 0,  3.14, 0, 0
-                  };
-                  publisher_->publish(msg); });
-  rclcpp::spin(node);
-  rclcpp::shutdown();
-  return 0;
+    rclcpp::init(argc, argv);
+    std::vector<double> goal;
+    for(int i = 1; i < argc; i++)
+      goal.push_back(atof(argv[i]));
+    
+    auto node = std::make_shared<rclcpp::Node>("movej");
+    auto publisher_ = node->create_publisher<std_msgs::msg::Float64MultiArray>("JointMotionController/commands", rclcpp::SystemDefaultsQoS());
+    std_msgs::msg::Float64MultiArray msg;
+    msg.data = goal;
+    std::this_thread::sleep_for(1s);
+    publisher_->publish(msg);
+    rclcpp::shutdown();
+    return 0;
 }
