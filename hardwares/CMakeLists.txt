@@ -19,6 +19,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "robot_math"
   "hardware_interface"
   "pluginlib"
+  "kuka_fri"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
@@ -36,10 +37,7 @@ add_library(hardwares::hardwares ALIAS hardwares)
 target_compile_features(hardwares PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(hardwares PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libfri/include>)
-
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/libfri/lib)
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 
 ament_target_dependencies(
   hardwares

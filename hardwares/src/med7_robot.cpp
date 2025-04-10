@@ -1,16 +1,8 @@
-#include "friClientApplication.h"
-#include "friUdpConnection.h"
 #include "hardware_interface/robot_interface.hpp"
 #include "med7client.hpp"
 #include "robot_math/robot_math.hpp"
 #include <iostream>
 #include <vector>
-
-#include "FRIMessages.pb.h"
-#include "friClientData.h"
-#include "friClientIf.h"
-#include "friConnectionIf.h"
-#include "friTransformationClient.h"
 
 using namespace robot_math;
 using namespace KUKA::FRI;

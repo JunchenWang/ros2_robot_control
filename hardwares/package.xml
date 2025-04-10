@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
 
   <depend>hardware_interface</depend>
+  <depend>kuka_fri</depend>
   <depend>urdf</depend>
   <depend>pluginlib</depend>
   <depend>lbr_description</depend>
