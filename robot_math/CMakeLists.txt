@@ -22,7 +22,7 @@ find_package(jsoncpp REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-file(GLOB_RECURSE matlab_srcs src/matlab_code/*.cpp)
+# file(GLOB_RECURSE matlab_srcs src/matlab_code/*.cpp)
 
 add_library(robot_math SHARED
            src/robot_math.cpp
