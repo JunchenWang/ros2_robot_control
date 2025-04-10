@@ -35,58 +35,73 @@ def generate_launch_description():
 
     # rviz_file = PathJoinSubstitution(
     #             [
-    #                 FindPackageShare("ur_description"),
-    #                 "rviz",
+    #                 FindPackageShare("ur_description"), 
+    #                 "rviz", 
     #                 "view_robot.rviz"
     #             ]
     #         )
-
-    # 使用hardwares包中的ur5e配置文件
+    
     rviz_file = PathJoinSubstitution(
-            [
-                FindPackageShare("franka_description"),
-                "rviz",
-                "visualize_franka.rviz"
-            ]
-        )
-
-    robot_xacro_filepath = PathJoinSubstitution(
         [
-            FindPackageShare("franka_description"),
-            "robots",
-            "fr3",
-            "fr3.urdf.xacro"
+            FindPackageShare("applications"),
+            "config",
+            "ur5e",
+            "view_robot.rviz"
         ]
     )
 
+
+    robot_xacro_filepath = PathJoinSubstitution(
+        [
+            FindPackageShare("applications"),
+            "config",
+            "ur5e",
+            "ur.urdf.xacro",
+        ]
+    )
+
+    ur_type = "ur5e"
+    kinematics_params_file = PathJoinSubstitution(
+                [
+                    FindPackageShare("applications"),
+                    "config",
+                    "ur5e",
+                    "kinematics@B211.yaml",
+                ]
+            )
+    
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             robot_xacro_filepath,
             " ",
-            "hand:=",
-            "false",
+            "kinematics_params:=",
+            kinematics_params_file,
             " ",
-            "ee_id:=",
-            "frank_hand",
+            "name:=",
+            ur_type,
+            " ",
+            "ur_type:=",
+            ur_type,
+            " ",
         ]
     )
     robot_description = ParameterValue(robot_description_content, value_type=str)
-
-    params = PathJoinSubstitution(
-        [
-            FindPackageShare("hardwares"),
-            "config",
-            "fc3_control.yaml",
-        ]
-    )
+    
 
     # with open("urdf/fr3.urdf", "w") as f:
     #     f.write(robot_description)
     #     f.close()
 
-   
+    params = PathJoinSubstitution(
+        [
+            FindPackageShare("applications"),
+            "config",
+            "ur5e",
+            "ur_control.yaml",
+        ]
+    )
   
     robot_state_publisher = Node(
             package="robot_state_publisher",
@@ -130,9 +145,9 @@ def generate_launch_description():
  
 
     nodes = arguments  + [
-            # robot_state_publisher,
-            # rviz_node,
-            # robot_monitor,
+            robot_state_publisher,
+            rviz_node,
+            robot_monitor,
             control_node,
             ]
 
