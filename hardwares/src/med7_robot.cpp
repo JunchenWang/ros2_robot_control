@@ -6,6 +6,7 @@
 
 using namespace robot_math;
 using namespace KUKA::FRI;
+using namespace std;
 
 namespace hardwares
 {
@@ -28,6 +29,45 @@ namespace hardwares
             double dt = 1.0 / update_rate_;
             auto &cmd = command_.get<double>("position");
             // send command
+            ESessionState currentState = (ESessionState)data_->monitoringMsg.connectionInfo.sessionState;
+            switch (currentState)
+            {
+            case COMMANDING_WAIT:
+                client_->waitForCommand();
+                break;
+            case COMMANDING_ACTIVE:
+                client_->setCommand(command_);
+                break;
+            case IDLE:
+                return;
+            default:
+                break;
+            }
+
+            // Encode and send command message
+            data_->lastSendCounter++;
+            // check if its time to send an answer
+            if (data_->lastSendCounter >= data_->monitoringMsg.connectionInfo.receiveMultiplier)
+            {
+                data_->lastSendCounter = 0;
+
+                // set sequence counters
+                data_->commandMsg.header.sequenceCounter = data_->sequenceCounter++;
+                data_->commandMsg.header.reflectedSequenceCounter =
+                    data_->monitoringMsg.header.sequenceCounter;
+
+                if (!data_->encoder.encode(data_->sendBuffer, size_))
+                {
+                    return;
+                }
+
+                if (!connection_->send(data_->sendBuffer, size_))
+                {
+                    printf("Error: failed while trying to send command message!\n");
+                    return;
+                }
+            }
+            std::cout << "write once for " << period.seconds() << std::endl;
         }
         bool is_stop() override
         {
@@ -41,19 +81,18 @@ namespace hardwares
                 return;
             }
 
-            // **************************************************************************
             // Receive and decode new monitoring message
-            // **************************************************************************
-            int size = connection_->receive(data_->receiveBuffer, FRI_MONITOR_MSG_MAX_SIZE);
+            size_ = connection_->receive(data_->receiveBuffer, FRI_MONITOR_MSG_MAX_SIZE);
 
-            if (size <= 0)
-            { // TODO: size == 0 -> connection closed (maybe go to IDLE instead of stopping?)
+            if (size_ <= 0)
+            {
                 printf("Error: failed while trying to receive monitoring message!\n");
                 return;
             }
 
-            if (!data_->decoder.decode(data_->receiveBuffer, size))
+            if (!data_->decoder.decode(data_->receiveBuffer, size_))
             {
+                printf("Error: failed while trying to decode monitoring message!\n");
                 return;
             }
 
@@ -66,9 +105,7 @@ namespace hardwares
                 return;
             }
 
-            // **************************************************************************
             // callbacks
-            // **************************************************************************
             // reset commmand message before callbacks
             data_->resetCommandMessage();
 
@@ -87,16 +124,14 @@ namespace hardwares
             case MONITORING_READY:
                 client_->monitor();
                 break;
-            case COMMANDING_WAIT:
-                client_->waitForCommand();
-                break;
-            case COMMANDING_ACTIVE:
-                client_->command();
-                break;
             case IDLE:
             default:
                 break;
             }
+            client_->getState(state_);
+            // for (size_t i = 0; i < state_.get<double>("position").size(); i++)
+            //     std::cout << state_.get<double>("position")[i] << " ";
+            // std::cout << std::endl;
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override
         {
@@ -109,15 +144,13 @@ namespace hardwares
                     RCLCPP_ERROR(node_->get_logger(), "robot_ip is not set");
                     return CallbackReturn::FAILURE;
                 }
-                try
+                bool flag = app_->connect(port_, robot_ip_.c_str());
+                if (!flag)
                 {
-                    app_->connect(port_, robot_ip_.c_str());
-                }
-                catch (std::exception &e)
-                {
-                    RCLCPP_ERROR(node_->get_logger(), "can not establish connection with FC3 robot with %s", robot_ip_.c_str());
+                    RCLCPP_ERROR(node_->get_logger(), "can not establish connection with Med7 robot with %s", robot_ip_.c_str());
                     return CallbackReturn::FAILURE;
                 }
+                RCLCPP_INFO(node_->get_logger(), "successfully connect to %s:%d", robot_ip_.c_str(), port_);
                 return CallbackReturn::SUCCESS;
             }
 
@@ -155,7 +188,8 @@ namespace hardwares
         std::unique_ptr<KUKA::FRI::ClientApplication> app_;
         std::unique_ptr<KUKA::FRI::UdpConnection> connection_;
         std::unique_ptr<KUKA::FRI::Med7Client> client_;
-        KUKA::FRI::ClientData* data_;
+        KUKA::FRI::ClientData *data_;
+        int size_;
     };
 
 } // namespace hardwares

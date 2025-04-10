@@ -23,10 +23,12 @@ namespace KUKA::FRI
         ~Med7Client();
 
         virtual void onStateChange(ESessionState oldState, ESessionState newState) override;
-        virtual void command() override;
+        // virtual void command() override;
 
-        void setCommand(hardware_interface::CommandInterface& command);
-        hardware_interface::StateInterface getState();
+        // void setCommand(hardware_interface::CommandInterface& command);
+        void setCommand(hardware_interface::CommandInterface &command);
+
+        void getState(hardware_interface::StateInterface& state);
         ClientData* createData();
 
     private:
@@ -39,7 +41,7 @@ namespace KUKA::FRI
         double _stepWidth;
 
         hardware_interface::CommandInterface command_copy_;
-        hardware_interface::StateInterface state_;
+        // hardware_interface::StateInterface state_;
         
         LBRState robotState_;
         LBRCommand robotCommand_;

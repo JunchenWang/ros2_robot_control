@@ -46,7 +46,8 @@ add_library(controllers
             src/virtual_fixture_plane_controller.cpp
             src/virtual_fixture_line_controller.cpp
             src/virtual_fixture_general_controller.cpp
-            src/virtual_fixture_general_pose_controller.cpp)
+            src/virtual_fixture_general_pose_controller.cpp
+            src/med7_controller.cpp)
 
 add_library(controllers::controllers ALIAS controllers)
 target_compile_features(controllers PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17

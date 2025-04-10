@@ -113,7 +113,7 @@ def generate_launch_description():
 
     nodes = arguments  + [
             robot_state_publisher,
-            rviz_node,
+            # rviz_node,
             # robot_monitor,
             control_node,
             ]

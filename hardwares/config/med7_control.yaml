@@ -1,13 +1,14 @@
 control_node:
   ros__parameters:
-    update_rate: 500
+    update_rate: 1000
     lock_memory: true
     simulation: false
     sim_real_time: false
     publish_joint_state: true
     robot: hardwares::Med7Robot
     controllers:
-      - controllers::JointImpedanceController
+      - controllers::DummyController
+      - controllers::Med7Controller
 
 Med7Robot:
   ros__parameters:
@@ -20,6 +21,7 @@ Med7Robot:
       - torque
     joint_state_interface:
       - position
+      - ipo_position
       - torque
     # other interface:
     command_interface: [mode, pose]
