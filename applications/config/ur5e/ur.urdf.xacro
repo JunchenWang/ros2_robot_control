@@ -44,7 +44,6 @@
 
   <!-- create link fixed to the "world" -->
   <link name="world" />
-
   <xacro:ur_robot
     name="$(arg name)"
     tf_prefix="$(arg tf_prefix)"
@@ -59,5 +58,11 @@
     >
      <origin xyz="0 0 0" rpy="0 0 3.14159265358979323846" />          <!-- position robot in the world -->
   </xacro:ur_robot>
+
+
+  <!-- <xacro:include filename="$(find applications)/urdf/end_effector.urdf.xacro"/>
+  <xacro:end-effector name="tcp" parent="$(arg tf_prefix)tool0" mesh="driller">
+     <origin xyz="0 0 0" rpy="0 0 0" />         
+  </xacro:end-effector> -->
 
 </robot>

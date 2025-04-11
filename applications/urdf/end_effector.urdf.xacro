@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+
+<xacro:macro name="end-effector" params="parent name mesh *origin">
+
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://applications/meshes/${mesh}.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+           <mesh filename="package://applications/meshes/${mesh}.stl" scale="0.001 0.001 0.001"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <inertia
+            ixx="0"
+            ixy="0"
+            ixz="0"
+            iyy="0"
+            iyz="0"
+            izz="0"
+        />
+      </inertial>
+    </link>
+
+    <joint name="${parent}-${name}" type="fixed">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent}"/>
+      <child link="${name}"/>
+    </joint>
+
+</xacro:macro>
+
+
+
+
+</robot>
