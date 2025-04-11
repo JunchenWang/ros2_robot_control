@@ -17,28 +17,18 @@ namespace KUKA::FRI
 {
     class Med7Client : public LBRClient
     {
-
     public:
         Med7Client();
         ~Med7Client();
 
         virtual void onStateChange(ESessionState oldState, ESessionState newState) override;
-        // virtual void command() override;
 
-        // void setCommand(hardware_interface::CommandInterface& command);
         void setCommand(hardware_interface::CommandInterface &command);
 
         void getState(hardware_interface::StateInterface &state);
 
     private:
-        unsigned int _jointMask;
-        double _freqHz;
-        double _amplRad;
-        double _filterCoeff;
-        double _offset;
-        double _phi;
-        double _stepWidth;
     };
-} // namespace KUKA::FRI
+}
 
 #endif // MED7_CLIENT_HPP

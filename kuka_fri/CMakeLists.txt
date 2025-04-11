@@ -19,7 +19,7 @@ find_package(realtime_tools REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-# build libfri
+# build libfri-2.5
 add_definitions(-DHAVE_SOCKLEN_T
                 -DPB_SYSTEM_HEADER="pb_syshdr.h"
                 -DPB_FIELD_16BIT
@@ -31,25 +31,25 @@ add_definitions(-DHAVE_SOCKLEN_T
                 -fPIC)
 
 set(FRI_HEADER
-  external/libfri/include
-  external/libfri/src/protobuf_gen
-  external/libfri/src/nanopb-0.2.8
-  external/libfri/src/protobuf
-  external/libfri/src/connection
-  external/libfri/src/client_lbr
-  external/libfri/src/client_trafo
-  external/libfri/src/base
+  external/libfri-2.5/include
+  external/libfri-2.5/src/protobuf_gen
+  external/libfri-2.5/src/nanopb-0.2.8
+  external/libfri-2.5/src/protobuf
+  external/libfri-2.5/src/connection
+  external/libfri-2.5/src/client_lbr
+  external/libfri-2.5/src/client_trafo
+  external/libfri-2.5/src/base
 )
 
 file(GLOB_RECURSE FRI_SRC
-  external/libfri/src/base/*.cpp
-  external/libfri/src/client_lbr/*.cpp
-  external/libfri/src/connection/*.cpp
-  external/libfri/src/protobuf/*.cpp
-  external/libfri/src/protobuf/*.c
-  external/libfri/src/protobuf_gen/*.c
-  external/libfri/src/nanopb-0.2.8/*.c
-  external/libfri/src/client_trafo/*.cpp
+  external/libfri-2.5/src/base/*.cpp
+  external/libfri-2.5/src/client_lbr/*.cpp
+  external/libfri-2.5/src/connection/*.cpp
+  external/libfri-2.5/src/protobuf/*.cpp
+  external/libfri-2.5/src/protobuf/*.c
+  external/libfri-2.5/src/protobuf_gen/*.c
+  external/libfri-2.5/src/nanopb-0.2.8/*.c
+  external/libfri-2.5/src/client_trafo/*.cpp
 )
 
 ## COMPILE
@@ -89,11 +89,11 @@ install(
 )
 
 install(
-  DIRECTORY external/libfri/include/
+  DIRECTORY external/libfri-2.5/include/
   DESTINATION include
 )
 
-file(GLOB_RECURSE OTHER_HEADER_FILES "external/libfri/src/*/*.h")
+file(GLOB_RECURSE OTHER_HEADER_FILES "external/libfri-2.5/src/*/*.h")
 install(
   FILES ${OTHER_HEADER_FILES}
   DESTINATION include
