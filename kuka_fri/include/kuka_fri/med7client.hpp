@@ -21,9 +21,11 @@ namespace KUKA::FRI
         Med7Client();
         ~Med7Client();
 
-        virtual void onStateChange(ESessionState oldState, ESessionState newState) override;
+        void StateChange(ESessionState oldState, ESessionState newState, hardware_interface::StateInterface &state);
 
         void setCommand(hardware_interface::CommandInterface &command);
+
+        void waitCommand(hardware_interface::StateInterface &state);
 
         void getState(hardware_interface::StateInterface &state);
 

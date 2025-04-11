@@ -16,8 +16,10 @@ This package provides:
 The following modifications were made to the original `external/libfri-2.5` source code in order to support integration with the Med7Client class and enable ROS2 compatibility:
 
 1. **Access Modifier Change in `friLBRClient.h`**
-   The method `virtual ClientData* createData();` in the file `include/friLBRClient.h` was originally declared as `protected`.
+   The method `virtual ClientData* createData();` in the file `include/friLBRClient.h` was originally declared as `private`.
    It was changed to `public` to allow external access from the `Med7Client` class.
+   The member variables `_robotState` and `_robotCommand` in the file `include/friLBRClient.h` was originally declared as `private`.
+   It was changed to `protected` to allow external access from the `Med7Client` class.
 2. **Friend Class Declarations**In order to grant the `Med7Client` class access to internal members of the robot command and state classes, the following friend class declarations were added:
 
    - In `include/friLBRCommand.h`:

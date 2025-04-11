@@ -27,9 +27,9 @@ Med7Robot:
     command_interface: [mode, pose]
     command_length: [2, 6]
     command_type: [int, double]
-    state_interface: [T, c, g, external_torque, success, m]
-    state_length: [16, 7, 7, 7, 1, 49]
-    state_type: [double, double, double, double, double, double]
+    state_interface: [initial_position, external_torque, active]
+    state_length: [7, 7, 1]
+    state_type: [double, double, bool]
 
 JointImpedanceController:
   ros__parameters:

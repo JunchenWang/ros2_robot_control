@@ -9,20 +9,36 @@ namespace KUKA::FRI
 
     Med7Client::~Med7Client() = default;
 
-    void Med7Client::onStateChange(ESessionState oldState, ESessionState newState)
+    void Med7Client::StateChange(ESessionState oldState, ESessionState newState, hardware_interface::StateInterface &state)
     {
         LBRClient::onStateChange(oldState, newState);
         // State change handling remains the same
+
         switch (newState)
         {
         case IDLE:
         case MONITORING_WAIT:
+        {
+            auto &&mjp = robotState().getMeasuredJointPosition();
+            std::copy(mjp, mjp + LBRState::NUMBER_OF_JOINTS,
+                      state.get<double>("initial_position").begin());
+            break;
+        }
         case MONITORING_READY:
         case COMMANDING_WAIT:
         case COMMANDING_ACTIVE:
+            break;
         default:
             break;
         }
+    }
+
+    void Med7Client::waitCommand(hardware_interface::StateInterface &state)
+    {
+        LBRClient::waitForCommand();
+        auto &&mjp = robotState().getMeasuredJointPosition();
+        std::copy(mjp, mjp + LBRState::NUMBER_OF_JOINTS,
+                  state.get<double>("initial_position").begin());
     }
 
     void Med7Client::setCommand(hardware_interface::CommandInterface &command)
@@ -39,11 +55,13 @@ namespace KUKA::FRI
         auto &&mjp = robotState().getMeasuredJointPosition();
         std::copy(mjp, mjp + LBRState::NUMBER_OF_JOINTS,
                   state.get<double>("position").begin());
+        state.get<bool>("active")[0] = false;
         if (robotState().getSessionState() == COMMANDING_ACTIVE)
         {
             auto &&ipop = robotState().getIpoJointPosition();
             std::copy(ipop, ipop + LBRState::NUMBER_OF_JOINTS,
                       state.get<double>("ipo_position").begin());
+            state.get<bool>("active")[0] = true;
         }
     }
 } // namespace KUKA::FRI

@@ -33,7 +33,7 @@ namespace hardwares
             switch (currentState)
             {
             case COMMANDING_WAIT:
-                client_->waitForCommand();
+                client_->waitCommand(state_);
                 break;
             case COMMANDING_ACTIVE:
                 client_->setCommand(command_);
@@ -109,7 +109,7 @@ namespace hardwares
 
             if (data_->lastState != currentState)
             {
-                client_->onStateChange(data_->lastState, currentState);
+                client_->StateChange(data_->lastState, currentState, state_);
                 data_->lastState = currentState;
             }
 
@@ -119,7 +119,6 @@ namespace hardwares
             case MONITORING_READY:
                 client_->monitor();
                 break;
-            case IDLE:
             default:
                 break;
             }
