@@ -22,6 +22,6 @@ public:
 private:
     Ui::MainWindow *ui;
     std::shared_ptr<std::thread> thread_;
-    rclcpp::Node::SharedPtr node_ = std::make_shared<rclcpp::Node>("robot_gui");
+    rclcpp::Node::SharedPtr node_;
 };
 #endif // MAINWINDOW_H
