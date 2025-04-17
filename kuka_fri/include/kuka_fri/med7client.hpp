@@ -9,8 +9,8 @@
 #include "friLBRClient.h"
 #include "friTransformationClient.h"
 #include "friUdpConnection.h"
-#include "hardware_interface/command_interface.hpp"
-#include "hardware_interface/state_interface.hpp"
+#include "robot_hardware_interface/command_interface.hpp"
+#include "robot_hardware_interface/state_interface.hpp"
 #include <vector>
 
 namespace KUKA::FRI

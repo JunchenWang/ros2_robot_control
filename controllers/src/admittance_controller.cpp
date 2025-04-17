@@ -24,12 +24,7 @@ namespace controllers
             std::string yaml_file_path = FileUtils::getPackageDirectory("hardwares") + "/config/ur_control.yaml";
             FileUtils::modifyYamlValue(yaml_file_path, "offset", offset_);
             if (data_logger_)
-            {
                 data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/adm_ctrl/", "adm_ctrl");
-                delete data_logger_;
-            }
-            if (visual_tools_)
-                delete visual_tools_;
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
@@ -142,12 +137,12 @@ namespace controllers
             inv_flag_ = 0;
             command_->get<int>("mode")[0] = -1;
 
-            data_logger_ = new DataLogger(
-                {
+            data_logger_ = std::make_unique<DataLogger>(
+                std::initializer_list<DataInfo>{
                     DATA_WRAPPER(Ftcp_),
                     DATA_WRAPPER(Fext_),
                 },
-                {
+                std::initializer_list<ExperimentContext>{
                     CONFIG_WRAPPER(mr_),
                     CONFIG_WRAPPER(br_),
                     CONFIG_WRAPPER(kr_),
@@ -156,7 +151,7 @@ namespace controllers
                     CONFIG_WRAPPER(kp_),
                 },
                 1000);
-            visual_tools_ = new ROS2VisualTools(node_);
+            visual_tools_ = std::make_unique<ROS2VisualTools>(node_);
             return CallbackReturn::SUCCESS;
         }
 
@@ -266,8 +261,8 @@ namespace controllers
         Eigen::Matrix4d Tcp_, Tsensor_, Tdtcp_, Tref_;
         Eigen::Vector6d Ftcp_, Vdtcp_, Fext_;
         bool prev_io1_;
-        ROS2VisualTools *visual_tools_;
-        DataLogger *data_logger_;
+        std::unique_ptr<DataLogger> data_logger_;
+        std::unique_ptr<ROS2VisualTools> visual_tools_;
     };
 }
 #include <pluginlib/class_list_macros.hpp>

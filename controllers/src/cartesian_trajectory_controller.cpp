@@ -49,7 +49,7 @@ namespace controllers
                 Eigen::Vector6d V, dV;
                 trajectory_.evaluate(dt.seconds(), T, V, dV);
                 cmd = robot_math::tform_to_pose(T);
-                visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
+                visual_tools_->publishPointMarker(T.block(0, 3, 3, 1), "base", 0.5);
                 
             }
         }

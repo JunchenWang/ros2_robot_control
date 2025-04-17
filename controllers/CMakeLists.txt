@@ -47,7 +47,7 @@ add_library(controllers
             src/virtual_fixture_line_controller.cpp
             src/virtual_fixture_general_controller.cpp
             src/virtual_fixture_general_pose_controller.cpp
-            src/med7_controller.cpp)
+            src/med7_controller.cpp
             src/rcm_controller.cpp
             src/joint_motion_controller.cpp
             src/cartesian_motion_controller.cpp

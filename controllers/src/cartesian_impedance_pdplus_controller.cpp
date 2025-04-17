@@ -1,4 +1,4 @@
-#include "controller_interface/controller_interface.hpp"
+#include "robot_controller_interface/controller_interface.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "realtime_tools/realtime_box.hpp"
 #include "robot_math/MovingFilter.h"
@@ -18,10 +18,7 @@ namespace controllers
         ~CartesianImpedancePDPlusController()
         {
             if (data_logger_)
-            {
                 data_logger_->save(FileUtils::getHomeDirectory() + "/experiment_logs/cartesian_impedance_pdplus_controller/", "cartesian_impedance_pdplus_controller");
-                delete data_logger_;
-            }
         }
 
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -86,8 +83,8 @@ namespace controllers
             tau_task_ = Eigen::VectorXd::Zero(dof_);
             tau_null_ = Eigen::VectorXd::Zero(dof_);
             tau_cmd_ = Eigen::VectorXd::Zero(dof_);
-            data_logger_ = new DataLogger(
-                {
+            data_logger_ = std::make_unique<DataLogger>(
+                std::initializer_list<DataInfo>{
                     DATA_WRAPPER(time_),
                     DATA_WRAPPER(success_rate_),
                     DATA_WRAPPER(cal_time_),
@@ -98,7 +95,7 @@ namespace controllers
                     DATA_WRAPPER(tau_task_),
                     DATA_WRAPPER(tau_null_),
                 },
-                {
+                std::initializer_list<ExperimentContext>{
                     CONFIG_WRAPPER(Kx_vec_),
                     CONFIG_WRAPPER(Bx_vec_),
                     CONFIG_WRAPPER(Kn_vec_),
@@ -197,7 +194,7 @@ namespace controllers
         double success_rate_, cal_time_;
         realtime_tools::RealtimeBox<std::vector<double>> Kx_in_box_, Bx_in_box_, Kn_in_box_, Bn_in_box_;
         std::vector<double> Kx_vec_, Bx_vec_, Kn_vec_, Bn_vec_;
-        DataLogger *data_logger_;
+        std::unique_ptr<DataLogger> data_logger_;
         double time_;
         RobotData robot_data_;
     };

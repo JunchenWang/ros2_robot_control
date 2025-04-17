@@ -11,11 +11,12 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(hardware_interface REQUIRED)
+find_package(robot_hardware_interface REQUIRED)
 find_package(urdf REQUIRED)
 find_package(robot_math REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(realtime_tools REQUIRED)
+find_package(kdl_parser REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 
@@ -70,11 +71,12 @@ ament_target_dependencies(${PROJECT_NAME} PUBLIC
   rclcpp
   rclcpp_lifecycle
   Eigen3
-  hardware_interface
+  robot_hardware_interface
   urdf
   robot_math
   geometry_msgs
   realtime_tools
+  kdl_parser
 )
 
 # INSTALL

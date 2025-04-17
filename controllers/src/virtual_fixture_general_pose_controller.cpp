@@ -1,4 +1,4 @@
-#include "controller_interface/controller_interface.hpp"
+#include "robot_controller_interface/controller_interface.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "realtime_tools/realtime_box.hpp"
 #include "robot_math/MovingFilter.h"
@@ -65,7 +65,7 @@ namespace controllers
             // TCP.block(0, 3, 3, 1) = Eigen::Vector3d(Tcp_vec_[0], Tcp_vec_[1], Tcp_vec_[2]);
 
             Eigen::Matrix4d T;
-            forward_kin_general(robot_, q_vec, T);
+            forward_kinematics(robot_, q_vec, T);
             R0_ = T.block(0, 0, 3, 3);
             p0_ = T.block(0, 3, 3, 1);
 
