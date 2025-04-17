@@ -18,7 +18,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "realtime_tools"
   "urdf"
   "robot_math"
-  "control_msgs"
+  "robot_control_msgs"
   "ament_index_cpp"
 )
 

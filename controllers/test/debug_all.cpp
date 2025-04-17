@@ -42,8 +42,8 @@ public:
         // test_fileutils();
         // test_datalogger();
         // test_editYAML();
-        // vec_pub1_ = this->create_publisher<control_msgs::msg::VectorData>("plot1", 10);
-        // vec_pub2_ = this->create_publisher<control_msgs::msg::VectorData>("plot2", 10);
+        // vec_pub1_ = this->create_publisher<robot_control_msgs::msg::VectorData>("plot1", 10);
+        // vec_pub2_ = this->create_publisher<robot_control_msgs::msg::VectorData>("plot2", 10);
         // test_publisher();
         // test_autodiff();
         // test_ginac();

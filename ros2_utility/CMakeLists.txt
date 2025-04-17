@@ -5,22 +5,28 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# 数学包所需的依赖
-find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_ros REQUIRED)
-find_package(ament_index_cpp REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(robot_math REQUIRED)
-find_package(urdf REQUIRED)
-find_package(tf2_ros REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(jsoncpp REQUIRED)
-find_package(ur_rtde REQUIRED)
-find_package(PkgConfig REQUIRED)
-find_package(OpenCAMLib REQUIRED)
+set(THIS_PACKAGE_INCLUDE_DEPENDS
+  ament_cmake
+  ament_cmake_ros
+  ament_index_cpp
+  rclcpp
+  rclcpp_lifecycle
+  urdf
+  robot_math
+  tf2_ros
+  geometry_msgs
+  visualization_msgs
+  Eigen3
+  jsoncpp
+  ur_rtde
+  PkgConfig
+  OpenCAMLib
+)
+# find_package(Boost REQUIRED COMPONENTS system)
+foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
+  find_package(${Dependency} REQUIRED)
+endforeach()
+
 pkg_check_modules(FFTW3 REQUIRED IMPORTED_TARGET fftw3)
 pkg_check_modules(GINAC REQUIRED IMPORTED_TARGET ginac)
 
@@ -40,23 +46,12 @@ target_include_directories(ros2_utility PUBLIC
 )
 
 ament_target_dependencies(ros2_utility PUBLIC
-    rclcpp
-    rclcpp_lifecycle
-    ament_index_cpp
-    robot_math
-    urdf
-    tf2_ros
-    geometry_msgs
-    visualization_msgs
-    Eigen3
-    jsoncpp
-    ur_rtde
-    PkgConfig
+    ${THIS_PACKAGE_INCLUDE_DEPENDS}
     FFTW3
     GINAC
 )
-target_link_libraries(ros2_utility
-  PUBLIC OpenCAMLib::ocl
+target_link_libraries(ros2_utility PUBLIC 
+  OpenCAMLib::ocl
 )
 
 # 导出给下游包

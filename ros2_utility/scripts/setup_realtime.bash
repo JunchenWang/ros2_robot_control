@@ -22,10 +22,10 @@ if ! grep -q "@realtime" "$LIMITS_CONF"; then
 # Realtime group settings
 @realtime soft rtprio 99
 @realtime soft priority 99
-@realtime soft memlock 102400
+@realtime soft memlock unlimited
 @realtime hard rtprio 99
 @realtime hard priority 99
-@realtime hard memlock 102400
+@realtime hard memlock unlimited
 EOL
   echo "实时调度限制已成功添加。"
 else

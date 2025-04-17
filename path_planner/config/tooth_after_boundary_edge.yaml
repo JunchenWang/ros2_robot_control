@@ -1,0 +1,5 @@
+mesh_modifiers: ~
+tool_path_planner:
+  name: BoundaryEdgePlanner
+tool_path_modifiers:
+  - name: SnakeOrganizationModifier

@@ -10,6 +10,7 @@ fi
 cd ~/Desktop
 git clone https://gitlab.com/sdurobotics/ur_rtde.git
 cd ur_rtde
+git checkout v1.6.0
 git submodule update --init --recursive
 mkdir build
 cd build

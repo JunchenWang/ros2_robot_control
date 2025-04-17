@@ -7,6 +7,7 @@
   <maintainer email="buaalh@buaa.edu.cn">eric</maintainer>
   <license>Apache-2.0</license>
   <depend>robot_math</depend>
+  <depend>robot_control_msgs</depend>
   <depend>opencamlib</depend>
   <buildtool_depend>ament_cmake</buildtool_depend>
 
