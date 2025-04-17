@@ -1,6 +1,6 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
-#include "control_msgs/msg/vector_data.hpp"
 #include "robot_math/OnlineTrajPlanner.h"
+#include "robot_control_msgs/msg/vector_data.hpp"
 #include "ros2_utility/data_logger.hpp"
 #include "ros2_utility/file_utils.hpp"
 #include "ros2_utility/math_utils.hpp"
@@ -301,7 +301,7 @@ public:
         {
             auto t_start = high_resolution_clock::now();
             auto timestamp = std::chrono::duration<double>(t_start - t_zero).count();
-            control_msgs::msg::VectorData msg;
+            robot_control_msgs::msg::VectorData msg;
             // 数据分量生成复杂曲线
             // 使用 vector<double> 存储数据
             vector<double> data = {
@@ -453,8 +453,8 @@ public:
     unique_ptr<TransformInterpolator> interpolator_;
     unique_ptr<ROS2VisualTools> visual_tools_;
     DataLogger *data_logger_;
-    rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub1_;
-    rclcpp::Publisher<control_msgs::msg::VectorData>::SharedPtr vec_pub2_;
+    rclcpp::Publisher<robot_control_msgs::msg::VectorData>::SharedPtr vec_pub1_;
+    rclcpp::Publisher<robot_control_msgs::msg::VectorData>::SharedPtr vec_pub2_;
 };
 
 int main(int argc, char *argv[])

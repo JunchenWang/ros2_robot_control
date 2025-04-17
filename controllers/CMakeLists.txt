@@ -7,29 +7,29 @@ endif()
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   "rclcpp_lifecycle"
-  "ament_cmake"
-  "ament_cmake_ros"
   "realtime_tools"
-  "hardware_interface"
-  "controller_interface"
+  "robot_hardware_interface"
+  "robot_controller_interface"
   "sensor_msgs"
   "urdf"
   "std_msgs"
   "robot_math"
   "pluginlib"
-  "control_msgs"
+  "robot_control_msgs"
   "ros2_utility"
   "tf2_ros"
   "visualization_msgs"
   "geometry_msgs"
   "std_srvs"
+  "orocos_kdl_vendor"
+  "kdl_parser"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
 
-pluginlib_export_plugin_description_file(controller_interface plugins.xml)
+pluginlib_export_plugin_description_file(robot_controller_interface plugins.xml)
 
 add_library(controllers 
             src/torque_controller.cpp
@@ -48,12 +48,17 @@ add_library(controllers
             src/virtual_fixture_general_controller.cpp
             src/virtual_fixture_general_pose_controller.cpp
             src/med7_controller.cpp)
+            src/rcm_controller.cpp
+            src/joint_motion_controller.cpp
+            src/cartesian_motion_controller.cpp
+            src/cartesian_trajectory_controller.cpp)
 
-add_library(controllers::controllers ALIAS controllers)
+# add_library(controllers::controllers ALIAS controllers)
 target_compile_features(controllers PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(controllers PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+
 ament_target_dependencies(
   controllers
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
@@ -78,17 +83,24 @@ install(
 add_executable(test_controller test/test_controller.cpp)
 add_executable(debug_all test/debug_all.cpp)
 add_executable(tool_path_planning_test test/tool_path_planning_test.cpp)
-
-target_include_directories(test_controller PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(test_controller PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+add_executable(test_forward_controller test/test_forward_controller.cpp)
+add_executable(test_trajectory_controller test/test_trajectory_controller.cpp)
+add_executable(movel utility/movel.cpp)
+add_executable(movej utility/movej.cpp)
+# target_include_directories(test_controller PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+# target_compile_features(test_controller PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
 # 将所有需要添加相同依赖的目标定义为一个列表
 set(EXECUTABLE_TARGETS
   test_controller
   debug_all
   tool_path_planning_test
+  test_forward_controller
+  test_trajectory_controller
+  movel
+  movej
 )
 
 # 循环遍历列表，为每个目标添加依赖

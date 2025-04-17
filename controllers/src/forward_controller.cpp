@@ -1,43 +1,100 @@
-#include "controller_interface/controller_interface.hpp"
+#include "robot_controller_interface/controller_interface.hpp"
 #include <iostream>
 #include "robot_math/robot_math.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 namespace controllers
 {
+
     class ForwardController : public controller_interface::ControllerInterface
     {
     public:
-        ForwardController() : is_new_cmd_available_(false)
+        using CmdType = std_msgs::msg::Float64MultiArray;
+        ForwardController() : real_time_buffer_(nullptr)
         {
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
         {
-            if (is_new_cmd_available_)
+            auto js = *real_time_buffer_.readFromRT();
+            auto &cmd_interface = command_->get<double>(cmd_name_);
+            command_->get<int>("mode")[0] = mode_;
+            if (js)
             {
-                auto js = real_time_buffer_.readFromRT();
-                command_->get<double>("position") = (*js)->position;
+                if (js->data.size() != cmd_interface.size())
+                {
+                    RCLCPP_ERROR(node_->get_logger(), "Size of command does not match size of joint state");
+                    return;
+                }
+                for (std::size_t i = 0; i < js->data.size(); ++i)
+                {
+                    cmd_interface[i] = js->data[i];
+                }
+            }
+            else
+            {
+                if (mode_ == 0)
+                {
+                    cmd_interface = robot_math::tform_to_pose(T0_);
+                }
+                else
+                    for (std::size_t i = 0; i < cmd_interface.size(); ++i)
+                    {
 
-                is_new_cmd_available_ = false;
+                        if (mode_ == 1)
+                            cmd_interface[i] = q0_[i];
+                        else if (mode_ == 2)
+                            cmd_interface[i] = dq0_[i];
+                    }
             }
         }
-        CallbackReturn on_configure(const rclcpp_lifecycle::State &/*previous_state*/) override
+        CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            //node_->get_parameter_or<std::string>("cmd_name", joint_command_topic_name_, "gui/joint_state");
-            command_receiver_ = node_->create_subscription<sensor_msgs::msg::JointState>("~/joint_cmd", rclcpp::SensorDataQoS(),
-                                                                                         std::bind(&ForwardController::robot_joint_command_callback, this, std::placeholders::_1));
+            node_->get_parameter_or<std::string>("cmd_name", cmd_name_, "");
+            if (cmd_name_ == "pose")
+                mode_ = 0;
+            else if (cmd_name_ == "position")
+                mode_ = 1;
+            else if (cmd_name_ == "velocity")
+                mode_ = 2;
+            else
+            {
+                RCLCPP_ERROR(node_->get_logger(), "cmd_name %s is not supported!", cmd_name_.c_str());
+                return CallbackReturn::FAILURE;
+            }
+
+            
+            return CallbackReturn::SUCCESS;
+        }
+        CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        {
+            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
+            q0_ = state_->get<double>("position");
+            dq0_ = state_->get<double>("velocity");
+            robot_math::forward_kinematics(robot_, q0_, T0_);
+            command_receiver_ = node_->create_subscription<CmdType>(
+                "~/commands", rclcpp::SystemDefaultsQoS(),
+                [this](const CmdType::SharedPtr msg)
+                {
+                    real_time_buffer_.writeFromNonRT(msg);
+                });
+            return CallbackReturn::SUCCESS;
+        }
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        {
+            command_receiver_ = nullptr;
+            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
             return CallbackReturn::SUCCESS;
         }
 
     protected:
-        void robot_joint_command_callback(sensor_msgs::msg::JointState::SharedPtr js)
-        {
-            real_time_buffer_.writeFromNonRT(js);
-            is_new_cmd_available_ = true;
-        }
-        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr command_receiver_;
-        realtime_tools::RealtimeBuffer<sensor_msgs::msg::JointState::SharedPtr> real_time_buffer_;
-        volatile bool is_new_cmd_available_;
+        rclcpp::Subscription<CmdType>::SharedPtr command_receiver_;
+        realtime_tools::RealtimeBuffer<CmdType::SharedPtr> real_time_buffer_;
+        std::string cmd_name_;
+        int mode_;
+        std::vector<double> q0_;
+        std::vector<double> dq0_;
+        Eigen::Matrix4d T0_;
     };
 
 } // namespace controllers

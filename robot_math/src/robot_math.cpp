@@ -70,6 +70,82 @@ namespace robot_math
         T << R, t, 0, 0, 0, 1;
         return T;
     }
+    Eigen::Vector3d dual_rotation_vector(const Eigen::Vector3d &r)
+    {
+        double r_norm = r.norm();
+        if(r_norm > 0)
+        {
+            return (r_norm - 2*std::acos(-1)) * r.normalized();
+        }
+        return r;
+    }
+
+    Eigen::Vector3d quaternion_to_rv(const Eigen::Quaterniond &q)
+    {
+        Eigen::AngleAxisd a(q);
+        return a.axis() * a.angle();
+    }
+
+	Eigen::Quaterniond rv_to_quaternion(const Eigen::Vector3d &r)
+    {
+        if(r.norm() > std::numeric_limits<double>::epsilon())
+        {
+            return Eigen::Quaterniond(Eigen::AngleAxisd(r.norm(), r.normalized()));
+        }
+        else
+        {
+            return Eigen::Quaterniond(1, 0, 0, 0);
+        }
+    }
+
+    std::vector<double> quaternion_pose_to_rv_pose(const std::vector<double> &q_pose)
+    {
+        std::vector<double> rv_pose(6);
+        rv_pose[0] = q_pose[0];
+        rv_pose[1] = q_pose[1];
+        rv_pose[2] = q_pose[2];
+        Eigen::Quaterniond q(q_pose[3], q_pose[4], q_pose[5], q_pose[6]);
+        Eigen::AngleAxisd a(q);
+        Eigen::Vector3d rv = a.axis() * a.angle();
+        rv_pose[3] = rv(0);
+        rv_pose[4] = rv(1);
+        rv_pose[5] = rv(2);
+        return rv_pose;
+    }
+	std::vector<double> rv_pose_to_quaternion_pose(const std::vector<double> &rv_pose)
+    {
+        std::vector<double> q_pose(7);
+        q_pose[0] = rv_pose[0];
+        q_pose[1] = rv_pose[1];
+        q_pose[2] = rv_pose[2];
+        Eigen::Vector3d rv(rv_pose[3], rv_pose[4], rv_pose[5]);
+        if(rv.norm() > std::numeric_limits<double>::epsilon())
+        {
+            Eigen::Quaterniond q(Eigen::AngleAxisd(rv.norm(), rv.normalized()));
+            q_pose[3] = q.w();
+            q_pose[4] = q.x();
+            q_pose[5] = q.y();
+            q_pose[6] = q.z();
+        }
+        else
+        {
+            q_pose[3] = 1;
+            q_pose[4] = 0;
+            q_pose[5] = 0;
+            q_pose[6] = 0;
+        }
+        
+        return q_pose;
+    }
+
+    Eigen::Matrix4d quaternion_pose_to_tform(const std::vector<double> &pose)
+    {
+        Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+        T.block(0, 3, 3, 1) << pose[0], pose[1], pose[2];
+        Eigen::Quaterniond q(pose[3], pose[4], pose[5], pose[6]);
+        T.block(0, 0, 3, 3) = q.toRotationMatrix();
+        return T;
+    }
     Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose)
     {
         Eigen::Vector3d rv(pose[3], pose[4], pose[5]);
@@ -158,12 +234,13 @@ namespace robot_math
         }
     }
     
-    Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name)
+    Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name, std::string &base_link)
     {
         urdf::Model urdf_model;
         urdf_model.initString(description);
         std::vector<urdf::LinkSharedPtr> bodies;
         urdf::LinkSharedPtr last_link;
+        Robot robot;
         for (auto link : urdf_model.links_)
         {
             last_link = link.second;
@@ -189,10 +266,11 @@ namespace robot_math
             bodies.push_back(last_link);
         }
         std::reverse(bodies.begin(), bodies.end());
+        base_link = bodies[0]->name;
         bodies.erase(bodies.begin()); // remove base
         int n = bodies.size();
         int dof = 0;
-        Robot robot;
+        
         auto &mass = robot.mass;
         auto &inertia = robot.inertia;
         auto &A = robot.A;
@@ -336,7 +414,12 @@ namespace robot_math
 
         return V;
     }
-
+    std::vector<double> tform_to_quaternion_pose(const Eigen::Matrix4d &T)
+    {
+        Eigen::Matrix3d R = T.block(0, 0, 3, 3);
+        Eigen::Quaterniond q(R);
+        return {T(0, 3), T(1, 3), T(2, 3), q.w(), q.x(), q.y(), q.z()};
+    }
     std::vector<double> tform_to_pose(const Eigen::Matrix4d &T)
     {
         Eigen::Vector3d w;
@@ -779,7 +862,7 @@ namespace robot_math
     //     ::inverse_kin_general(robot, Td.data(), qref, tol, q_array, flag);
     // }
 
-    void forward_kin_general(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T)
+    void forward_kinematics(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T)
     {
         int n = robot->dof;
         Eigen::Map<const Eigen::Matrix4d> ME(robot->ME);
@@ -1161,6 +1244,42 @@ namespace robot_math
         return adjoint_T(Tcp).transpose() * Fext;
     }
 
+    Eigen::Matrix3d A_r(const Eigen::Vector3d &r)
+    {
+        Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
+        double r_norm = r.norm();
+        if (r_norm > 0)
+        {
+            Eigen::Matrix3d S = so_w(r);
+            double r_norm2 = r_norm * r_norm;
+            double r_norm3 = r_norm2 * r_norm;
+            A = Eigen::Matrix3d::Identity() - (1 - std::cos(r_norm)) / r_norm2 * S + (r_norm - std::sin(r_norm)) / r_norm3 * S * S;
+        }
+        return A;
+    }
+
+    Eigen::Matrix3d dA_r(const Eigen::Vector3d &r, const Eigen::Vector3d &dr)
+    {
+        Eigen::Matrix3d S_r = so_w(r);
+        Eigen::Matrix3d S_dr = so_w(dr);
+        Eigen::Matrix3d dA = -S_dr;
+        double r_norm = r.norm();
+        if (r_norm > 0)
+        {
+            double r_norm2 = r_norm * r_norm;
+            double r_norm3 = r_norm2 * r_norm;
+            double r_norm4 = r_norm2 * r_norm2;
+            double d_r_norm = r.dot(dr) / r_norm;
+            double B = (std::cos(r_norm) - 1) / r_norm2;
+            double dB = (-r_norm * std::sin(r_norm) - 2 * (std::cos(r_norm) - 1)) / r_norm3 * d_r_norm;
+            double C = (r_norm - std::sin(r_norm)) / r_norm3;
+            double dC = (r_norm * (1 - std::cos(r_norm)) - 3 * (r_norm - std::sin(r_norm))) / r_norm4 * d_r_norm;
+            dA = dB * S_r + B * S_dr + dC * S_r * S_r + C * (S_dr * S_r + S_r * S_dr);
+        }
+        return dA;
+    }
+
+
     void admittance_error_cal(const Robot *robot, const Eigen::Matrix4d &Tcp, const Eigen::Matrix4d &Td, const Eigen::Vector6d &Vd,
                               const std::vector<double> &q, const std::vector<double> &qd, Eigen::Vector3d &re, Eigen::Vector3d &pe, Eigen::Vector3d &red, Eigen::Vector3d &ped, bool flag)
     {
@@ -1181,15 +1300,7 @@ namespace robot_math
         Eigen::JacobiSVD<Eigen::Matrix3d> svd(R.transpose() * Rd, Eigen::ComputeFullU | Eigen::ComputeFullV);
         Eigen::Matrix3d tem = svd.matrixU() * svd.matrixV().transpose();
         re = logR(tem);
-        double re_norm = re.norm();
-        Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
-        if (re_norm > 0)
-        {
-            Eigen::Matrix3d S = so_w(re);
-            double re_norm2 = re_norm * re_norm;
-            double re_norm3 = re_norm2 * re_norm;
-            A = Eigen::Matrix3d::Identity() - (1 - cos(re_norm)) / re_norm2 * S + (re_norm - sin(re_norm)) / re_norm3 * S * S;
-        }
+        Eigen::Matrix3d A = A_r(re);
         red = A.colPivHouseholderQr().solve(Rd.transpose() * Vd.topRows(3) - Rd.transpose() * R * V.topRows(3));
     }
 

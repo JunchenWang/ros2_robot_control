@@ -10,7 +10,7 @@ public:
 	~CSRICommParser();
 
 	virtual bool OnReceivedData(BYTE* data, int dataLen);
-	virtual bool OnNetworkFailure(std::string infor);
+	virtual bool OnNetworkFailure(std::string& infor);
 };
 
 #endif

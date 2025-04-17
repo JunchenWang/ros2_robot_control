@@ -1,0 +1,52 @@
+control_node:
+  ros__parameters:
+    update_rate: 500
+    lock_memory: true
+    simulation: false
+    sim_real_time: false
+    publish_joint_state: true
+    robot: hardwares::SimulationRobot
+    controllers: 
+      - controllers::JointMotionController
+      - controllers::CartesianMotionController
+      - controllers::CartesianTrajectoryController
+    default_controller: CartesianTrajectoryController
+
+SimulationRobot:
+  ros__parameters:
+    end_effector: ""
+    joint_command_interface:
+      - position
+      - velocity
+      - torque
+    joint_state_interface:
+      - position
+      - velocity
+      - torque
+    init_pose: [-0.5, -.1, .1, 3.14, .0,  .0]
+    command_interface: [mode, pose]
+    command_length: [1, 6] # mode = 0: cartesian, 1: joint position 2: joint velocity 3: joint torque
+    command_type: [int, double]
+    # sensors: [ft_sensor]
+    # ft_sensor: hardwares::FTDummySensor
+
+# ft_sensor:
+#   ros__parameters:
+#     state_interface: [force]
+#     state_length: [6]
+#     sensor_ip: 192.168.110.101
+#     sensor_port: 4008
+
+JointMotionController:
+  ros__parameters:
+    cmd_name: "position"
+
+
+CartesianMotionController:
+  ros__parameters:
+    cmd_name: "pose"
+
+
+CartesianTrajectoryController:
+  ros__parameters:
+    cmd_name: "pose"

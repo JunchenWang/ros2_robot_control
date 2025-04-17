@@ -17,8 +17,10 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "realtime_tools"
   "urdf"
   "robot_math"
-  "hardware_interface"
+  "robot_hardware_interface"
   "pluginlib"
+  "orocos_kdl_vendor"
+  "kdl_parser"
   "kuka_fri"
 )
 
@@ -26,14 +28,14 @@ foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
 
-pluginlib_export_plugin_description_file(hardware_interface plugins.xml)
+pluginlib_export_plugin_description_file(robot_hardware_interface plugins.xml)
 
 file(GLOB_RECURSE srcs src/*.cpp src/sr/*.cpp)
 
 add_library(hardwares 
             ${srcs})
 
-add_library(hardwares::hardwares ALIAS hardwares)
+# add_library(hardwares::hardwares ALIAS hardwares)
 target_compile_features(hardwares PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(hardwares PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -83,10 +85,11 @@ target_link_libraries(test_hardware
 install(TARGETS test_hardware
         DESTINATION lib/${PROJECT_NAME})
 
-install(
-          DIRECTORY launch config urdf
-          DESTINATION share/${PROJECT_NAME}
-        )
+
+# install(
+#           DIRECTORY launch config urdf
+#           DESTINATION share/${PROJECT_NAME}
+#         )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

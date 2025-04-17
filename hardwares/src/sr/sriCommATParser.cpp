@@ -45,7 +45,7 @@ bool CSRICommATParser::OnReceivedData(BYTE* data, int dataLen)
 	return true;
 }
 
-bool CSRICommATParser::OnNetworkFailure(std::string infor)
+bool CSRICommATParser::OnNetworkFailure(std::string & /*infor*/)
 {
 	return true;
 }
@@ -69,7 +69,7 @@ bool CSRICommATParser::ParseDataFromBuffer(int& delLen, std::string& ack)
 	int headIndex = ParseGetHeadIndex(data, dataLen);
 	if (headIndex == -1)
 	{
-		delLen = dataLen - 3; //ÕÒ²»µ½Ö¡Í·£¬É¾³ýµ±Ç°ËùÓÐÊý¾Ý£¬±£Áô1/4¸öÖ¡Í·
+		delLen = dataLen - 3; //ï¿½Ò²ï¿½ï¿½ï¿½Ö¡Í·ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½1/4ï¿½ï¿½Ö¡Í·
 		ack = "";
 		return false;
 	}
@@ -86,7 +86,7 @@ bool CSRICommATParser::ParseDataFromBuffer(int& delLen, std::string& ack)
 	char* command = new char[len];
 	memcpy(command, data + headIndex, len);
 	std::string commandStr = command;
-	delete command;
+	delete[] command;
 	ack = commandStr;
 	delLen = endIndex + 2;
 	return true;

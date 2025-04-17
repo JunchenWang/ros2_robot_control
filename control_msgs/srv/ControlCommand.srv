@@ -1,4 +1,0 @@
-string cmd_name
-string[] cmd_params
----
-bool result

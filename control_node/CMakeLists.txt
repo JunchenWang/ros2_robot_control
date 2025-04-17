@@ -21,10 +21,12 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "std_msgs"
   "std_srvs"
   "robot_math"
-  "hardware_interface"
-  "controller_interface"
+  "robot_hardware_interface"
+  "robot_controller_interface"
   "pluginlib"
-  "control_msgs"
+  "robot_control_msgs"
+  "orocos_kdl_vendor"
+  "kdl_parser"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
@@ -65,10 +67,10 @@ target_link_libraries(control_node PUBLIC
 install(TARGETS control_node
   DESTINATION lib/${PROJECT_NAME})
 
-install(
-    DIRECTORY launch config
-    DESTINATION share/${PROJECT_NAME}
-  )
+# install(
+#     DIRECTORY launch config
+#     DESTINATION share/${PROJECT_NAME}
+#   )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

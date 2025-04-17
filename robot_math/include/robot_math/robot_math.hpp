@@ -33,35 +33,43 @@ namespace robot_math
                       const Eigen::Vector3d &p1_F, const Eigen::Vector3d &p2_F, const Eigen::Vector3d &rcm,
                       const Eigen::MatrixXd &Jb, const Eigen::MatrixXd &dJb, const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT,
                       Eigen::MatrixXd &J, Eigen::MatrixXd &dJ, Eigen::Vector3d &x);
-    Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name);
-    void print_robot(const Robot &robot);
+	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name, std::string &base_link);
+	void print_robot(const Robot &robot);
     // pose: first three are position
-    Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose);
-    std::vector<double> tform_to_pose(const Eigen::Matrix4d &T);
-    Eigen::Matrix3d so_w(const Eigen::Vector3d &w);
-    Eigen::Matrix4d se_twist(const Eigen::Vector6d &V);
-    Eigen::Vector7d normalize_twist(const Eigen::Vector6d &V);
-    Eigen::Matrix3d exp_r(const Eigen::Vector3d &r);
-    Eigen::Vector3d logR(const Eigen::Matrix3d &R);
-    Eigen::Matrix4d exp_twist(const Eigen::Vector6d &twist);
-    Eigen::Vector6d logT(const Eigen::Matrix4d &T);
-    Eigen::Matrix4d inv_tform(const Eigen::Matrix4d &T);
-    Eigen::Matrix6d adjoint_T(const Eigen::Matrix4d &T);
-    Eigen::Matrix6d adjoint_V(const Eigen::Vector6d &V);
-    Eigen::Matrix4d make_tform(const Eigen::Matrix3d &R, const Eigen::Vector3d &t);
-    Eigen::MatrixXd pinv(const Eigen::MatrixXd &matrix, double tol = 1e-9);
-    Eigen::Vector3d cond_matrix(const Eigen::MatrixXd &A);
-
-    void derivative_tform_inv(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix4d &dinvT, Eigen::Matrix4d &invT);
-    void derivative_adjoint_T(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix6d &dAdT, Eigen::Matrix6d &AdT);
+	Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose);
+	Eigen::Vector3d dual_rotation_vector(const Eigen::Vector3d &r);
+	std::vector<double> tform_to_pose(const Eigen::Matrix4d &T);
+	std::vector<double> quaternion_pose_to_rv_pose(const std::vector<double> &q_pose);
+	std::vector<double> rv_pose_to_quaternion_pose(const std::vector<double> &rv_pose);
+	std::vector<double> tform_to_quaternion_pose(const Eigen::Matrix4d &T);// w, x, y, z
+	Eigen::Vector3d quaternion_to_rv(const Eigen::Quaterniond &q);
+	Eigen::Quaterniond rv_to_quaternion(const Eigen::Vector3d &r);
+	Eigen::Matrix4d quaternion_pose_to_tform(const std::vector<double> &pose);
+	Eigen::Matrix3d so_w(const Eigen::Vector3d &w);
+	Eigen::Matrix4d se_twist(const Eigen::Vector6d &V);
+	Eigen::Vector7d normalize_twist(const Eigen::Vector6d &V);
+	Eigen::Matrix3d exp_r(const Eigen::Vector3d &r);
+	Eigen::Vector3d logR(const Eigen::Matrix3d &R);
+	Eigen::Matrix4d exp_twist(const Eigen::Vector6d &twist);
+	Eigen::Vector6d logT(const Eigen::Matrix4d &T);
+	Eigen::Matrix4d inv_tform(const Eigen::Matrix4d &T);
+	Eigen::Matrix6d adjoint_T(const Eigen::Matrix4d &T);
+	Eigen::Matrix6d adjoint_V(const Eigen::Vector6d &V);
+	Eigen::Matrix4d make_tform(const Eigen::Matrix3d &R, const Eigen::Vector3d &t);
+	Eigen::MatrixXd pinv(const Eigen::MatrixXd &matrix, double tol = 1e-9);
+	Eigen::Vector3d cond_matrix(const Eigen::MatrixXd &A);
+	Eigen::Matrix3d A_r(const Eigen::Vector3d &r);
+	Eigen::Matrix3d dA_r(const Eigen::Vector3d &r, const Eigen::Vector3d &dr);
+	void derivative_tform_inv(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix4d & dinvT, Eigen::Matrix4d & invT);
+	void derivative_adjoint_T(const Eigen::Matrix4d &T, const Eigen::Matrix4d &dT, Eigen::Matrix6d &dAdT, Eigen::Matrix6d &AdT);
 
     // damping least squares Ax = b with constraint on ||x||
     Eigen::MatrixXd damping_least_square(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b, double con_threshold = 1e6, double lambda = 0.1);
 
-    void jacobian_matrix(const Robot *robot, const std::vector<double> &q, Eigen::MatrixXd &J, Eigen::Matrix4d &T);
-    void jacobian_matrix_all(const Robot *robot, const std::vector<double> &q, std::shared_ptr<double[]> &J);
-    // void inverse_kin_general(const Robot *robot, Eigen::Matrix4d Td, const std::vector<double> &qref, const double tol[2], std::vector<double> &q, double *flag);
-    void forward_kin_general(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T);
+	void jacobian_matrix(const Robot *robot, const std::vector<double> &q, Eigen::MatrixXd &J, Eigen::Matrix4d &T);
+	void jacobian_matrix_all(const Robot *robot, const std::vector<double> &q, std::shared_ptr<double[]> &J);
+	//void inverse_kin_general(const Robot *robot, Eigen::Matrix4d Td, const std::vector<double> &qref, const double tol[2], std::vector<double> &q, double *flag);
+	void forward_kinematics(const Robot *robot, const std::vector<double> &q, Eigen::Matrix4d &T);
 
     Eigen::MatrixXd J_sharp(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M); // X x 6
     Eigen::MatrixXd d_J_sharp(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &dM);

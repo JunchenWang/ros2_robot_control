@@ -1,4 +1,4 @@
-#include "controller_interface/controller_interface.hpp"
+#include "robot_controller_interface/controller_interface.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "realtime_tools/realtime_box.hpp"
 #include "robot_math/MovingFilter.h"
@@ -140,7 +140,7 @@ namespace controllers
             pedd_.setZero();
 
             inv_flag_ = 0;
-            command_->get<int>("mode")[0] = 0;
+            command_->get<int>("mode")[0] = -1;
 
             data_logger_ = new DataLogger(
                 {
@@ -225,7 +225,7 @@ namespace controllers
             // 这里得到的是工具坐标系相对于基坐标系的变换矩阵，需要转化为参考末端法兰相对于基坐标系的变换矩阵
             Tref_ = Tref_ * inv_tform(Tcp_);
 
-            command_->get<int>("mode")[0] = 2;
+            command_->get<int>("mode")[0] = 0;
             cmd_pose = tform_to_pose(Tref_);
 
             // 修正力传感器读数，修正工具重力/重力矩及零点偏移，不考虑外力旋量和合力旋量（机器人运动）

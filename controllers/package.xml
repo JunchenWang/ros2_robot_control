@@ -9,14 +9,14 @@
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
 
-  <depend>controller_interface</depend>
-  <depend>hardware_interface</depend>
+  <depend>robot_controller_interface</depend>
+  <depend>robot_hardware_interface</depend>
   <depend>realtime_tools</depend>
   <depend>robot_math</depend>
   <depend>urdf</depend>
   <depend>pluginlib</depend>
   <depend>ros2_utility</depend>
-  <depend>control_msgs</depend>
+  <depend>robot_control_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

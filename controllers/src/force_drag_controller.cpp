@@ -1,4 +1,4 @@
-#include "controller_interface/controller_interface.hpp"
+#include "robot_controller_interface/controller_interface.hpp"
 #include "realtime_tools/realtime_box.hpp"
 #include "robot_math/MovingFilter.h"
 #include "robot_math/robot_math.hpp"
@@ -95,7 +95,7 @@ namespace controllers
             auto &dq = state_->get<double>("velocity");
             auto &cmd = command_->get<double>("velocity");
             auto &mode = command_->get<int>("mode");
-            mode[0] = 3;// speed control;
+            mode[0] = 2;// speed control;
             offset_in_box_.try_get([=](auto const &value)
                                    { offset_ = value; });
             M_in_box_.try_get([=](auto const &value)

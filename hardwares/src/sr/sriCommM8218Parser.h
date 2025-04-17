@@ -13,7 +13,7 @@ public:
 	bool SetM8218CallbackFunction(SRICommM8218CallbackFunction m8218CallbackFunction);
 
 	bool OnReceivedData(BYTE* data, int dataLen);
-	bool OnNetworkFailure(std::string infor);
+	bool OnNetworkFailure(std::string &infor);
 private:
 	CSRICommCircularBuffer mCircularBuffer;
 	SRICommM8218CallbackFunction mM8218CallbackFunction;

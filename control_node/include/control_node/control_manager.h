@@ -7,23 +7,15 @@
 #include "std_srvs/srv/empty.hpp"
 #include "urdf/model.h"
 #include "robot_math/robot_math.hpp"
-#include "hardware_interface/robot_interface.hpp"
-#include "controller_interface/controller_interface.hpp"
+#include "robot_hardware_interface/robot_interface.hpp"
+#include "robot_controller_interface/controller_interface.hpp"
 #include <pluginlib/class_loader.hpp>
-#include "control_msgs/srv/control_command.hpp"
+#include "robot_control_msgs/srv/control_command.hpp"
 #include <functional>
 #include <chrono>
 #include <atomic>
 namespace control_node
 {
-    class ShutDownException : public std::runtime_error
-    {
-        public:
-        ShutDownException(const std::string & msg): std::runtime_error(msg)
-        {
-
-        }
-    };
 
     class ControlManager : public rclcpp::Node
     {
@@ -38,8 +30,8 @@ namespace control_node
         void prepare_loop();
         void end_loop();
         void interrupt();
-        void command_callback(const std::shared_ptr<control_msgs::srv::ControlCommand::Request> request,
-                              std::shared_ptr<control_msgs::srv::ControlCommand::Response> response);
+        void command_callback(const std::shared_ptr<robot_control_msgs::srv::ControlCommand::Request> request,
+                              std::shared_ptr<robot_control_msgs::srv::ControlCommand::Response> response);
         bool activate_controller(const std::string &controller_name);
         void shutdown_robot();
         void read(const rclcpp::Time &t, const rclcpp::Duration &period);
@@ -56,6 +48,7 @@ namespace control_node
         pluginlib::UniquePtr<pluginlib::ClassLoader<controller_interface::ControllerInterface>> controller_loader_;
         std::shared_ptr<hardware_interface::RobotInterface> robot_;
         std::vector<controller_interface::ControllerInterface::SharedPtr> controllers_;
+        std::string default_controller_;
         std::shared_ptr<controller_interface::ControllerInterface> active_controller_;
         realtime_tools::RealtimeBox<controller_interface::ControllerInterface::SharedPtr> active_controller_box_;
         std::shared_ptr<rclcpp::Executor> executor_;
@@ -63,7 +56,7 @@ namespace control_node
         std::string robot_description_;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
         std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::msg::JointState>> real_time_publisher_;
-        rclcpp::Service<control_msgs::srv::ControlCommand>::SharedPtr service_;
+        rclcpp::Service<robot_control_msgs::srv::ControlCommand>::SharedPtr service_;
         rclcpp::Service<std_srvs::srv::Empty>::SharedPtr stop_service_;
         bool is_simulation_;
         bool is_sim_real_time_;
