@@ -8,12 +8,7 @@
 #include "ros2_utility/symbolic_diffentiator.hpp"
 #include "ros2_utility/transform_interpolator.hpp"
 #include "ros2_utility/ros2_visual_tools.hpp"
-#include <autodiff/reverse/var.hpp>
-#include <autodiff/reverse/var/eigen.hpp>
 #include <ginac/ginac.h>
-#include <opencamlib/numeric.hpp>
-#include <opencamlib/point.hpp>
-
 #include <chrono>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
@@ -22,13 +17,6 @@ using namespace Eigen;
 using namespace std;
 using namespace robot_math;
 using namespace std::chrono;
-using namespace autodiff;
-
-// The scalar function for which the gradient is needed
-autodiff::var f(const autodiff::ArrayXvar &x)
-{
-    return sin(x[0]) * x[0] + x[1] * x[1] + x[2] * x[2] - 10;
-}
 
 class DebugAll : public rclcpp::Node
 {
@@ -45,9 +33,7 @@ public:
         // vec_pub1_ = this->create_publisher<robot_control_msgs::msg::VectorData>("plot1", 10);
         // vec_pub2_ = this->create_publisher<robot_control_msgs::msg::VectorData>("plot2", 10);
         // test_publisher();
-        // test_autodiff();
         // test_ginac();
-        // test_opencamlib();
         test_visual_tools();
     }
 
@@ -337,30 +323,6 @@ public:
         FileUtils::modifyYamlValue(yaml_file_path, "offset", {1.2, 4.6, 6, 8, 9, 12.5});
     }
 
-    // 测试 test_autodiff 库计算数值梯度和Hessian矩阵
-    void test_autodiff()
-    {
-        auto start_time_ = std::chrono::steady_clock::now();
-        autodiff::VectorXvar x(3); // Define the input variable x
-        x << 1, 2, 3;
-        Eigen::Vector3d x1 = {1, 2, 3};
-
-        // Define the output variable u
-        autodiff::var u = f(x);
-
-        Eigen::VectorXd g; // the gradient vector to be computed in method `hessian`
-        // Eigen::MatrixXd H = hessian(u, x, g); // evaluate the Hessian matrix H and the gradient vector g of u
-        Eigen::MatrixXd H = autodiff::hessian(f(x), x, g); // evaluate the Hessian matrix H and the gradient vector g of u
-
-        cout << "u = " << u << endl; // print the evaluated output variable u
-        cout << "g = \n"
-             << g << endl; // print the evaluated gradient vector of u
-        cout << "H = \n"
-             << H << endl; // print the evaluated Hessian matrix of u
-        auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_);
-        cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
-    }
-
     // 测试 GiNaC 库
     void test_ginac()
     {
@@ -395,35 +357,6 @@ public:
         // }
         // auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_);
         // cout << "Time elapsed: " << duration_.count() << " milliseconds" << endl;
-    }
-
-    // 测试 opencamlib 库
-    void test_opencamlib()
-    {
-        ocl::Point p1;
-        p1.x = 1.2;
-        p1.y = sqrt(p1.x);
-        p1.z = p1.x + p1.y;
-        std::cout << "p1=" << p1 << "\n";
-        ocl::Point p2(1.23, 4.56, 3.219);
-        std::cout << "p2=" << p2 << "\n";
-
-        std::cout << "addition:\n";
-        std::cout << "  " << p1 << " + " << p2 << " = " << p1 + p2 << "\n";
-        std::cout << "subtraction:\n";
-        std::cout << "  " << p1 << " - " << p2 << " = " << p1 - p2 << "\n";
-        std::cout << "dot product:\n";
-        std::cout << "  " << p1 << " dot " << p2 << " = " << p1.dot(p2) << "\n";
-        std::cout << "cross product:\n";
-        std::cout << "  " << p1 << " cross " << p2 << " = " << p1.cross(p2) << "\n";
-        std::cout << "scalar multiplication:\n";
-        std::cout << "  " << p1 << " * 0.1  = " << 0.1 * p1 << "\n";
-        std::cout << "norm:\n";
-        std::cout << "  norm( " << p1 << " )  = " << p1.norm() << "\n";
-        std::cout << "normalize:\n";
-        ocl::Point p3 = p1;
-        p3.normalize();
-        std::cout << "  " << p1 << ".normalize()  = " << p3 << " norm=" << p3.norm() << "\n";
     }
 
     // 测试 visual_tools

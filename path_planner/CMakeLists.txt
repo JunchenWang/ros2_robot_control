@@ -37,9 +37,14 @@ add_executable(icp_test
   test/icp_test.cpp
 )
 
+add_executable(debug_all
+  test/debug_all.cpp
+)
+
 set(EXECUTABLE_TARGETS
   path_generator
   icp_test
+  debug_all
 )
 
 # 循环遍历列表，为每个目标添加依赖
@@ -57,6 +62,10 @@ target_link_libraries(path_generator
   yaml-cpp
   noether::noether_tpp
   noether::noether_gui
+)
+
+target_link_libraries(debug_all
+  OpenCAMLib::ocl
 )
 
 install(TARGETS ${EXECUTABLE_TARGETS}

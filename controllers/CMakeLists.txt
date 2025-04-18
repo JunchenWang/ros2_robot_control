@@ -31,7 +31,7 @@ endforeach()
 
 pluginlib_export_plugin_description_file(robot_controller_interface plugins.xml)
 
-add_library(controllers 
+add_library(controllers SHARED
             src/torque_controller.cpp
             src/forward_controller.cpp
             src/realtime_test_controller.cpp
@@ -82,7 +82,6 @@ install(
 
 add_executable(test_controller test/test_controller.cpp)
 add_executable(debug_all test/debug_all.cpp)
-add_executable(tool_path_planning_test test/tool_path_planning_test.cpp)
 add_executable(test_forward_controller test/test_forward_controller.cpp)
 add_executable(test_trajectory_controller test/test_trajectory_controller.cpp)
 add_executable(movel utility/movel.cpp)
@@ -96,7 +95,6 @@ add_executable(movej utility/movej.cpp)
 set(EXECUTABLE_TARGETS
   test_controller
   debug_all
-  tool_path_planning_test
   test_forward_controller
   test_trajectory_controller
   movel
