@@ -9,7 +9,8 @@ sudo make install
 
 # install noether lib from source (recommended)
 mkdir -p ~/noether_ws/src
-cd ~/noether_ws
-vcs import src < dependencies.repos
+cd ~/noether_ws/src
+git clone https://github.com/ros-industrial/noether
+vcs import . < noether/dependencies.repos
 rosdep install --from-paths src -iry
 colcon build
