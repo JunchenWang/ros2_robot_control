@@ -130,8 +130,9 @@ def generate_launch_description():
     robot_monitor = Node(
             package='robot_monitor',
             executable='robot_monitor',
-            output="screen",
+            output="both",
             )
+
 
     arguments = [
             # DeclareLaunchArgument(

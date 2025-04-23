@@ -2,19 +2,19 @@
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
 
-<xacro:macro name="end-effector" params="parent name mesh *origin">
+<xacro:macro name="end-effector" params="parent name *origin">
 
     <link name="${name}">
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://applications/meshes/${mesh}.stl" scale="0.001 0.001 0.001"/>
+          <mesh filename="package://applications/meshes/${name}.stl" scale="0.001 0.001 0.001"/>
         </geometry>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-           <mesh filename="package://applications/meshes/${mesh}.stl" scale="0.001 0.001 0.001"/>
+           <mesh filename="package://applications/meshes/${name}.stl" scale="0.001 0.001 0.001"/>
         </geometry>
       </collision>
       <inertial>
@@ -32,11 +32,18 @@
     </link>
 
     <joint name="${parent}-${name}" type="fixed">
-      <xacro:insert_block name="origin" />
+       <origin xyz="0 0 0" rpy="0 0 0" />    
       <parent link="${parent}"/>
       <child link="${name}"/>
     </joint>
-
+    
+    <link name="tcp"/>
+    
+    <joint name="${name}-tcp" type="fixed">
+      <xacro:insert_block name="origin" />
+      <parent link="${name}"/>
+      <child link="tcp"/>
+    </joint>
 </xacro:macro>
 
 

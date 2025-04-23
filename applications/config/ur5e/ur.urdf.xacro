@@ -60,9 +60,9 @@
   </xacro:ur_robot>
 
 
-  <!-- <xacro:include filename="$(find applications)/urdf/end_effector.urdf.xacro"/>
-  <xacro:end-effector name="tcp" parent="$(arg tf_prefix)tool0" mesh="driller">
-     <origin xyz="0 0 0" rpy="0 0 0" />         
-  </xacro:end-effector> -->
+  <xacro:include filename="$(find applications)/urdf/end_effector.urdf.xacro"/>
+  <xacro:end-effector name="handpiece" parent="$(arg tf_prefix)tool0">
+     <origin xyz="0.0000505 0.0018090 0.2960264 " rpy="0.0656498 1.2033 1.5708" />         
+  </xacro:end-effector>
 
 </robot>
