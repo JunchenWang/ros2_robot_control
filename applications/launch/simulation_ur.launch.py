@@ -133,12 +133,12 @@ def generate_launch_description():
             output="both",
             )
 
-    # robot_gui = Node(
-    #         package='robot_gui',
-    #         executable='robot_gui',
-    #         output="both",
-    #         parameters=[{"robot_description": robot_description}]
-    #         )
+    robot_gui = Node(
+            package='robot_gui',
+            executable='robot_gui',
+            output="both",
+            parameters=[{"robot_description": robot_description}]
+            )
 
     arguments = [
             # DeclareLaunchArgument(
@@ -190,8 +190,9 @@ def generate_launch_description():
     nodes = arguments + handlers + [
             robot_state_publisher,
             rviz_node,
-            robot_monitor,
+            # robot_monitor,
             control_node,
+            robot_gui
             ]
 
     return LaunchDescription(nodes)

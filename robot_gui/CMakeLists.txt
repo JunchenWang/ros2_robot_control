@@ -12,6 +12,11 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "sensor_msgs"
   "std_msgs"
   "std_srvs"
+  "urdf"
+  "std_msgs"
+  "std_srvs"
+  "robot_math"
+  "robot_control_msgs"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})

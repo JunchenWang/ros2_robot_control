@@ -10,17 +10,14 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "urdf"
 )
 
+# find_package(ament_cmake REQUIRED)
+
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
-# find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_ros REQUIRED)
+
 find_package(Eigen3 REQUIRED)
 find_package(jsoncpp REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
 
 # file(GLOB_RECURSE matlab_srcs src/matlab_code/*.cpp)
 

@@ -7,7 +7,11 @@
 #include <thread>
 #include <chrono>
 #include "rclcpp/rclcpp.hpp"
-
+#include "robot_math/robot_math.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
+#include <QLineEdit>
+#include "robot_control_msgs/srv/control_command.hpp"
+#include "std_srvs/srv/empty.hpp"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -23,5 +27,14 @@ private:
     Ui::MainWindow *ui;
     std::shared_ptr<std::thread> thread_;
     rclcpp::Node::SharedPtr node_;
+    robot_math::Robot robot_;
+    std::vector<std::string> joint_names_;
+    std::string end_effector_;
+    std::string base_link_;
+    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr state_receiver_;
+    std::vector<QLineEdit *> joint_display_;
+    std::vector<QLineEdit *> pose_display_;
+    rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client_;
+    rclcpp::Client<robot_control_msgs::srv::ControlCommand>::SharedPtr cmd_client_;
 };
 #endif // MAINWINDOW_H
