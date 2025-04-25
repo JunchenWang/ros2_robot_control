@@ -21,8 +21,6 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
 
-import os
-import xacro
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchContext, LaunchDescription
 
@@ -30,6 +28,8 @@ from launch.actions import RegisterEventHandler
 from launch.events.process import ProcessStarted
 from launch.event_handlers.on_process_start import OnProcessStart
 
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
 
@@ -41,6 +41,12 @@ def generate_launch_description():
 
     # arm_id_parameter_name = "arm_id"
     # arm_id = LaunchConfiguration(arm_id_parameter_name)
+
+    # cali_path = get_package_share_directory('ur_calibration')
+    # print(cali_path)
+    # included_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(cali_path + '/launch/calibration_correction.launch.py'), 
+    #                                             launch_arguments = {'robot_ip' : '192.168.1.1','target_filename' : 'kinematics.yaml'}.items())  
+
 
     rviz_file = PathJoinSubstitution(
         [
