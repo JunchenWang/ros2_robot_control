@@ -44,18 +44,24 @@ namespace hardware_interface
                 command_.get<double>().emplace(std::move(name), std::vector<double>(dof_, 0.0));
             }
 
-            std::vector<double> init_pose(6, 0);
-            if (node_->get_parameter_or<std::vector<double>>("init_pose", init_pose, init_pose))
+            std::vector<double> init_pose(dof_, 0);
+            if (node_->get_parameter_or<std::vector<double>>("init_joint_pose", init_pose, init_pose))
             {
-                std::vector<double> j0(dof_, 0);
-                if (inverse_kinematics(state_.get<double>("position"), robot_math::pose_to_tform(init_pose), j0))
+                if(init_pose.size() != dof_)
                 {
-                    state_.get<double>("position") = j0;
+                    RCLCPP_ERROR(node_->get_logger(), "init_pose size %d is not equal to dof %d", init_pose.size(), dof_);
                 }
-                else
-                {
-                    RCLCPP_ERROR(node_->get_logger(), "init_pose can not be reached!");
-                }
+                else 
+                    state_.get<double>("position") = init_pose;
+                // std::vector<double> j0(dof_, 0);
+                // if (inverse_kinematics(state_.get<double>("position"), robot_math::pose_to_tform(init_pose), j0))
+                // {
+                //     state_.get<double>("position") = j0;
+                // }
+                // else
+                // {
+                //     RCLCPP_ERROR(node_->get_logger(), "init_pose can not be reached!");
+                // }
             }
             return 1;
         }
