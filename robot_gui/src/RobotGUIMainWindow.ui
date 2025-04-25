@@ -97,6 +97,24 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QFormLayout" name="formLayout_2">
+        <property name="horizontalSpacing">
+         <number>1</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>1</number>
+        </property>
+        <property name="leftMargin">
+         <number>1</number>
+        </property>
+        <property name="topMargin">
+         <number>1</number>
+        </property>
+        <property name="rightMargin">
+         <number>1</number>
+        </property>
+        <property name="bottomMargin">
+         <number>1</number>
+        </property>
         <item row="0" column="0">
          <widget class="QLabel" name="label_2">
           <property name="text">
@@ -114,6 +132,26 @@
           <item>
            <property name="text">
             <string>ForwardController</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>JointMotionController</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>CartesianMotionController</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>CartesianTrajectoryController</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>AdmittanceController</string>
            </property>
           </item>
           <item>
@@ -138,16 +176,83 @@
            <enum>QFrame::Raised</enum>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
+           <property name="spacing">
+            <number>1</number>
+           </property>
+           <property name="leftMargin">
+            <number>1</number>
+           </property>
+           <property name="topMargin">
+            <number>1</number>
+           </property>
+           <property name="rightMargin">
+            <number>1</number>
+           </property>
+           <property name="bottomMargin">
+            <number>1</number>
+           </property>
            <item>
             <widget class="QTabWidget" name="tabWidget_2">
              <property name="currentIndex">
               <number>0</number>
              </property>
+             <widget class="QWidget" name="tab_5">
+              <attribute name="title">
+               <string>NONE</string>
+              </attribute>
+              <layout class="QVBoxLayout" name="verticalLayout_3">
+               <property name="spacing">
+                <number>1</number>
+               </property>
+               <property name="leftMargin">
+                <number>1</number>
+               </property>
+               <property name="topMargin">
+                <number>1</number>
+               </property>
+               <property name="rightMargin">
+                <number>1</number>
+               </property>
+               <property name="bottomMargin">
+                <number>1</number>
+               </property>
+               <item>
+                <widget class="QPlainTextEdit" name="plainTextEdit">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                 <property name="plainText">
+                  <string>Please choose a controller to activate</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
              <widget class="QWidget" name="tab_3">
               <attribute name="title">
                <string>ForwardController</string>
               </attribute>
               <layout class="QFormLayout" name="formLayout_3"/>
+             </widget>
+             <widget class="QWidget" name="JointMotionController">
+              <attribute name="title">
+               <string>JointMotionController</string>
+              </attribute>
+             </widget>
+             <widget class="QWidget" name="tab_6">
+              <attribute name="title">
+               <string>CartesianMotionController</string>
+              </attribute>
+             </widget>
+             <widget class="QWidget" name="tab_7">
+              <attribute name="title">
+               <string>CartesianTrajectoryController</string>
+              </attribute>
+             </widget>
+             <widget class="QWidget" name="tab_8">
+              <attribute name="title">
+               <string>AdmittanceController</string>
+              </attribute>
              </widget>
              <widget class="QWidget" name="tab_4">
               <attribute name="title">

@@ -10,7 +10,8 @@ control_node:
       - controllers::JointMotionController
       - controllers::CartesianMotionController
       - controllers::CartesianTrajectoryController
-    default_controller: CartesianTrajectoryController
+      - controllers::ForwardController
+    default_controller: ""
 
 SimulationRobot:
   ros__parameters:
@@ -37,16 +38,7 @@ SimulationRobot:
 #     sensor_ip: 192.168.110.101
 #     sensor_port: 4008
 
-JointMotionController:
+
+ForwardController:
   ros__parameters:
     cmd_name: "position"
-
-
-CartesianMotionController:
-  ros__parameters:
-    cmd_name: "pose"
-
-
-CartesianTrajectoryController:
-  ros__parameters:
-    cmd_name: "pose"

@@ -10,8 +10,10 @@
 #include "robot_math/robot_math.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include <QLineEdit>
+#include <QDoubleSpinBox>
 #include "robot_control_msgs/srv/control_command.hpp"
 #include "std_srvs/srv/empty.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -23,6 +25,7 @@ class RobotGUIMainWindow : public QMainWindow
 public:
     RobotGUIMainWindow(QWidget *parent = nullptr);
     ~RobotGUIMainWindow();
+    void send_forward_command();
 private:
     Ui::MainWindow *ui;
     std::shared_ptr<std::thread> thread_;
@@ -34,7 +37,10 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr state_receiver_;
     std::vector<QLineEdit *> joint_display_;
     std::vector<QLineEdit *> pose_display_;
+    std::vector<QDoubleSpinBox *> joint_command_spinbox_;
     rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client_;
     rclcpp::Client<robot_control_msgs::srv::ControlCommand>::SharedPtr cmd_client_;
+    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr command_publisher_;
+    int controller_mode_ = 0;
 };
 #endif // MAINWINDOW_H

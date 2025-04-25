@@ -7,39 +7,12 @@
 #include <QDoubleSpinBox>
 #include "urdf/model.h"
 #include "rclcpp/time.hpp"
-// Subscriber::Subscriber(MainWindow *wnd) : Node("robot_monitor"), mainWnd(wnd), start_time(std::chrono::nanoseconds(this->now().nanoseconds()))
-// {
-//     auto topic_callback =
-//         [this](sensor_msgs::msg::JointState::SharedPtr msg) -> void
-//     {
-//         // RCLCPP_INFO(this->get_logger(), "I heard: '%f'", 1);
-//         rclcpp::Time time = msg->header.stamp;
-//         std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> msg_time(std::chrono::nanoseconds(time.nanoseconds()));
-//         if(msg_time < start_time)
-//             mainWnd->pushMessage(time.seconds(), msg);
-//         else
-//             mainWnd->pushMessage(std::chrono::duration<double>(msg_time - start_time).count(), msg);
-//     };
-//     subscription_ =
-//         this->create_subscription<sensor_msgs::msg::JointState>("joint_states", rclcpp::SensorDataQoS(), topic_callback);
-
-//     auto service_callback =
-//         [this](const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
-//                                              std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/) -> void
-//     {
-//         start_time = std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>(std::chrono::nanoseconds(this->now().nanoseconds()));
-//         mainWnd->clear();
-//     };
-
-//     service_ =
-//         this->create_service<std_srvs::srv::Empty>("~/clear", service_callback);
-// }
 
 RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    
+
     rclcpp::NodeOptions node_options;
     node_options.allow_undeclared_parameters(true);
     node_options.automatically_declare_parameters_from_overrides(true);
@@ -51,9 +24,9 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
     ui->label->setText(QString("%1 with end-effector %2").arg(QString::fromStdString(urdf_model.getName())).arg(QString::fromStdString(end_effector_)));
     client_ = node_->create_client<std_srvs::srv::Empty>("control_node/stop");
     cmd_client_ = node_->create_client<robot_control_msgs::srv::ControlCommand>("control_node/control_command");
-    
+    command_publisher_ = node_->create_publisher<std_msgs::msg::Float64MultiArray>("ForwardController/commands", rclcpp::SystemDefaultsQoS());
     // ForwardController UI
-    for(auto && jt : joint_names_)
+    for (auto &&jt : joint_names_)
     {
         auto item = new QDoubleSpinBox;
         item->setDecimals(3);
@@ -61,9 +34,13 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
         auto j = urdf_model.getJoint(jt);
         item->setRange(j->limits->lower, j->limits->upper);
         ui->formLayout_3->addRow(QString::fromStdString(jt), item);
+        joint_command_spinbox_.push_back(item);
+        connect(item, &QDoubleSpinBox::valueChanged, [this](double ) {
+            send_forward_command();
+        });
     }
     // Robot state UI
-    for(auto && jt : joint_names_)
+    for (auto &&jt : joint_names_)
     {
 
         auto item = new QLineEdit;
@@ -98,27 +75,41 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
     ui->formLayout->addRow("rz", item);
     pose_display_.push_back(item);
 
-    connect(ui->pushButton, &QPushButton::clicked, [this] {
+    connect(ui->comboBox, &QComboBox::currentIndexChanged, [this](int index) {
+        ui->tabWidget_2->setCurrentIndex(index);
+    });
+
+    connect(ui->pushButton, &QPushButton::clicked, [this]
+            {
 
         int ind = ui->comboBox->currentIndex();
+        
         if(ind == 0)
         {
             
             auto request = std::make_shared<std_srvs::srv::Empty::Request>();
-            auto result = client_->async_send_request(request, [this](rclcpp::Client<std_srvs::srv::Empty>::SharedFuture future) {
+            auto result = client_->async_send_request(request, [this](rclcpp::Client<std_srvs::srv::Empty>::SharedFuture /*future*/) {
                 
-                future;
                 RCLCPP_INFO(node_->get_logger(), "stop controllers");
             });
+            controller_mode_ = 0;
+            this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
         }
         else if(ind > 0)
         {
             auto request = std::make_shared<robot_control_msgs::srv::ControlCommand::Request>();
             request->cmd_name = "activate";
             request->cmd_params = ui->comboBox->currentText().toStdString();
-            auto result = cmd_client_->async_send_request(request, [this](rclcpp::Client<robot_control_msgs::srv::ControlCommand>::SharedFuture future) {
+            if(ind == 1) // forward controller
+            {
+                for(int i = 0; i < 6; i++)
+                    joint_command_spinbox_[i]->setValue(joint_display_[i]->text().toDouble());
+            }
+            auto result = cmd_client_->async_send_request(request, [this, ind](rclcpp::Client<robot_control_msgs::srv::ControlCommand>::SharedFuture future) {
                 if (future.get()->result)
                 {
+                    controller_mode_ = ind;
+                    this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
                     RCLCPP_INFO(node_->get_logger(), "activate success!");
                 }
                 else
@@ -126,8 +117,8 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
                     RCLCPP_ERROR(node_->get_logger(), "activate failed!");
                 }
             });
-        }
-    });
+            
+        } });
 
     state_receiver_ = node_->create_subscription<sensor_msgs::msg::JointState>(
         "joint_states", rclcpp::SystemDefaultsQoS(),
@@ -166,4 +157,16 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
 RobotGUIMainWindow::~RobotGUIMainWindow()
 {
     delete ui;
+}
+
+void RobotGUIMainWindow::send_forward_command()
+{
+    if(controller_mode_ == 1)
+    {
+        std_msgs::msg::Float64MultiArray msg;
+        msg.data.resize(6);
+        for (int i = 0; i < 6; i++)
+            msg.data[i] = joint_command_spinbox_[i]->value();
+        command_publisher_->publish(msg);
+    }
 }
