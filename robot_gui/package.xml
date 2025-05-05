@@ -12,6 +12,8 @@
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
   <depend>sensor_msgs</depend>
+  <depend>robot_math</depend>
+  <depend>robot_control_msgs</depend>
 
   <!-- <exec_depend>ros2launch</exec_depend>
   <exec_depend>joint_state_publisher_gui</exec_depend>
