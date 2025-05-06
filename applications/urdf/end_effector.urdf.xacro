@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
+  <material name="white">
+   <color rgba="1 1 1 1"/>
+  </material>
 
 <xacro:macro name="end-effector" params="parent name *origin">
 
@@ -10,6 +13,7 @@
         <geometry>
           <mesh filename="package://applications/meshes/${name}.stl" scale="0.001 0.001 0.001"/>
         </geometry>
+        <material name="white"/>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
