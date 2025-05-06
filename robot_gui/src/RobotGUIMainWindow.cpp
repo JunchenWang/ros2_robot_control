@@ -9,7 +9,7 @@
 #include "rclcpp/time.hpp"
 
 RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow)
+    : QMainWindow(parent), ui(new Ui::MainWindow), keep_running_(true)
 {
     ui->setupUi(this);
 
@@ -152,10 +152,14 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
                                         executor->spin(); 
                                         this->close(); });
     thread_->detach();
+
+    com_thread_ = std::make_shared<std::thread>(std::bind(&RobotGUIMainWindow::receive_data, this));
 }
 
 RobotGUIMainWindow::~RobotGUIMainWindow()
 {
+    keep_running_ = false;
+    com_thread_->join();
     delete ui;
 }
 
@@ -169,4 +173,54 @@ void RobotGUIMainWindow::send_forward_command()
             msg.data[i] = joint_command_spinbox_[i]->value();
         command_publisher_->publish(msg);
     }
+}
+
+void RobotGUIMainWindow::receive_data()
+{
+    int port = 7755;
+    int socket_handle = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (socket_handle == -1)
+    {
+        throw std::runtime_error("create socket failed");
+    }
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    if (bind(socket_handle, (struct sockaddr *)&addr, sizeof(addr)))
+    {
+        throw std::runtime_error("bind socket in service failed");
+    }
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 0;
+    read_timeout.tv_usec = 10;
+    // non-blocking
+    if (setsockopt(socket_handle, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout)))
+    {
+        throw std::runtime_error("set socket time out failed");
+    }
+    RCLCPP_INFO(node_->get_logger(), "receive thread started, port: %d", port);
+    rclcpp::Rate rate(50);
+    while (rclcpp::ok() && keep_running_)
+    {
+        auto t_start = std::chrono::high_resolution_clock::now();
+        int resv_num = recvfrom(socket_handle, &buffer_, sizeof(buffer_), 0, nullptr, nullptr);
+        if (resv_num > 0)
+        {
+            switch (buffer_.type)
+            {
+            case 0:
+                
+                break;
+            
+            default:
+                break;
+            }
+        }
+        rate.sleep();
+    }
+
+    ::close(socket_handle);
 }

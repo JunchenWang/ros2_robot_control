@@ -14,6 +14,9 @@
 #include "robot_control_msgs/srv/control_command.hpp"
 #include "std_srvs/srv/empty.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -26,9 +29,13 @@ public:
     RobotGUIMainWindow(QWidget *parent = nullptr);
     ~RobotGUIMainWindow();
     void send_forward_command();
+    
+protected:
+    void receive_data();
 private:
     Ui::MainWindow *ui;
     std::shared_ptr<std::thread> thread_;
+    std::shared_ptr<std::thread> com_thread_;
     rclcpp::Node::SharedPtr node_;
     robot_math::Robot robot_;
     std::vector<std::string> joint_names_;
@@ -41,6 +48,13 @@ private:
     rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client_;
     rclcpp::Client<robot_control_msgs::srv::ControlCommand>::SharedPtr cmd_client_;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr command_publisher_;
-    int controller_mode_ = 0;
+    int controller_mode_;
+    volatile bool keep_running_;
+    union 
+    {
+        int type;
+        char data_[8192];
+    } buffer_;
+    
 };
 #endif // MAINWINDOW_H
