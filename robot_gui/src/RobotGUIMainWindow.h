@@ -29,9 +29,11 @@ public:
     RobotGUIMainWindow(QWidget *parent = nullptr);
     ~RobotGUIMainWindow();
     void send_forward_command();
-    
+signals:
+    void joint_state_changed(const sensor_msgs::msg::JointState::SharedPtr msg);  
 protected:
     void receive_data();
+    void update_joint_state(const sensor_msgs::msg::JointState::SharedPtr msg);  
 private:
     Ui::MainWindow *ui;
     std::shared_ptr<std::thread> thread_;

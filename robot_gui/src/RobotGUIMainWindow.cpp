@@ -35,9 +35,8 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
         item->setRange(j->limits->lower, j->limits->upper);
         ui->formLayout_3->addRow(QString::fromStdString(jt), item);
         joint_command_spinbox_.push_back(item);
-        connect(item, &QDoubleSpinBox::valueChanged, [this](double ) {
-            send_forward_command();
-        });
+        connect(item, &QDoubleSpinBox::valueChanged, [this](double)
+                { send_forward_command(); });
     }
     // Robot state UI
     for (auto &&jt : joint_names_)
@@ -75,10 +74,9 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
     ui->formLayout->addRow("rz", item);
     pose_display_.push_back(item);
 
-    connect(ui->comboBox, &QComboBox::currentIndexChanged, [this](int index) {
-        ui->tabWidget_2->setCurrentIndex(index);
-    });
-
+    connect(ui->comboBox, &QComboBox::currentIndexChanged, [this](int index)
+            { ui->tabWidget_2->setCurrentIndex(index); });
+    connect(this, &RobotGUIMainWindow::joint_state_changed, this, &RobotGUIMainWindow::update_joint_state);
     connect(ui->pushButton, &QPushButton::clicked, [this]
             {
 
@@ -129,20 +127,7 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
                 RCLCPP_ERROR(node_->get_logger(), "Size of command does not match size of joint state");
                 return;
             }
-            for (std::size_t i = 0; i < msg->name.size(); ++i)
-            {
-                auto item = joint_display_[i];
-                item->setText(QString("%1").arg(msg->position[i], 5, 'f', 3));
-            }
-            Eigen::Matrix4d T;
-            robot_math::forward_kinematics(&robot_, msg->position, T);
-            auto pose = robot_math::tform_to_pose(T);
-            pose_display_[0]->setText(QString("%1").arg(pose[0], 5, 'f', 4));
-            pose_display_[1]->setText(QString("%1").arg(pose[1], 5, 'f', 4));
-            pose_display_[2]->setText(QString("%1").arg(pose[2], 5, 'f', 4));
-            pose_display_[3]->setText(QString("%1").arg(pose[3], 5, 'f', 4));
-            pose_display_[4]->setText(QString("%1").arg(pose[4], 5, 'f', 4));
-            pose_display_[5]->setText(QString("%1").arg(pose[5], 5, 'f', 4));
+            emit joint_state_changed(msg);
         });
 
     thread_ = std::make_shared<std::thread>([this]()
@@ -165,7 +150,7 @@ RobotGUIMainWindow::~RobotGUIMainWindow()
 
 void RobotGUIMainWindow::send_forward_command()
 {
-    if(controller_mode_ == 1)
+    if (controller_mode_ == 1)
     {
         std_msgs::msg::Float64MultiArray msg;
         msg.data.resize(6);
@@ -212,9 +197,9 @@ void RobotGUIMainWindow::receive_data()
             switch (buffer_.type)
             {
             case 0:
-                
+
                 break;
-            
+
             default:
                 break;
             }
@@ -223,4 +208,22 @@ void RobotGUIMainWindow::receive_data()
     }
 
     ::close(socket_handle);
+}
+
+void RobotGUIMainWindow::update_joint_state(const sensor_msgs::msg::JointState::SharedPtr msg)
+{
+    for (std::size_t i = 0; i < msg->name.size(); ++i)
+    {
+        auto item = joint_display_[i];
+        item->setText(QString("%1").arg(msg->position[i], 5, 'f', 3));
+    }
+    Eigen::Matrix4d T;
+    robot_math::forward_kinematics(&robot_, msg->position, T);
+    auto pose = robot_math::tform_to_pose(T);
+    pose_display_[0]->setText(QString("%1").arg(pose[0], 5, 'f', 4));
+    pose_display_[1]->setText(QString("%1").arg(pose[1], 5, 'f', 4));
+    pose_display_[2]->setText(QString("%1").arg(pose[2], 5, 'f', 4));
+    pose_display_[3]->setText(QString("%1").arg(pose[3], 5, 'f', 4));
+    pose_display_[4]->setText(QString("%1").arg(pose[4], 5, 'f', 4));
+    pose_display_[5]->setText(QString("%1").arg(pose[5], 5, 'f', 4));
 }
