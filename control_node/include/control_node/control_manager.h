@@ -14,6 +14,7 @@
 #include <functional>
 #include <chrono>
 #include <atomic>
+#include "yaml-cpp/yaml.h"
 namespace control_node
 {
 
@@ -65,6 +66,7 @@ namespace control_node
         realtime_tools::RealtimeBox<bool> running_box_;
         rclcpp::Time sim_start_time_;
         std::atomic<bool> keep_running_;
+        std::shared_ptr<YAML::Node> config_;
     };
 
 }

@@ -6,6 +6,7 @@ control_node:
     sim_real_time: false
     publish_joint_state: true
     robot: hardwares::SimulationRobot
+    parameters: "parameters.yaml"
     controllers: 
       - controllers::JointMotionController
       - controllers::CartesianMotionController

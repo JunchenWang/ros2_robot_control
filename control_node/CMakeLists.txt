@@ -33,7 +33,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
 find_package(Boost 1.83.0 COMPONENTS odeint) 
-
+find_package(yaml-cpp REQUIRED) 
 # include_directories(${Boost_INCLUDE_DIRS}) 
 
 # generate_parameter_library(control_node_parameters
@@ -52,6 +52,7 @@ target_compile_features(control_node PUBLIC c_std_99 cxx_std_17)  # Require C99 
 ament_target_dependencies(control_node PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 target_link_libraries(control_node PUBLIC
+                       yaml-cpp
                       ${Boost_LIBRARIES}
 )
 

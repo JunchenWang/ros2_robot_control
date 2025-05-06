@@ -2,6 +2,7 @@
 #include "lifecycle_msgs/msg/state.hpp"
 #include <boost/numeric/odeint.hpp>
 #include "rclcpp/rclcpp.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 using namespace std::chrono_literals;
 using namespace boost::numeric::odeint;
 namespace control_node
@@ -14,6 +15,24 @@ namespace control_node
           running_box_(false),
           keep_running_(true)
     {
+        auto parameter_file = this->get_parameter_or<std::string>("parameters", "");
+        if(!parameter_file.empty())
+        {
+            auto path = ament_index_cpp::get_package_share_directory("applications");
+            if(!path.empty())
+            {
+                config_ = std::make_shared<YAML::Node>();
+                *config_ = YAML::LoadFile(path + "/config/" + parameter_file);
+                // auto matrix = (*config_)["matrix"];
+                // for(auto&& row : matrix)
+                // {
+                //     for(auto&& col : row)
+                //     {
+                //         RCLCPP_INFO(this->get_logger(), "%f", col.as<double>());
+                //     }
+                // }
+            }
+        }
         update_rate_ = this->get_parameter_or<int>("update_rate", 500);
         is_simulation_ = this->get_parameter_or<bool>("simulation", true);
         is_sim_real_time_ = this->get_parameter_or<bool>("sim_real_time", true);
