@@ -136,7 +136,6 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
                                         executor->add_node(node_);
                                         executor->spin(); 
                                         this->close(); });
-    thread_->detach();
 
     com_thread_ = std::make_shared<std::thread>(std::bind(&RobotGUIMainWindow::receive_data, this));
 }
@@ -145,6 +144,7 @@ RobotGUIMainWindow::~RobotGUIMainWindow()
 {
     keep_running_ = false;
     com_thread_->join();
+    thread_->join();
     delete ui;
 }
 
@@ -187,10 +187,11 @@ void RobotGUIMainWindow::receive_data()
         throw std::runtime_error("set socket time out failed");
     }
     RCLCPP_INFO(node_->get_logger(), "receive thread started, port: %d", port);
-    rclcpp::Rate rate(50);
-    while (rclcpp::ok() && keep_running_)
+    double dt = 0.03;
+    while (keep_running_)
     {
         auto t_start = std::chrono::high_resolution_clock::now();
+        
         int resv_num = recvfrom(socket_handle, &buffer_, sizeof(buffer_), 0, nullptr, nullptr);
         if (resv_num > 0)
         {
@@ -204,7 +205,10 @@ void RobotGUIMainWindow::receive_data()
                 break;
             }
         }
-        rate.sleep();
+        auto t_stop = std::chrono::high_resolution_clock::now();
+        auto t_duration = std::chrono::duration<double>(t_stop - t_start);
+        if (t_duration.count() < dt)
+            std::this_thread::sleep_for(std::chrono::duration<double>(dt - t_duration.count()));
     }
 
     ::close(socket_handle);
