@@ -341,11 +341,16 @@ namespace control_node
             next_iteration_time{cm_now};
 
         rclcpp::Time previous_time = this->now();
+        rclcpp::Duration measured_period(0, 0);
+        bool flag = false;
         while (running_ && !robot_->is_stop()) // give robot a change to stop running
         {
             // calculate measured period
-            auto const current_time = this->now();
-            auto const measured_period = current_time - previous_time;
+            auto current_time = this->now();
+            if(flag)
+                measured_period = current_time - previous_time;
+            else
+                flag = true;
             previous_time = current_time;
 
             // execute update loop
