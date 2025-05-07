@@ -19,15 +19,15 @@ void signal_handler(int s)
     {
         RCLCPP_INFO(rclcpp::get_logger("control_node"), "Caught signal %d", s);
         cm->interrupt();
-        if(cm_thread->joinable())
-            cm_thread->join();
+        cm_thread->join();
         rclcpp::shutdown();
     }
 }
 
 int main(int argc, char **argv)
 {
-    rclcpp::init(argc, argv);
+    rclcpp::init(argc, argv);// install default signal handlers
+    signal(SIGINT, signal_handler);// last installed hanldler will take effect
     int kSchedPriority = 50;
     std::shared_ptr<rclcpp::Executor> executor =
         std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
@@ -112,16 +112,12 @@ int main(int argc, char **argv)
             {
                 RCLCPP_ERROR(cm->get_logger(), "exception caught: %s and begin to shutdown", e.what());
             }
-            cm->shutdown_robot();
-            rclcpp::shutdown();
+            cm->shutdown_robot(); 
         });
-    signal(SIGINT, signal_handler);
+    
     executor->add_node(cm);
     executor->spin();
-    if(cm_thread->joinable())
-        cm_thread->join();
     cm_thread.reset();
     cm.reset();
-    rclcpp::shutdown();
     return 0;
 }
