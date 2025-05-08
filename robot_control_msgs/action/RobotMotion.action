@@ -1,0 +1,5 @@
+std_msgs/Float64MultiArray target_position
+---
+bool success
+---
+std_msgs/Float64MultiArray current_position

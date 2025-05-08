@@ -18,13 +18,13 @@ set(srv_files
 )
 
 set(action_files
-  # action/SetMode.action
+  action/RobotMotion.action
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
   ${srv_files}
-  # ${action_files}
+  ${action_files}
   DEPENDENCIES
     action_msgs
     builtin_interfaces

@@ -36,6 +36,7 @@ namespace robot_math
 	Robot urdf_to_robot(const std::string &description, std::vector<std::string> &joint_names, std::string &link_name, std::string &base_link);
 	void print_robot(const Robot &robot);
     // pose: first three are position
+	double distance(const std::vector<double> &v1, const std::vector<double> &v2);
 	Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose);
 	Eigen::Vector3d dual_rotation_vector(const Eigen::Vector3d &r);
 	std::vector<double> tform_to_pose(const Eigen::Matrix4d &T);

@@ -7,8 +7,20 @@ namespace robot_math
     class JointTrajectoryPlanner
     {
     public:
-        JointTrajectoryPlanner(double time_threshod = 0.04) : time_threshod_(time_threshod)
+        JointTrajectoryPlanner(double time_threshod = 0.04) : time_threshod_(time_threshod), is_valid_(false)
         {
+        }
+        bool is_valid()
+        {
+            return is_valid_;
+        }
+        void set_time_threshold(double time_threshold)
+        {
+            time_threshod_ = time_threshold;
+        }
+        void reset()
+        {
+            is_valid_ = false;
         }
         bool has_same_goal(const std::vector<double> &goal)
         {
@@ -21,7 +33,7 @@ namespace robot_math
             }
             return true;
         }
-        bool evaluate(double t, std::vector<double> &q, std::vector<double> &dq, std::vector<double> &ddq)
+        void evaluate(double t, std::vector<double> &q, std::vector<double> &dq, std::vector<double> &ddq)
         {
             q.resize(n_);
             dq.resize(n_);
@@ -29,32 +41,23 @@ namespace robot_math
             double s, ds, dds;
             if (ss_.empty())
             {
-                if (s_.evaluate(t, s, ds, dds))
+                s_.evaluate(t, s, ds, dds);
+                for (std::size_t i = 0; i < n_; i++)
                 {
-                    for (std::size_t i = 0; i < n_; i++)
-                    {
-                        q[i] = q0_[i] + (q1_[i] - q0_[i]) * s;
-                        dq[i] = (q1_[i] - q0_[i]) * ds;
-                        ddq[i] = (q1_[i] - q0_[i]) * dds;
-                    }
-                    return true;
+                    q[i] = q0_[i] + (q1_[i] - q0_[i]) * s;
+                    dq[i] = (q1_[i] - q0_[i]) * ds;
+                    ddq[i] = (q1_[i] - q0_[i]) * dds;
                 }
-                return false;
             }
             else
             {
                 for (std::size_t i = 0; i < n_; i++)
                 {
-                    if (ss_[i].evaluate(t, s, ds, dds))
-                    {
-                        q[i] = q0_[i] + (q1_[i] - q0_[i]) * s;
-                        dq[i] = (q1_[i] - q0_[i]) * ds;
-                        ddq[i] = (q1_[i] - q0_[i]) * dds;
-                    }
-                    else
-                        return false;
+                    ss_[i].evaluate(t, s, ds, dds);
+                    q[i] = q0_[i] + (q1_[i] - q0_[i]) * s;
+                    dq[i] = (q1_[i] - q0_[i]) * ds;
+                    ddq[i] = (q1_[i] - q0_[i]) * dds;
                 }
-                return true;
             }
         }
 
@@ -68,13 +71,14 @@ namespace robot_math
             for (std::size_t i = 0; i < n_; i++)
             {
                 double b = 0;
-                if(fabs(q1[i] - q0[i]) > 0)
+                if (fabs(q1[i] - q0[i]) > 0)
                 {
                     b = dq0[i] / (q1[i] - q0[i]);
                 }
                 double a = 2.0 / time_ / time_ * 5;
                 ss_[i].generate(time_, a, b);
             }
+            is_valid_ = true;
         }
         void generate(const std::vector<double> &q0, const std::vector<double> &q1, double time)
         {
@@ -85,15 +89,16 @@ namespace robot_math
             s_.generate(time, a, 0);
             time_ = time;
             ss_.clear();
+            is_valid_ = true;
         }
 
         void generate_speed(const std::vector<double> &q0, const std::vector<double> &q1, double v)
         {
             time_ = time_threshod_;
-            for(std::size_t i = 0; i < q0.size(); i++)
+            for (std::size_t i = 0; i < q0.size(); i++)
             {
                 double t = fabs(q1[i] - q0[i]) / v;
-                if(t > time_)
+                if (t > time_)
                     time_ = t;
             }
             generate(q0, q1, time_);
@@ -101,10 +106,10 @@ namespace robot_math
         void generate_speed(const std::vector<double> &q0, const std::vector<double> &dq0, const std::vector<double> &q1, double v)
         {
             time_ = time_threshod_;
-            for(std::size_t i = 0; i < q0.size(); i++)
+            for (std::size_t i = 0; i < q0.size(); i++)
             {
                 double t = fabs(q1[i] - q0[i]) / v;
-                if(t > time_)
+                if (t > time_)
                     time_ = t;
             }
             generate(q0, dq0, q1, time_);
@@ -117,5 +122,6 @@ namespace robot_math
         ScaleFunction s_;
         std::vector<ScaleFunction> ss_;
         std::vector<double> q0_, q1_;
+        bool is_valid_;
     };
 }

@@ -36,10 +36,8 @@ namespace controllers
                 auto dt = node_->now() - last_time_;
                 Eigen::Matrix4d T;
                 Eigen::Vector6d V, dV;
-                if (planner.evaluate(dt.seconds(), T, V, dV))
-                {
-                    cmd = robot_math::tform_to_pose(T);
-                }
+                planner.evaluate(dt.seconds(), T, V, dV);
+                cmd = robot_math::tform_to_pose(T);
             }
             else
             {

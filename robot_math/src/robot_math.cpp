@@ -146,6 +146,17 @@ namespace robot_math
         T.block(0, 0, 3, 3) = q.toRotationMatrix();
         return T;
     }
+    double distance(const std::vector<double> &v1, const std::vector<double> &v2)
+    {
+        std::size_t n = std::min(v1.size(), v2.size());
+        double d = 0;
+        for (size_t i = 0; i < n; ++i)
+        {
+            double diff = v1[i] - v2[i];
+            d += diff * diff;
+        }
+        return std::sqrt(d / n);
+    }
     Eigen::Matrix4d pose_to_tform(const std::vector<double> &pose)
     {
         Eigen::Vector3d rv(pose[3], pose[4], pose[5]);

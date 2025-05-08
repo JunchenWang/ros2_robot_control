@@ -23,6 +23,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   "std_srvs"
   "orocos_kdl_vendor"
   "kdl_parser"
+  "rclcpp_action"
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})

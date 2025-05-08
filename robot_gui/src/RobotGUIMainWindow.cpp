@@ -87,11 +87,10 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
             
             auto request = std::make_shared<std_srvs::srv::Empty::Request>();
             auto result = client_->async_send_request(request, [this](rclcpp::Client<std_srvs::srv::Empty>::SharedFuture /*future*/) {
-                
-                RCLCPP_INFO(node_->get_logger(), "stop controllers");
+                controller_mode_ = 0;
+                this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
             });
-            controller_mode_ = 0;
-            this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
+            
         }
         else if(ind > 0)
         {

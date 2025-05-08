@@ -9,7 +9,7 @@ namespace robot_math
     class ScaleFunction
     {
     public:
-        bool evaluate(double t, double &s, double &ds, double &dds)
+        void evaluate(double t, double &s, double &ds, double &dds)
         {
             if(t < 0) 
             {
@@ -38,7 +38,6 @@ namespace robot_math
                 ds = a_ * (T_ - t);
                 dds = -a_;
             }
-            return true;
         }
         void generate(double T)
         {
