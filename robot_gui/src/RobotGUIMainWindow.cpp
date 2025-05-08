@@ -7,6 +7,7 @@
 #include <QDoubleSpinBox>
 #include "urdf/model.h"
 #include "rclcpp/time.hpp"
+using namespace std::chrono_literals;
 
 RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), keep_running_(true)
@@ -86,10 +87,16 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
         {
             
             auto request = std::make_shared<std_srvs::srv::Empty::Request>();
-            auto result = client_->async_send_request(request, [this](rclcpp::Client<std_srvs::srv::Empty>::SharedFuture /*future*/) {
+            auto result = client_->async_send_request(request);
+            if(result.wait_for(1s) == std::future_status::ready)
+            {
                 controller_mode_ = 0;
                 this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
-            });
+            }
+            // auto result = client_->async_send_request(request, [this](rclcpp::Client<std_srvs::srv::Empty>::SharedFuture /*future*/) {
+            //     controller_mode_ = 0;
+            //     this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
+            // });
             
         }
         else if(ind > 0)
@@ -102,18 +109,26 @@ RobotGUIMainWindow::RobotGUIMainWindow(QWidget *parent)
                 for(int i = 0; i < 6; i++)
                     joint_command_spinbox_[i]->setValue(joint_display_[i]->text().toDouble());
             }
-            auto result = cmd_client_->async_send_request(request, [this, ind](rclcpp::Client<robot_control_msgs::srv::ControlCommand>::SharedFuture future) {
-                if (future.get()->result)
-                {
-                    controller_mode_ = ind;
-                    this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
-                    RCLCPP_INFO(node_->get_logger(), "activate success!");
-                }
-                else
-                {
-                    RCLCPP_ERROR(node_->get_logger(), "activate failed!");
-                }
-            });
+            auto result = cmd_client_->async_send_request(request);
+            if(result.wait_for(1s) == std::future_status::ready && result.get()->result == true)
+            {
+                controller_mode_ = ind;
+                this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
+            }
+            
+            
+            // auto result = cmd_client_->async_send_request(request, [this, ind](rclcpp::Client<robot_control_msgs::srv::ControlCommand>::SharedFuture future) {
+            //     if (future.get()->result)
+            //     {
+            //         controller_mode_ = ind;
+            //         this->statusBar()->showMessage(QString("active controller: %1").arg(ui->comboBox->currentText()));
+            //         RCLCPP_INFO(node_->get_logger(), "activate success!");
+            //     }
+            //     else
+            //     {
+            //         RCLCPP_ERROR(node_->get_logger(), "activate failed!");
+            //     }
+            // });
             
         } });
 
@@ -190,7 +205,7 @@ void RobotGUIMainWindow::receive_data()
     while (keep_running_)
     {
         auto t_start = std::chrono::high_resolution_clock::now();
-        
+
         int resv_num = recvfrom(socket_handle, &buffer_, sizeof(buffer_), 0, nullptr, nullptr);
         if (resv_num > 0)
         {

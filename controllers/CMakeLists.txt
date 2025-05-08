@@ -85,7 +85,7 @@ install(
 
 add_executable(test_controller test/test_controller.cpp)
 add_executable(debug_all test/debug_all.cpp)
-add_executable(test_forward_controller test/test_forward_controller.cpp)
+add_executable(test_forward_controller test/test_joint_controller.cpp)
 add_executable(test_trajectory_controller test/test_trajectory_controller.cpp)
 add_executable(movel utility/movel.cpp)
 add_executable(movej utility/movej.cpp)
