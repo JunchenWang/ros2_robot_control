@@ -23,8 +23,9 @@ namespace controllers
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
         {
-            auto goal_handle = (*real_time_buffer_.readFromRT()).first;
-            auto trajectory = (*real_time_buffer_.readFromRT()).second;
+            auto handle_pair = *real_time_buffer_.readFromRT();
+            auto goal_handle = handle_pair.first;
+            auto trajectory = handle_pair.second;
             auto &cmd = command_->get<double>("pose");
             auto &q = state_->get<double>("position");
             Eigen::Matrix4d T;
@@ -43,11 +44,11 @@ namespace controllers
                 }
                 else
                 {
-                    
                     auto goal = std::vector<double>(goal_handle->get_goal()->target_position.data.end() - 6, goal_handle->get_goal()->target_position.data.end());
                     auto goal_T = robot_math::pose_to_tform(goal);
                     auto errs = robot_math::distance(goal_T, T);
-                    if (errs.first < 1e-2 && errs.second < 1e-5) // rv and pos
+                    auto dt = node_->now() - last_time_;
+                    if (errs.first < 1e-2 && errs.second < 1e-5 && dt.seconds() >= trajectory->total_time()) // rv and pos
                     {
                         auto result = std::make_shared<ACTION::Result>();
                         result->success = true;
@@ -57,10 +58,10 @@ namespace controllers
                     }
                     else
                     {
-                        auto dt = node_->now() - last_time_;
+                        
                         Eigen::Matrix4d T;
                         Eigen::Vector6d V, dV;
-                        trajectory_.evaluate(dt.seconds(), T, V, dV);
+                        trajectory->evaluate(dt.seconds(), T, V, dV);
                         cmd = robot_math::tform_to_pose(T);
                         visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
                     }
@@ -124,7 +125,6 @@ namespace controllers
         rclcpp_action::Server<ACTION>::SharedPtr action_server_;
         std::vector<double> q0_;
         std::vector<double> pose0_;
-        robot_math::CartesianTrajectory trajectory_;
         rclcpp::Time last_time_;
         std::shared_ptr<ROS2VisualTools> visual_tools_;
     };

@@ -25,6 +25,10 @@ namespace robot_math
             time_.clear();
             num_of_point_ = 0;
         }
+        double total_time()
+        {
+            return T_;
+        }
         void evaluate(double t, Eigen::Matrix4d &Td, Eigen::Vector6d &V, Eigen::Vector6d &dV)
         {
            
@@ -100,7 +104,7 @@ namespace robot_math
                 spl_[k].set_points(time_, y_[k]);
                 spl_[k].make_monotonic();
             }
-            T_ = time_.back();
+            T_ = time_.back() - time_.front();
         }
 
     protected:
