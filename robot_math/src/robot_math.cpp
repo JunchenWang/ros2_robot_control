@@ -764,6 +764,13 @@ namespace robot_math
         return (Z.transpose() * C - A_v(Z, M) * d_z_sharp(Z, M, dZ, dM)) * J_sharp_X(J, M, X);
     }
 
+    std::pair<double, double> distance(const Eigen::Matrix4d &T1, const Eigen::Matrix4d &T2)
+    {
+        Eigen::Matrix3d R1 = T1.block<3, 3>(0, 0);
+        Eigen::Matrix3d R2 = T2.block<3, 3>(0, 0);
+        return {logR(R2.transpose() * R1).norm(), (T2.block<3, 1>(0, 3) - T1.block<3, 1>(0, 3)).norm()};
+    }
+    
     void cal_motion_error(const Eigen::Matrix4d &T, const Eigen::Matrix4d &T_d,
                           const Eigen::Vector3d &v, const Eigen::Vector3d &w,
                           const Eigen::Vector3d &v_d, const Eigen::Vector3d &w_d,

@@ -5,39 +5,74 @@
 #include "realtime_tools/realtime_buffer.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "robot_control_msgs/action/robot_motion.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
 namespace controllers
 {
 
     class CartesianMotionController : public controller_interface::ControllerInterface
     {
     public:
-        using CmdType = std_msgs::msg::Float64MultiArray;
-        CartesianMotionController() : real_time_buffer_(nullptr)
+        using ACTION = robot_control_msgs::action::RobotMotion;
+        using GoalHandle = rclcpp_action::ServerGoalHandle<ACTION>;
+
+        CartesianMotionController() : real_time_buffer_(nullptr), speed_(0.5)
         {
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
         {
-            auto js = *real_time_buffer_.readFromRT();
+            auto goal_handle = *real_time_buffer_.readFromRT();
             auto &cmd = command_->get<double>("pose");
             auto &q = state_->get<double>("position");
             Eigen::Matrix4d T;
             robot_math::forward_kinematics(robot_, q, T);
+            auto pose = robot_math::tform_to_pose(T);
             auto &dq = state_->get<double>("velocity");
             command_->get<int>("mode")[0] = 0;
-            if (js)
+            if (goal_handle && goal_handle->is_active())
             {
-                auto goal = js->data;
-                if (!planner.has_same_goal(goal))
+                if (goal_handle->is_canceling())
                 {
-                    auto Te = robot_math::pose_to_tform(goal);
-                    planner.generate_speed(T, Te, 0.5);
-                    last_time_ = node_->now();
+                    auto result = std::make_shared<ACTION::Result>();
+                    result->success = false;
+                    goal_handle->canceled(result);
+                    pose0_ = pose;
+                    planner.reset();
+                    //RCLCPP_INFO(node_->get_logger(), "Goal canceled");
                 }
-                auto dt = node_->now() - last_time_;
-                Eigen::Matrix4d T;
-                Eigen::Vector6d V, dV;
-                planner.evaluate(dt.seconds(), T, V, dV);
-                cmd = robot_math::tform_to_pose(T);
+                else
+                {
+                    auto goal = goal_handle->get_goal()->target_position.data;
+                    auto goal_T = robot_math::pose_to_tform(goal);
+                    auto errs = robot_math::distance(goal_T, T);
+                    if (errs.first < 1e-2 && errs.second < 1e-5) // rv and pos
+                    {
+                        auto result = std::make_shared<ACTION::Result>();
+                        result->success = true;
+                        goal_handle->succeed(result);
+                        pose0_ = pose;
+                        planner.reset();
+                        //RCLCPP_INFO(node_->get_logger(), "Goal succeeded");
+                    }
+                    else
+                    {
+                        if (!planner.is_valid() || !planner.has_same_goal(goal))
+                        {
+                            planner.generate_speed(T, goal_T, speed_);
+
+                            last_time_ = node_->now();
+                        }
+                        auto dt = node_->now() - last_time_;
+                        Eigen::Matrix4d T;
+                        Eigen::Vector6d V, dV;
+                        planner.evaluate(dt.seconds(), T, V, dV);
+                        cmd = robot_math::tform_to_pose(T);
+                        // RCLCPP_INFO(node_->get_logger(), "%f", q[0]);
+                        // auto feedback = std::make_shared<ACTION::Feedback>();
+                        // feedback->current_position.data = q;
+                        // goal_handle->publish_feedback(feedback);
+                    }
+                }
             }
             else
             {
@@ -46,41 +81,59 @@ namespace controllers
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            
+
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             real_time_buffer_.reset();
+            planner.reset();
             q0_ = state_->get<double>("position");
             dq0_ = state_->get<double>("velocity");
-            robot_math::forward_kinematics(robot_, q0_, T0_);
-            pose0_ = robot_math::tform_to_pose(T0_);
-            planner.generate(T0_, T0_, 1);
-            //RCLCPP_INFO(node_->get_logger(), "%f %f %f %f %f %f", pose0_[0], pose0_[1],pose0_[2],pose0_[3],pose0_[4],pose0_[5]);
-            command_receiver_ = node_->create_subscription<CmdType>(
-                "~/commands", rclcpp::SystemDefaultsQoS(),
-                [this](const CmdType::SharedPtr msg)
-                {
-                    real_time_buffer_.writeFromNonRT(msg);
-                });
+            Eigen::Matrix4d T0; 
+            robot_math::forward_kinematics(robot_, q0_, T0);
+            pose0_ = robot_math::tform_to_pose(T0);
+            auto handle_goal = [this](const rclcpp_action::GoalUUID &uuid,
+                                      std::shared_ptr<const ACTION::Goal> goal)
+            {
+                (void)uuid;
+                return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+            };
+
+            auto handle_cancel = [this](const std::shared_ptr<GoalHandle> goal_handle)
+            {
+                (void)goal_handle;
+                return rclcpp_action::CancelResponse::ACCEPT;
+            };
+
+            auto handle_accepted = [this](const std::shared_ptr<GoalHandle> goal_handle)
+            {
+                real_time_buffer_.writeFromNonRT(goal_handle);
+            };
+
+            this->action_server_ = rclcpp_action::create_server<ACTION>(
+                node_,
+                "~/goal",
+                handle_goal,
+                handle_cancel,
+                handle_accepted);
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            command_receiver_ = nullptr;
+            action_server_ = nullptr;
             return CallbackReturn::SUCCESS;
         }
 
     protected:
-        rclcpp::Subscription<CmdType>::SharedPtr command_receiver_;
-        realtime_tools::RealtimeBuffer<CmdType::SharedPtr> real_time_buffer_;
+        realtime_tools::RealtimeBuffer<std::shared_ptr<GoalHandle>> real_time_buffer_;
+        rclcpp_action::Server<ACTION>::SharedPtr action_server_;
         std::vector<double> q0_;
         std::vector<double> dq0_;
         std::vector<double> pose0_;
-        Eigen::Matrix4d T0_;
         robot_math::CartesianTrajectoryPlanner planner;
         rclcpp::Time last_time_;
+        double speed_;
     };
 
 } // namespace controllers

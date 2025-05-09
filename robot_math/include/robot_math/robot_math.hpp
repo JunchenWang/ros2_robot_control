@@ -92,7 +92,7 @@ namespace robot_math
 	Eigen::MatrixXd Mu_xv(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dJ, const Eigen::MatrixXd &Z, const Eigen::MatrixXd &C);
 	Eigen::MatrixXd Mu_vx(const Eigen::MatrixXd &J, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dZ, const Eigen::MatrixXd &dM, const Eigen::MatrixXd &Z, const Eigen::MatrixXd &C);
 	Eigen::MatrixXd Mu_vx_X(const Eigen::MatrixXd &J, const Eigen::MatrixXd &Z, const Eigen::MatrixXd &M, const Eigen::MatrixXd &dZ, const Eigen::MatrixXd &dM, const Eigen::MatrixXd &C, const Eigen::MatrixXd &X);
-
+	std::pair<double, double> distance(const Eigen::Matrix4d &T1, const Eigen::Matrix4d &T2);
 	void cal_motion_error(const Eigen::Matrix4d &T, const Eigen::Matrix4d &T_d,
 						  const Eigen::Vector3d &v, const Eigen::Vector3d &w,
 						  const Eigen::Vector3d &v_d, const Eigen::Vector3d &w_d,

@@ -19,7 +19,7 @@ namespace robot_math
             Eigen::Matrix4d G = pose_to_tform(goal);
             Eigen::Vector3d re = logR(Re_.transpose() * G.block<3, 3>(0, 0));
             Eigen::Vector3d pe = G.block<3, 1>(0, 3) - pe_;
-            if (re.norm() < 1e-6 && pe.norm() < 1e-6)
+            if (re.norm() < 1e-5 && pe.norm() < 1e-5)
                 return true;
             return false;
         }

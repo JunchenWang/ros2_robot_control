@@ -28,7 +28,7 @@ namespace robot_math
                 return false;
             for (std::size_t i = 0; i < q1_.size(); i++)
             {
-                if (fabs(q1_[i] - goal[i]) > 1e-6)
+                if (fabs(q1_[i] - goal[i]) > 1e-5)
                     return false;
             }
             return true;
