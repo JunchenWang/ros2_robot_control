@@ -16,7 +16,7 @@ namespace controllers
         using ACTION = robot_control_msgs::action::RobotMotion;
         using GoalHandle = rclcpp_action::ServerGoalHandle<ACTION>;
 
-        CartesianMotionController() : real_time_buffer_(nullptr), speed_(0.5)
+        CartesianMotionController() :  speed_(0.5)
         {
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override

@@ -11,7 +11,7 @@ namespace controllers
     {
     public:
         using CmdType = std_msgs::msg::Float64MultiArray;
-        ForwardController() : real_time_buffer_(nullptr)
+        ForwardController()
         {
         }
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
@@ -68,7 +68,7 @@ namespace controllers
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
+            real_time_buffer_.reset();
             q0_ = state_->get<double>("position");
             dq0_ = state_->get<double>("velocity");
             robot_math::forward_kinematics(robot_, q0_, T0_);
@@ -83,7 +83,6 @@ namespace controllers
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             command_receiver_ = nullptr;
-            real_time_buffer_ = realtime_tools::RealtimeBuffer<std::shared_ptr<CmdType>>(nullptr);
             return CallbackReturn::SUCCESS;
         }
 
