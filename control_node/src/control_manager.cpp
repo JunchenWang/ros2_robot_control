@@ -16,10 +16,10 @@ namespace control_node
           keep_running_(true)
     {
         auto parameter_file = this->get_parameter_or<std::string>("parameters", "");
-        if(!parameter_file.empty())
+        if (!parameter_file.empty())
         {
             auto path = ament_index_cpp::get_package_share_directory("applications");
-            if(!path.empty())
+            if (!path.empty())
             {
                 config_ = std::make_shared<YAML::Node>();
                 *config_ = YAML::LoadFile(path + "/config/" + parameter_file);
@@ -347,7 +347,7 @@ namespace control_node
         {
             // calculate measured period
             auto current_time = this->now();
-            if(flag)
+            if (flag)
                 measured_period = current_time - previous_time;
             else
                 flag = true;
@@ -392,10 +392,12 @@ namespace control_node
         do
         {
             std::this_thread::sleep_for(1s);
-            read(this->now(), rclcpp::Duration::from_seconds(1.0));
             active_controller_box_.get([=](auto const &value)
-                                       { active_controller_ = value; });
-            // read should be executed first
+                                       {
+                                           // since active controller will use read values, so put read safeguard
+                                           read(this->now(), rclcpp::Duration::from_seconds(1.0));
+                                           active_controller_ = value;
+                                       });
             if (!default_controller_.empty())
             {
                 activate_controller(default_controller_);

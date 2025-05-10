@@ -54,7 +54,7 @@ namespace controllers
                     {
                         if (!planner.is_valid() || !planner.has_same_goal(goal))
                         {
-                            // RCLCPP_INFO(node_->get_logger(), "%f", goal[0]);
+                            //RCLCPP_INFO(node_->get_logger(), "%f %f", goal[0], dq[0]);
                             planner.generate_speed(q, dq, goal, speed_);
 
                             last_time_ = node_->now();
@@ -63,7 +63,7 @@ namespace controllers
                         std::vector<double> q, dq, ddq;
                         planner.evaluate(dt.seconds(), q, dq, ddq);
                         cmd = q;
-                        // RCLCPP_INFO(node_->get_logger(), "%f", q[0]);
+                        // RCLCPP_INFO(node_->get_logger(), "%f %f", q[0], dq[0]);
                         // auto feedback = std::make_shared<ACTION::Feedback>();
                         // feedback->current_position.data = q;
                         // goal_handle->publish_feedback(feedback);

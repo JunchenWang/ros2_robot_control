@@ -20,7 +20,7 @@ int main(int argc, char **argv)
   {
     auto t = (node->now() - start).seconds();
     std_msgs::msg::Float64MultiArray msg;
-    msg.data = {std::sin(0.5 * t), 0, 0, 0, 0, 0};
+    msg.data = {std::sin(2*t), 0, 0, 0, 0, 0};
     publisher->publish(msg);
     rclcpp::spin_some(node);
     rate.sleep();

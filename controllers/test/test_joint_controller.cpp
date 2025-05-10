@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("test_joint_controller");
-  auto client = rclcpp_action::create_client<ACTION>(node, "ForwardController/goal");
+  auto client = rclcpp_action::create_client<ACTION>(node, "JointMotionController/goal");
   auto controller_client = node->create_client<robot_control_msgs::srv::ControlCommand>("control_node/control_command");
   if(!controller_client->wait_for_service(1s))
   {
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
   }
   auto request = std::make_shared<robot_control_msgs::srv::ControlCommand::Request>();
   request->cmd_name = "activate";
-  request->cmd_params = "ForwardController";
+  request->cmd_params = "JointMotionController";
   auto future = controller_client->async_send_request(request);
   auto result = rclcpp::spin_until_future_complete(node, future);
   if (result != rclcpp::FutureReturnCode::SUCCESS)
