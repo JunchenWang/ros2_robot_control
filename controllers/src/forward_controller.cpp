@@ -21,31 +21,16 @@ namespace controllers
             command_->get<int>("mode")[0] = mode_;
             if (js)
             {
-                if (js->data.size() != cmd_interface.size())
-                {
-                    RCLCPP_ERROR(node_->get_logger(), "Size of command does not match size of joint state");
-                    return;
-                }
-                for (std::size_t i = 0; i < js->data.size(); ++i)
-                {
-                    cmd_interface[i] = js->data[i];
-                }
+                cmd_interface = js->data;
             }
             else
             {
                 if (mode_ == 0)
-                {
                     cmd_interface = pose0_;
-                }
-                else
-                    for (std::size_t i = 0; i < cmd_interface.size(); ++i)
-                    {
-
-                        if (mode_ == 1)
-                            cmd_interface[i] = q0_[i];
-                        else if (mode_ == 2)
-                            cmd_interface[i] = dq0_[i];
-                    }
+                else if (mode_ == 1)
+                    cmd_interface = q0_;
+                else if (mode_ == 2)
+                    cmd_interface = dq0_;
             }
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override

@@ -5,6 +5,9 @@
   <class type="controllers::ForwardController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a ForwardController plugin.</description>
   </class>
+    <class type="controllers::ForwardController2" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a ForwardController plugin.</description>
+  </class>
   <class type="controllers::RealtimeTestController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a RealtimeTestController plugin.</description>
   </class>

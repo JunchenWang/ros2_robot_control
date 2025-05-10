@@ -46,6 +46,7 @@ pluginlib_export_plugin_description_file(robot_controller_interface plugins.xml)
 add_library(controllers 
             src/torque_controller.cpp
             src/forward_controller.cpp
+            src/forward_controller2.cpp
             src/realtime_test_controller.cpp
             src/dummy_controller.cpp
             src/force_drag_controller.cpp
