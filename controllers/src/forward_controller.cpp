@@ -35,7 +35,7 @@ namespace controllers
             {
                 if (mode_ == 0)
                 {
-                    cmd_interface = robot_math::tform_to_pose(T0_);
+                    cmd_interface = pose0_;
                 }
                 else
                     for (std::size_t i = 0; i < cmd_interface.size(); ++i)
@@ -50,6 +50,11 @@ namespace controllers
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
+            
+            return CallbackReturn::SUCCESS;
+        }
+        CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
+        {
             node_->get_parameter_or<std::string>("cmd_name", cmd_name_, "");
             if (cmd_name_ == "pose")
                 mode_ = 0;
@@ -62,16 +67,12 @@ namespace controllers
                 RCLCPP_ERROR(node_->get_logger(), "cmd_name %s is not supported!", cmd_name_.c_str());
                 return CallbackReturn::FAILURE;
             }
-
-            
-            return CallbackReturn::SUCCESS;
-        }
-        CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
-        {
             real_time_buffer_.reset();
             q0_ = state_->get<double>("position");
             dq0_ = state_->get<double>("velocity");
-            robot_math::forward_kinematics(robot_, q0_, T0_);
+            Eigen::Matrix4d T0;
+            robot_math::forward_kinematics(robot_, q0_, T0);
+            pose0_ = robot_math::tform_to_pose(T0);
             command_receiver_ = node_->create_subscription<CmdType>(
                 "~/commands", rclcpp::SystemDefaultsQoS(),
                 [this](const CmdType::SharedPtr msg)
@@ -93,7 +94,7 @@ namespace controllers
         int mode_;
         std::vector<double> q0_;
         std::vector<double> dq0_;
-        Eigen::Matrix4d T0_;
+        std::vector<double> pose0_;
     };
 
 } // namespace controllers

@@ -7,7 +7,7 @@ namespace robot_math
     class CartesianTrajectoryPlanner
     {
     public:
-        CartesianTrajectoryPlanner(double time_threshod = 0.04) : time_threshod_(time_threshod), is_valid_(false)
+        CartesianTrajectoryPlanner(double time_threshod = 0.02) : time_threshod_(time_threshod), is_valid_(false)
         {
         }
         void set_time_threshold(double time_threshold)
@@ -69,7 +69,7 @@ namespace robot_math
 
     protected:
         double time_;
-        double time_threshod_ = 0.04;
+        double time_threshod_;
         ScaleFunction s_;
         Eigen::Vector3d ps_, pe_, re_, pse_, Rsre_;
         Eigen::Matrix3d Rs_, Re_;

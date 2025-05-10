@@ -25,22 +25,23 @@ namespace hardwares
             if (mode == 0) // cartisan space
             {
                 std::vector<double> jt;
-                if(inverse_kinematics(state["position"],robot_math::pose_to_tform(cmd["pose"]), jt))
+                if (inverse_kinematics(state["position"], robot_math::pose_to_tform(cmd["pose"]), jt))
                 {
-                    for (int i = 0; i < dof_; i++)
-                        state["velocity"][i] = (jt[i] - state["position"][i]) / period.seconds();
+                    if (period.seconds() > 0)
+                        for (int i = 0; i < dof_; i++)
+                            state["velocity"][i] = (jt[i] - state["position"][i]) / period.seconds();
                     state["position"] = jt;
                 }
                 else
                     throw std::runtime_error("ik error");
-                
             }
             else if (mode == 1) // joint space
             {
-                for (int i = 0; i < dof_; i++)
-                    state["velocity"][i] = (cmd["position"][i] - state["position"][i]) / period.seconds();
+                if (period.seconds() > 0)
+                    for (int i = 0; i < dof_; i++)
+                        state["velocity"][i] = (cmd["position"][i] - state["position"][i]) / period.seconds();
                 state["position"] = cmd["position"];
-                //state["velocity"] = cmd["velocity"];
+                // state["velocity"] = cmd["velocity"];
             }
             else if (mode == 2) // velocity
             {
@@ -48,6 +49,25 @@ namespace hardwares
                 for (int i = 0; i < dof_; i++)
                     state["position"][i] += cmd["velocity"][i] * period.seconds();
             }
+        }
+        CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override
+        {
+            if (RobotInterface::on_activate(previous_state) == CallbackReturn::SUCCESS)
+            {
+                // to do
+                // std::fill(pre_dq_.begin(), pre_dq_.end(), 0);
+
+                return CallbackReturn::SUCCESS;
+            }
+            return CallbackReturn::FAILURE;
+        }
+
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override
+        {
+            RobotInterface::on_deactivate(previous_state);
+            auto dq = state_.get<double>("velocity");
+            std::fill(dq.begin(), dq.end(), 0);
+            return CallbackReturn::SUCCESS;
         }
     };
 

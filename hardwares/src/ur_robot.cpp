@@ -64,7 +64,7 @@ namespace hardwares
 
             io_state[0] = receive_interface_->getDigitalOutState(0);
             io_state[1] = receive_interface_->getDigitalOutState(1);
-            if (dt > 0.5 / update_rate_)
+            if (dt > 0)
             {
                 for (int i = 0; i < 6; i++)
                 {

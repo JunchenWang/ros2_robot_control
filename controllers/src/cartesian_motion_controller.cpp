@@ -89,7 +89,6 @@ namespace controllers
             real_time_buffer_.reset();
             planner.reset();
             q0_ = state_->get<double>("position");
-            dq0_ = state_->get<double>("velocity");
             Eigen::Matrix4d T0; 
             robot_math::forward_kinematics(robot_, q0_, T0);
             pose0_ = robot_math::tform_to_pose(T0);
@@ -129,7 +128,6 @@ namespace controllers
         realtime_tools::RealtimeBuffer<std::shared_ptr<GoalHandle>> real_time_buffer_;
         rclcpp_action::Server<ACTION>::SharedPtr action_server_;
         std::vector<double> q0_;
-        std::vector<double> dq0_;
         std::vector<double> pose0_;
         robot_math::CartesianTrajectoryPlanner planner;
         rclcpp::Time last_time_;

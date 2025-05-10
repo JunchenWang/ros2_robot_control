@@ -7,7 +7,7 @@ namespace robot_math
     class JointTrajectoryPlanner
     {
     public:
-        JointTrajectoryPlanner(double time_threshod = 0.04) : time_threshod_(time_threshod), is_valid_(false)
+        JointTrajectoryPlanner(double time_threshod = 0.02) : time_threshod_(time_threshod), is_valid_(false)
         {
         }
         bool is_valid()
@@ -117,7 +117,7 @@ namespace robot_math
 
     protected:
         double time_;
-        double time_threshod_ = 0.04;
+        double time_threshod_;
         std::size_t n_;
         ScaleFunction s_;
         std::vector<ScaleFunction> ss_;

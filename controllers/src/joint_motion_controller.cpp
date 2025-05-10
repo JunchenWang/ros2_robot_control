@@ -22,7 +22,6 @@ namespace controllers
         {
             auto goal_handle = *real_time_buffer_.readFromRT();
             auto &cmd = command_->get<double>("position");
-            auto &cmd_v = command_->get<double>("velocity");
             auto &q = state_->get<double>("position");
             auto &dq = state_->get<double>("velocity");
             command_->get<int>("mode")[0] = 1;
@@ -34,13 +33,13 @@ namespace controllers
                     result->success = false;
                     goal_handle->canceled(result);
                     q0_ = q;
-                    dq0_ = dq;
                     planner.reset();
                     //RCLCPP_INFO(node_->get_logger(), "Goal canceled");
                 }
                 else
                 {
                     auto goal = goal_handle->get_goal()->target_position.data;
+                    
                     double err = robot_math::distance(q, goal);
                     if (err < 1e-5)
                     {
@@ -48,7 +47,6 @@ namespace controllers
                         result->success = true;
                         goal_handle->succeed(result);
                         q0_ = q;
-                        dq0_ = dq;
                         planner.reset();
                         //RCLCPP_INFO(node_->get_logger(), "Goal succeeded");
                     }
@@ -56,6 +54,7 @@ namespace controllers
                     {
                         if (!planner.is_valid() || !planner.has_same_goal(goal))
                         {
+                            // RCLCPP_INFO(node_->get_logger(), "%f", goal[0]);
                             planner.generate_speed(q, dq, goal, speed_);
 
                             last_time_ = node_->now();
@@ -64,7 +63,6 @@ namespace controllers
                         std::vector<double> q, dq, ddq;
                         planner.evaluate(dt.seconds(), q, dq, ddq);
                         cmd = q;
-                        cmd_v = dq;
                         // RCLCPP_INFO(node_->get_logger(), "%f", q[0]);
                         // auto feedback = std::make_shared<ACTION::Feedback>();
                         // feedback->current_position.data = q;
@@ -75,7 +73,6 @@ namespace controllers
             else
             {
                 cmd = q0_;
-                cmd_v = dq0_;
             }
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -89,7 +86,6 @@ namespace controllers
             real_time_buffer_.reset();
             planner.reset();
             q0_ = state_->get<double>("position");
-            dq0_ = state_->get<double>("velocity");
 
             auto handle_goal = [this](const rclcpp_action::GoalUUID &uuid,
                                    std::shared_ptr<const ACTION::Goal> goal)
@@ -118,15 +114,19 @@ namespace controllers
                 // so we declare a lambda function to be called inside a new thread
                 // auto execute_in_thread = [this, goal_handle](){return this->execute(goal_handle);};
                 // std::thread{execute_in_thread}.detach();
+                // RCLCPP_INFO(node_->get_logger(), "accept goal");
                 real_time_buffer_.writeFromNonRT(goal_handle);
             };
 
+            call_back_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
             this->action_server_ = rclcpp_action::create_server<ACTION>(
                 node_,
                 "~/goal",
                 handle_goal,
                 handle_cancel,
-                handle_accepted);
+                handle_accepted,
+                rcl_action_server_get_default_options(),
+                call_back_group_);
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -139,10 +139,10 @@ namespace controllers
         // rclcpp::Subscription<CmdType>::SharedPtr command_receiver_;
         realtime_tools::RealtimeBuffer<std::shared_ptr<GoalHandle>> real_time_buffer_;
         std::vector<double> q0_;
-        std::vector<double> dq0_;
         robot_math::JointTrajectoryPlanner planner;
         rclcpp::Time last_time_;
         rclcpp_action::Server<ACTION>::SharedPtr action_server_;
+        rclcpp::CallbackGroup::SharedPtr call_back_group_;
         double speed_;
     };
 
