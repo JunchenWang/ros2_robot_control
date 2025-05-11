@@ -15,10 +15,10 @@ namespace controllers
     public:
         using ACTION = robot_control_msgs::action::RobotMotion;
         using GoalHandle = rclcpp_action::ServerGoalHandle<ACTION>;
-        JointMotionController() : speed_(0.5)
+        JointMotionController() : speed_(0.5), planner(0.02)
         {
         }
-        void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
+        void update(const rclcpp::Time & t, const rclcpp::Duration & period) override
         {
             auto goal_handle = *real_time_buffer_.readFromRT();
             auto &cmd = command_->get<double>("position");
@@ -52,17 +52,34 @@ namespace controllers
                     }
                     else
                     {
+                        int flag = 0;
                         if (!planner.is_valid() || !planner.has_same_goal(goal))
                         {
                             //RCLCPP_INFO(node_->get_logger(), "%f %f", goal[0], dq[0]);
                             planner.generate_speed(q, dq, goal, speed_);
-
+                            flag = 1;
                             last_time_ = node_->now();
                         }
                         auto dt = node_->now() - last_time_;
-                        std::vector<double> q, dq, ddq;
-                        planner.evaluate(dt.seconds(), q, dq, ddq);
-                        cmd = q;
+                        std::vector<double> interp_q, interp_dq, interp_ddq;
+                        planner.evaluate(dt.seconds(), interp_q, interp_dq, interp_ddq);
+                        cmd = interp_q;
+                        // if(period.seconds() > 0)
+                        // {
+                        //     double diff = q[0] - interp_q[0];
+                        //     if(std::abs(diff) > 0.01)
+                        //     {
+                        //         planner.generate_speed(q, dq, goal, speed_);
+                        //         RCLCPP_INFO(node_->get_logger(), "attention %d %f %f", flag, dt.seconds(), speed_);
+                        //         RCLCPP_INFO(node_->get_logger(), "q: %f %f %f %f %f %f", q[0], q[1], q[2], q[3], q[4], q[5]);
+                        //         RCLCPP_INFO(node_->get_logger(), "interp_q: %f %f %f %f %f %f", interp_q[0], interp_q[1], interp_q[2], interp_q[3], interp_q[4], interp_q[5]);
+                        //         RCLCPP_INFO(node_->get_logger(), "goal: %f %f %f %f %f %f", goal[0], goal[1], goal[2], goal[3], goal[4], goal[5]);
+                        //         RCLCPP_INFO(node_->get_logger(), "dq: %f %f %f %f %f %f", dq[0], dq[1], dq[2], dq[3], dq[4], dq[5]);
+                        //         planner.evaluate(0, interp_q, interp_dq, interp_ddq);
+                        //         RCLCPP_INFO(node_->get_logger(), "interp_q with 0: %f %f %f %f %f %f", interp_q[0], interp_q[1], interp_q[2], interp_q[3], interp_q[4], interp_q[5]);
+                        //         throw std::runtime_error("goal not reached");
+                        //     }
+                        // }
                         // RCLCPP_INFO(node_->get_logger(), "%f %f", q[0], dq[0]);
                         // auto feedback = std::make_shared<ACTION::Feedback>();
                         // feedback->current_position.data = q;

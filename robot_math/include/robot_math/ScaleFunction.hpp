@@ -9,17 +9,35 @@ namespace robot_math
     class ScaleFunction
     {
     public:
-        void evaluate(double t, double &s, double &ds, double &dds)
+        ScaleFunction()
         {
-            if(t < 0) 
+        }
+        void evaluate_linear(double t, double &s, double &ds, double &dds)
+        {
+            if (t < 0)
             {
                 t = 0;
             }
-            else if(t > T_)
+            else if (t > T_)
             {
                 t = T_;
             }
-            
+
+            s = t / T_;
+            ds = 1.0 / T_;
+            dds = 0;
+        }
+        void evaluate(double t, double &s, double &ds, double &dds)
+        {
+            if (t < 0)
+            {
+                t = 0;
+            }
+            else if (t > T_)
+            {
+                t = T_;
+            }
+
             if (t < t1_)
             {
                 s = flag_ * a_ * t * t / 2 + b_ * t;
@@ -39,6 +57,16 @@ namespace robot_math
                 dds = -a_;
             }
         }
+        // void print()
+        // {
+        //     std::cerr << "t1: " << t1_ << std::endl;
+        //     std::cerr << "t2: " << t2_ << std::endl;
+        //     std::cerr << "a: " << a_ << std::endl;
+        //     std::cerr << "b: " << b_ << std::endl;
+        //     std::cerr << "v: " << v_ << std::endl;
+        //     std::cerr << "T: " << T_ << std::endl;
+        //     std::cerr << "offset: " << offset_ << std::endl;
+        // }
         void generate(double T)
         {
             // average velocity
@@ -50,14 +78,15 @@ namespace robot_math
         // T is total time, a is acceleration, b is initial velocity
         void generate(double T, double a, double b = 0)
         {
-            if(T <= 0)
-               return;
-
+            if (T <= 0)
+                return;
+            //std::cout << "a: " << a << std::endl;
             double T2 = T * T;
             double delta = (2 * b * T - 4) * (2 * b * T - 4) + 4 * T2 * b * b;
             double amin = ((4 - 2 * b * T) + std::sqrt(delta)) / (2 * T2); // feasible minimum a
+            // numerical issue solved by wjc 2025.05.11
             if (amin > a)
-                a = amin;
+                a = (1 + 1e-3) * amin;
 
             double A = a, B = -(a * T + b), C = 1 + b * b / (2 * a);
             delta = B * B - 4 * A * C;
@@ -66,6 +95,10 @@ namespace robot_math
             t1_ = (v_ - b) / a;
             if (t1_ < 0)
             {
+                // solve the issue of t1_ is mimus, found on 2025.05.11
+                a = a > b / T ? a : b / T;
+                a = std::max(a, b * b / 2);
+                ///////////////////////////////////
                 tb = (1 - b * b / (2 * a)) / (a * T - b);
                 v_ = a * tb;
                 t1_ = (v_ - b) / -a;
