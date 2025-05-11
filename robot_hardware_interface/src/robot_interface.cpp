@@ -23,7 +23,7 @@ namespace hardware_interface
             robot_ = robot_math::urdf_to_robot(robot_description, joint_names_, end_effector_, base_link_);
             kdl_parser::treeFromString(robot_description, tree_);
             tree_.getChain(base_link_, end_effector_, chain_);
-            solver_ = std::make_unique<KDL::ChainIkSolverPos_LMA>(chain_);
+            solver_ = std::make_unique<KDL::ChainIkSolverPos_LMA>(chain_, 1e-6, 1000);
             RCLCPP_INFO(node_->get_logger(), "the robot chain is from %s to %s", base_link_.c_str(), end_effector_.c_str());
             dof_ = joint_names_.size();
             std::stringstream ss;

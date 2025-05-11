@@ -196,9 +196,9 @@ def generate_launch_description():
     nodes = arguments + handlers + [
             robot_state_publisher,
             rviz_node,
-            robot_monitor,
+            # robot_monitor,
             control_node,
-            # robot_gui
+            robot_gui
             ]
 
     return LaunchDescription(nodes)

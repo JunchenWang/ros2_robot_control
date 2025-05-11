@@ -45,7 +45,7 @@ namespace controllers
                     auto goal = goal_handle->get_goal()->target_position.data;
                     auto goal_T = robot_math::pose_to_tform(goal);
                     auto errs = robot_math::distance(goal_T, T);
-                    if (errs.first < 1e-2 && errs.second < 1e-5) // rv and pos
+                    if (errs.first < 1e-4 && errs.second < 1e-5) // rv and pos
                     {
                         auto result = std::make_shared<ACTION::Result>();
                         result->success = true;
