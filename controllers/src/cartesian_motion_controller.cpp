@@ -19,8 +19,9 @@ namespace controllers
         CartesianMotionController() :  speed_(0.5)
         {
         }
-        void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
+        void update(const rclcpp::Time & t, const rclcpp::Duration & period) override
         {
+
             auto goal_handle = *real_time_buffer_.readFromRT();
             auto &cmd = command_->get<double>("pose");
             auto &q = state_->get<double>("position");
@@ -28,6 +29,12 @@ namespace controllers
             robot_math::forward_kinematics(robot_, q, T);
             auto pose = robot_math::tform_to_pose(T);
             auto &dq = state_->get<double>("velocity");
+            // inital reading should be put here!!
+            if(period.seconds() == 0)
+            {
+                q0_ = q;
+                pose0_ = pose;
+            }
             command_->get<int>("mode")[0] = 0;
             if (goal_handle && goal_handle->is_active())
             {
@@ -88,10 +95,6 @@ namespace controllers
         {
             real_time_buffer_.reset();
             planner.reset();
-            q0_ = state_->get<double>("position");
-            Eigen::Matrix4d T0; 
-            robot_math::forward_kinematics(robot_, q0_, T0);
-            pose0_ = robot_math::tform_to_pose(T0);
             auto handle_goal = [this](const rclcpp_action::GoalUUID &uuid,
                                       std::shared_ptr<const ACTION::Goal> goal)
             {

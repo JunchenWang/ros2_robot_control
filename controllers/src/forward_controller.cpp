@@ -14,10 +14,22 @@ namespace controllers
         ForwardController()
         {
         }
-        void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
+        void update(const rclcpp::Time & t, const rclcpp::Duration & period) override
         {
             auto js = *real_time_buffer_.readFromRT();
             auto &cmd_interface = command_->get<double>(cmd_name_);
+            auto &q = state_->get<double>("position");
+            auto &dq = state_->get<double>("velocity");
+            Eigen::Matrix4d T;
+            robot_math::forward_kinematics(robot_, q, T);
+            auto pose = robot_math::tform_to_pose(T);
+            // inital reading should be put here!!
+            if(period.seconds() == 0)
+            {
+                q0_ = q;
+                pose0_ = pose;
+                dq0_ = dq;
+            }
             command_->get<int>("mode")[0] = mode_;
             if (js)
             {
@@ -53,11 +65,6 @@ namespace controllers
                 return CallbackReturn::FAILURE;
             }
             real_time_buffer_.reset();
-            q0_ = state_->get<double>("position");
-            dq0_ = state_->get<double>("velocity");
-            Eigen::Matrix4d T0;
-            robot_math::forward_kinematics(robot_, q0_, T0);
-            pose0_ = robot_math::tform_to_pose(T0);
             command_receiver_ = node_->create_subscription<CmdType>(
                 "~/commands", rclcpp::SystemDefaultsQoS(),
                 [this](const CmdType::SharedPtr msg)

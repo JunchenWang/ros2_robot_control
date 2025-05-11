@@ -24,6 +24,11 @@ namespace controllers
             auto &cmd = command_->get<double>("position");
             auto &q = state_->get<double>("position");
             auto &dq = state_->get<double>("velocity");
+            // inital reading should be put here!!
+            if(period.seconds() == 0)
+            {
+                q0_ = q;
+            }
             command_->get<int>("mode")[0] = 1;
             if (goal_handle && goal_handle->is_active())
             {
@@ -102,7 +107,6 @@ namespace controllers
             node_->get_parameter_or<double>("speed", speed_, 0.5);
             real_time_buffer_.reset();
             planner.reset();
-            q0_ = state_->get<double>("position");
 
             auto handle_goal = [this](const rclcpp_action::GoalUUID &uuid,
                                    std::shared_ptr<const ACTION::Goal> goal)

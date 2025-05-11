@@ -21,17 +21,23 @@ namespace controllers
         CartesianTrajectoryController() 
         {
         }
-        void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & /*period*/) override
+        void update(const rclcpp::Time & t, const rclcpp::Duration & period) override
         {
             auto handle_pair = *real_time_buffer_.readFromRT();
             auto goal_handle = handle_pair.first;
             auto trajectory = handle_pair.second;
             auto &cmd = command_->get<double>("pose");
             auto &q = state_->get<double>("position");
+            auto &dq = state_->get<double>("velocity");
             Eigen::Matrix4d T;
             robot_math::forward_kinematics(robot_, q, T);
             auto pose = robot_math::tform_to_pose(T);
-            auto &dq = state_->get<double>("velocity");
+            // inital reading should be put here!!
+            if(period.seconds() == 0)
+            {
+                q0_ = q;
+                pose0_ = pose;
+            }
             command_->get<int>("mode")[0] = 0;
             if (goal_handle && goal_handle->is_active())
             {
@@ -80,10 +86,6 @@ namespace controllers
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             real_time_buffer_.reset();
-            q0_ = state_->get<double>("position");
-            Eigen::Matrix4d T0;
-            robot_math::forward_kinematics(robot_, q0_, T0);
-            pose0_ = robot_math::tform_to_pose(T0);
             auto handle_goal = [this](const rclcpp_action::GoalUUID &uuid,
                                       std::shared_ptr<const ACTION::Goal> goal)
             {
