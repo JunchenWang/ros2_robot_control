@@ -391,8 +391,8 @@ namespace control_node
 
         do
         {
-            read(this->now(), rclcpp::Duration::from_seconds(1.0));
             std::this_thread::sleep_for(1s);
+            read(this->now(), rclcpp::Duration::from_seconds(1.0));
             active_controller_box_.get([=](auto const &value)
                                        {
                                            active_controller_ = value;
