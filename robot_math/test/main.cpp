@@ -12,7 +12,6 @@ int main()
 {
     ScaleFunction s;
     s.generate(4.25, 0.6, 3.05);
-    s.print();
     return 0;
     // Eigen::Vector3d r(0, 0, 0);
     // Eigen::Vector3d dr(0.12, 0.13, 0.32);
