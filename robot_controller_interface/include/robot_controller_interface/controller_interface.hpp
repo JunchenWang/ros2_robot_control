@@ -30,7 +30,8 @@ namespace controller_interface
 
         void finalize();
 
-        void loan_interface(const robot_math::Robot *robot,
+        void loan_interface( int update_rate,
+                             const robot_math::Robot *robot,
                              hardware_interface::CommandInterface *command,
                              const hardware_interface::StateInterface *state,
                              std::map<std::string, hardware_interface::CommandInterface*>* com_command,
@@ -63,6 +64,7 @@ namespace controller_interface
         std::map<std::string, hardware_interface::CommandInterface*>* com_command_; // components' command
         const std::map<std::string, const hardware_interface::StateInterface*>* com_state_; // compoents' state
         std::vector<double> internal_state_; // e.g. integration of state
+        int update_rate_;
     };
 
 } // namespace controller_interface

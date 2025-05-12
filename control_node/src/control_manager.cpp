@@ -70,7 +70,8 @@ namespace control_node
                 auto controller = controller_loader_->createSharedInstance(name);
                 pos = name.rfind(":");
                 name = name.substr(pos + 1);
-                controller->loan_interface(&robot_->get_robot_math(),
+                controller->loan_interface(update_rate_,
+                                           &robot_->get_robot_math(),
                                            &robot_->get_command_interface(),
                                            &robot_->get_state_interface(),
                                            &robot_->get_com_command_interface(),
@@ -118,14 +119,16 @@ namespace control_node
                 running = true; });
         if (running)
         {
-            running_box_.set(false);
+
             do
             {
+                running_box_.set(false);
+                std::this_thread::sleep_for(5ms);
                 active_controller_box_.get([=, &running](const auto &value)
                                            {
             if (!value)
                 running = false; });
-                std::this_thread::sleep_for(1ms);
+
             } while (running);
         }
 
@@ -358,7 +361,7 @@ namespace control_node
             update(current_time, measured_period);
             write(current_time, measured_period);
             // get running state from box
-            running_box_.try_get([=](const auto &value)
+            running_box_.try_get([this](const auto &value)
                                  { running_ = value; });
 
             // wait until we hit the end of the period
@@ -394,15 +397,12 @@ namespace control_node
             std::this_thread::sleep_for(1s);
             read(this->now(), rclcpp::Duration::from_seconds(1.0));
             active_controller_box_.get([=](auto const &value)
-                                       {
-                                           active_controller_ = value;
-                                       });
+                                       { active_controller_ = value; });
             if (!default_controller_.empty())
             {
                 activate_controller(default_controller_);
                 default_controller_.clear();
             }
-
         } while (keep_running_ && !active_controller_);
         if (!keep_running_)
         {
@@ -428,13 +428,6 @@ namespace control_node
         auto state = robot_->get_node_state();
         if (state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
             robot_->get_node()->deactivate();
-
-        // clear robot monitor
-        // rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client =
-        //     create_client<std_srvs::srv::Empty>("robot_monitor/clear");
-
-        // auto request = std::make_shared<std_srvs::srv::Empty::Request>();
-        // auto result = client->async_send_request(request);
     }
 
 }

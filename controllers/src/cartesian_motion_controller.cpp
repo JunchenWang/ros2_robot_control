@@ -112,13 +112,15 @@ namespace controllers
             {
                 real_time_buffer_.writeFromNonRT(goal_handle);
             };
-
+            call_back_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
             this->action_server_ = rclcpp_action::create_server<ACTION>(
                 node_,
                 "~/goal",
                 handle_goal,
                 handle_cancel,
-                handle_accepted);
+                handle_accepted,
+                rcl_action_server_get_default_options(),
+                call_back_group_);
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -134,6 +136,7 @@ namespace controllers
         std::vector<double> pose0_;
         robot_math::CartesianTrajectoryPlanner planner;
         rclcpp::Time last_time_;
+        rclcpp::CallbackGroup::SharedPtr call_back_group_;
         double speed_;
     };
 

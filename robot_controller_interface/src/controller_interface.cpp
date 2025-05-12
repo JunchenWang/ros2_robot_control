@@ -43,12 +43,14 @@ namespace controller_interface
         return 0;
     }
 
-    void ControllerInterface::loan_interface(const robot_math::Robot *robot,
+    void ControllerInterface::loan_interface( int update_rate,
+                                              const robot_math::Robot *robot,
                                               hardware_interface::CommandInterface *command,
                                               const hardware_interface::StateInterface *state,
                                               std::map<std::string, hardware_interface::CommandInterface*>* com_command,
                                               const std::map<std::string, const hardware_interface::StateInterface*>* com_state)
     {
+        update_rate_ = update_rate;
         command_ = command;
         state_ = state;
         robot_ = robot;
