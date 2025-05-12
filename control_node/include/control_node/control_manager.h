@@ -34,6 +34,7 @@ namespace control_node
         void command_callback(const std::shared_ptr<robot_control_msgs::srv::ControlCommand::Request> request,
                               std::shared_ptr<robot_control_msgs::srv::ControlCommand::Response> response);
         bool activate_controller(const std::string &controller_name);
+        bool load_controller(const std::string &controller_name);
         void shutdown_robot();
         void read(const rclcpp::Time &t, const rclcpp::Duration &period);
         void update(const rclcpp::Time &t, const rclcpp::Duration &period);

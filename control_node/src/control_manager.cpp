@@ -100,7 +100,40 @@ namespace control_node
     ControlManager::~ControlManager()
     {
     }
+    bool ControlManager::load_controller(const std::string &controller_name)
+    {
+        auto name = controller_name;
+        int pos = name.rfind(":");
+        name = name.substr(pos + 1);
+        for (auto &controller : controllers_)
+        {
+            if (controller->get_node()->get_name() == name)
+            {
+                RCLCPP_INFO(get_logger(), "controller %s is already loaded!", name.c_str());
+                return false;
+            }
+        }
+        try
+        {
 
+            auto controller = controller_loader_->createSharedInstance(controller_name);
+            controller->loan_interface(update_rate_,
+                                       &robot_->get_robot_math(),
+                                       &robot_->get_command_interface(),
+                                       &robot_->get_state_interface(),
+                                       &robot_->get_com_command_interface(),
+                                       &robot_->get_com_state_interface());
+            controller->initialize(name);
+            controllers_.push_back(controller);
+            executor_->add_node(controller->get_node()->get_node_base_interface());
+        }
+        catch (pluginlib::PluginlibException &ex)
+        {
+            RCLCPP_INFO(this->get_logger(), "%s", ex.what());
+            return false;
+        }
+        return true;
+    }
     void ControlManager::interrupt()
     {
         keep_running_ = false;
@@ -170,6 +203,9 @@ namespace control_node
         response->result = false;
         if (cmd == "activate")
             response->result = activate_controller(request->cmd_params);
+        else if (cmd == "load")
+            response->result = load_controller(request->cmd_params);
+       
     }
 
     int ControlManager::get_update_rate()
