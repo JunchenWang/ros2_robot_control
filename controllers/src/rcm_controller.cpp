@@ -39,14 +39,7 @@ namespace controllers
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/)
         {
-            time_ = 0;
-            auto &T_vector = state_->get<double>("T");
             d_Filter.reset();
-            Eigen::Map<const Eigen::Matrix4d> T(&T_vector[0]);
-            Eigen::Vector3d p1 = T.block<3, 3>(0, 0) * p1_F_ + T.block<3, 1>(0, 3);
-            Eigen::Vector3d p2 = T.block<3, 3>(0, 0) * p2_F_ + T.block<3, 1>(0, 3);
-            x_d_ = p1 + 0.67442 * (p2 - p1);
-            z_ = Eigen::VectorXd::Zero(dof_);
             return CallbackReturn::SUCCESS;
         }
 
@@ -57,7 +50,6 @@ namespace controllers
 
         void update(const rclcpp::Time &/*t*/, const rclcpp::Duration &period) override
         {
-            time_ += period.seconds();
             auto &cmd_torque = command_->get<double>("torque");
             auto &tau_d_vector = state_->get<double>("torque");
             auto &external_torque = state_->get<double>("external_torque");
@@ -79,11 +71,15 @@ namespace controllers
             Eigen::Matrix4d Tb, dTb;
             m_c_g_matrix(robot_, q_vector, dq_vector, M, C, g, Jb, dJb, dM, dTb, Tb);
             Eigen::VectorXd P = (Y_.array() * dq.array()).matrix();
-            if (time_ < 1e-5)
+            if(period.seconds() == 0)
             {
+                auto &T_vector = state_->get<double>("T");
+                Eigen::Map<const Eigen::Matrix4d> T(&T_vector[0]);
+                Eigen::Vector3d p1 = T.block<3, 3>(0, 0) * p1_F_ + T.block<3, 1>(0, 3);
+                Eigen::Vector3d p2 = T.block<3, 3>(0, 0) * p2_F_ + T.block<3, 1>(0, 3);
+                x_d_ = p1 + 0.67442 * (p2 - p1);
                 z_ = -P;
             }
-
             Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
             Eigen::Vector3d x;
             Eigen::MatrixXd J_rcm, dJ_rcm;
@@ -112,7 +108,6 @@ namespace controllers
         Eigen::Vector3d Kx_, Bx_;
         Eigen::VectorXd Kn_, Bn_, Y_, z_;
         MovingFilter<double> d_Filter;
-        double time_;
     };
 } // namespace controllers
 

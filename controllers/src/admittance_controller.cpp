@@ -117,7 +117,7 @@ namespace controllers
             Tcp_ = Eigen::Matrix4d::Identity();
             Tcp_.block(0, 3, 3, 1) = Pcom;
 
-            Tdtcp_ = pose_to_tform(state_->get<double>("pose")) * Tcp_;
+            
             Vdtcp_.setZero();
             Tref_ = Eigen::Matrix4d::Identity();
 
@@ -171,7 +171,10 @@ namespace controllers
             const std::vector<double> &pose = state_->get<double>("pose");
             const std::vector<bool> &io = state_->get<bool>("io");
             std::vector<double> &cmd_pose = command_->get<double>("pose");
-
+            if(period.seconds() == 0)
+            {
+                Tdtcp_ = pose_to_tform(pose) * Tcp_;
+            }
             // 从 offset_in_box_ 中取出值给 offset_
             offset_in_box_.try_get([=](auto const &value)
                                    { offset_ = value; });
