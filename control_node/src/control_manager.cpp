@@ -110,7 +110,7 @@ namespace control_node
             if (controller->get_node()->get_name() == name)
             {
                 RCLCPP_INFO(get_logger(), "controller %s is already loaded!", name.c_str());
-                return false;
+                return true;
             }
         }
         try
