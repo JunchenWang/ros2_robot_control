@@ -6,7 +6,7 @@ t = data[:,0]
 x = data[:,1]
 y = data[:,2]
 v = data[:,3]
-a = data[:,4]
-plt.plot(t, x)
+# a = data[:,4]
+plt.plot(t, x, t, y)
 # plt.axis('equal')
 plt.show()

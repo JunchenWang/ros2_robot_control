@@ -2,16 +2,24 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-#include "robot_math/ScaleFunction.hpp"
+#include "robot_math/TrapezoidFunction.hpp"
 #include "robot_math/CartesianTrajectoryPlanner.hpp"
 #include "robot_math/JointTrajectoryPlanner.hpp"
-#include "robot_math/trajectory.hpp"
+#include "robot_math/CartesianTrajectory.hpp"
 using namespace robot_math;
 
 int main()
 {
-    ScaleFunction s;
-    s.generate(4.25, 0.6, 3.05);
+    TrapezoidFunction sf;
+    double time = 4.25;
+    sf.generate(time, .1, -63.05);
+    double s, ds, dds;
+    std::ofstream fout("data.txt");
+    for (double t = 0; t <= time; t += 0.01)
+    {
+        sf.evaluate(t, s, ds, dds);
+        fout << t << " " << s << " " << ds << " " << dds << std::endl;
+    }
     return 0;
     // Eigen::Vector3d r(0, 0, 0);
     // Eigen::Vector3d dr(0.12, 0.13, 0.32);
@@ -36,12 +44,11 @@ int main()
     // std::vector<double> p0 = {-0.817259, -0.232391, 0.060765, 1.578384, -0.000002, 0.001729};
     // std::vector<double> p1 = {-0.417259, -0.432391, 0.160765, 0, -0.000002, 0.001729};
     // //
-    JointTrajectoryPlanner planner;
+    JointTrajectoryPlanner<robot_math::TrapezoidFunction> planner;
     planner.generate({0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {1e-5, 1e-5, 1e-5, 1e-5, 1e-5, 1e-5}, 1);
 
     // ScaleFunction s;
     // s.generate(5);
-    std::ofstream fout("data.txt");
     for(int i = 0; i <= 500; i++)
     {
         double t = i * 0.01;
@@ -56,7 +63,7 @@ int main()
     std::string description((std::istreambuf_iterator<char>(fin)),
                             std::istreambuf_iterator<char>());
     std::vector<std::string> joint_names;
-    std::string end_effector, base;;
+    std::string end_effector, base;
     Robot robot = urdf_to_robot(description, joint_names, end_effector, base);
     print_robot(robot);
     std::vector<double> q{1, 2, 3, 4, 5, 6, 7};

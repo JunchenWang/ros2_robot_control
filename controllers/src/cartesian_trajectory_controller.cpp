@@ -2,7 +2,7 @@
 #include <iostream>
 #include "robot_math/robot_math.hpp"
 #include "ros2_utility/ros2_visual_tools.hpp"
-#include "robot_math/trajectory.hpp"
+#include "robot_math/CartesianTrajectory.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"

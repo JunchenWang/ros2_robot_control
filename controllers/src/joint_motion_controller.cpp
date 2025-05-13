@@ -7,6 +7,7 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "robot_control_msgs/action/robot_motion.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "robot_math/TrapezoidFunction.hpp"
 namespace controllers
 {
 
@@ -160,7 +161,7 @@ namespace controllers
         // rclcpp::Subscription<CmdType>::SharedPtr command_receiver_;
         realtime_tools::RealtimeBuffer<std::shared_ptr<GoalHandle>> real_time_buffer_;
         std::vector<double> q0_;
-        robot_math::JointTrajectoryPlanner planner;
+        robot_math::JointTrajectoryPlanner<robot_math::TrapezoidFunction> planner;
         rclcpp::Time last_time_;
         rclcpp_action::Server<ACTION>::SharedPtr action_server_;
         rclcpp::CallbackGroup::SharedPtr call_back_group_;

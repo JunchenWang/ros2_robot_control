@@ -7,6 +7,8 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "robot_control_msgs/action/robot_motion.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "robot_math/TrapezoidFunction.hpp"
+#include "robot_math/LinearFunction.hpp"
 namespace controllers
 {
 
@@ -16,7 +18,7 @@ namespace controllers
         using ACTION = robot_control_msgs::action::RobotMotion;
         using GoalHandle = rclcpp_action::ServerGoalHandle<ACTION>;
 
-        CartesianMotionController() :  speed_(0.5)
+        CartesianMotionController() :  speed_(1), planner(0.02)
         {
         }
         void update(const rclcpp::Time & t, const rclcpp::Duration & period) override
@@ -134,7 +136,7 @@ namespace controllers
         rclcpp_action::Server<ACTION>::SharedPtr action_server_;
         std::vector<double> q0_;
         std::vector<double> pose0_;
-        robot_math::CartesianTrajectoryPlanner planner;
+        robot_math::CartesianTrajectoryPlanner<robot_math::LinearFunction> planner;
         rclcpp::Time last_time_;
         rclcpp::CallbackGroup::SharedPtr call_back_group_;
         double speed_;

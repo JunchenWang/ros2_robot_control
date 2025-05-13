@@ -3,7 +3,7 @@
 #include "robot_math/ScaleFunction.hpp"
 namespace robot_math
 {
-
+    template <typename ScaleFunctionType>
     class CartesianTrajectoryPlanner
     {
     public:
@@ -34,7 +34,7 @@ namespace robot_math
         void evaluate(double t, Eigen::Matrix4d &T, Eigen::Vector6d &V, Eigen::Vector6d &dV)
         {
             double s, ds, dds;
-            s_.evaluate(t, s, ds, dds);
+            s_->evaluate(t, s, ds, dds);
             T.block<3, 3>(0, 0) = Rs_ * exp_r(re_ * s);
             T.block<3, 1>(0, 3) = ps_ + pse_ * s;
             T.block<1, 4>(3, 0) << 0, 0, 0, 1;
@@ -63,14 +63,15 @@ namespace robot_math
             Rsre_ = Rs_ * re_;
             pse_ = pe_ - ps_;
             time_ = time;
-            s_.generate(time_);
+            s_ = std::make_shared<ScaleFunctionType>();
+            s_->generate(time_);
             is_valid_ = true;
         }
 
     protected:
         double time_;
         double time_threshod_;
-        ScaleFunction s_;
+        std::shared_ptr<ScaleFunctionType> s_;
         Eigen::Vector3d ps_, pe_, re_, pse_, Rsre_;
         Eigen::Matrix3d Rs_, Re_;
         bool is_valid_;

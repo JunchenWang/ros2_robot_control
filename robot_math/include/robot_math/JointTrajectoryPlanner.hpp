@@ -4,6 +4,7 @@
 namespace robot_math
 {
 
+    template <typename ScaleFunctionType>
     class JointTrajectoryPlanner
     {
     public:
@@ -41,7 +42,7 @@ namespace robot_math
             double s, ds, dds;
             if (ss_.empty())
             {
-                s_.evaluate(t, s, ds, dds);
+                s_->evaluate(t, s, ds, dds);
                 for (std::size_t i = 0; i < n_; i++)
                 {
                     q[i] = q0_[i] + (q1_[i] - q0_[i]) * s;
@@ -53,7 +54,7 @@ namespace robot_math
             {
                 for (std::size_t i = 0; i < n_; i++)
                 {
-                    ss_[i].evaluate(t, s, ds, dds);
+                    ss_[i]->evaluate(t, s, ds, dds);
                     q[i] = q0_[i] + (q1_[i] - q0_[i]) * s;
                     dq[i] = (q1_[i] - q0_[i]) * ds;
                     ddq[i] = (q1_[i] - q0_[i]) * dds;
@@ -76,7 +77,8 @@ namespace robot_math
                     b = dq0[i] / (q1[i] - q0[i]);
                 }
                 double a = 2.0 / time_ / time_ * 5;
-                ss_[i].generate(time_, a, b);
+                ss_[i] = std::make_shared<ScaleFunctionType>();
+                ss_[i]->generate(time_, a, b);
             }
             is_valid_ = true;
         }
@@ -86,7 +88,8 @@ namespace robot_math
             q1_ = q1;
             n_ = q0.size();
             double a = 2.0 / time_ / time_ * 5;
-            s_.generate(time, a, 0);
+            s_ = std::make_shared<ScaleFunctionType>();
+            s_->generate(time, a, 0);
             time_ = time;
             ss_.clear();
             is_valid_ = true;
@@ -119,8 +122,8 @@ namespace robot_math
         double time_;
         double time_threshod_;
         std::size_t n_;
-        ScaleFunction s_;
-        std::vector<ScaleFunction> ss_;
+        std::shared_ptr<ScaleFunctionType> s_;
+        std::vector<std::shared_ptr<ScaleFunctionType>> ss_;
         std::vector<double> q0_, q1_;
         bool is_valid_;
     };
