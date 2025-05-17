@@ -34,6 +34,8 @@ namespace control_node
         void command_callback(const std::shared_ptr<robot_control_msgs::srv::ControlCommand::Request> request,
                               std::shared_ptr<robot_control_msgs::srv::ControlCommand::Response> response);
         bool activate_controller(const std::string &controller_name);
+        bool add_secondary_controller(const std::string &controller_name);
+        bool remove_secondary_controller(const std::string &controller_name);
         bool load_controller(const std::string &controller_name);
         void shutdown_robot();
         void read(const rclcpp::Time &t, const rclcpp::Duration &period);
@@ -65,6 +67,7 @@ namespace control_node
         bool is_publish_joint_state_;
         bool running_;
         realtime_tools::RealtimeBox<bool> running_box_;
+        realtime_tools::RealtimeBox<std::vector<controller_interface::ControllerInterface::SharedPtr>> secondary_controllers_box_;
         rclcpp::Time sim_start_time_;
         std::atomic<bool> keep_running_;
         std::shared_ptr<YAML::Node> config_;
