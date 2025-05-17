@@ -101,10 +101,7 @@ namespace control_node
 
     ControlManager::~ControlManager()
     {
-        for (auto &controller : controllers_)
-        {
-            controller->finalize();
-        }
+
     }
     bool ControlManager::remove_secondary_controller(const std::string &controller_name)
     {
@@ -112,17 +109,26 @@ namespace control_node
         int pos = name.rfind(":");
         name = name.substr(pos + 1);
         secondary_controllers_box_.set([=, &name](auto &value)
-                                           { 
-                                            auto it = std::find_if(value.begin(), value.end(), [=](auto &&v) { return v->get_node()->get_name() == name;});
-                                            if(it != value.end())
-                                            {
-                                                (*it)->get_node()->deactivate();
-                                                value.erase(it);
-                                            }
-                                            
+                                       {
+                                           auto it = std::find_if(value.begin(), value.end(), [=](auto &&v)
+                                                                  { return v->get_node()->get_name() == name; });
+                                           if (it != value.end())
+                                           {
+                                               (*it)->get_node()->deactivate();
+                                               value.erase(it);
                                            }
-                                        );
-        
+                                       });
+
+        return true;
+    }
+    bool ControlManager::clear_secondary_controller()
+    {
+        secondary_controllers_box_.set([this](auto &value)
+                                       {
+                                           std::for_each(value.begin(), value.end(), [=](auto &&v)
+                                                         { v->get_node()->deactivate(); });
+                                           value.clear();
+                                       });
         return true;
     }
     bool ControlManager::add_secondary_controller(const std::string &controller_name)
@@ -131,31 +137,30 @@ namespace control_node
         int pos = name.rfind(":");
         name = name.substr(pos + 1);
         bool ret;
-            active_controller_box_.get([=,&ret, &name](const auto &value) {
-                if(value == nullptr || value->get_node()->get_name() == name)
-                    ret = false;
-                else
-                    ret = true;
-
-            });
-        if(!ret)
+        active_controller_box_.get([=, &ret, &name](const auto &value)
+                                   {
+                                       if (value != nullptr && value->get_node()->get_name() == name)
+                                           ret = false;
+                                       else
+                                           ret = true;
+                                   });
+        if (!ret)
             return false;
 
         for (auto &controller : controllers_)
         {
-            
+
             if (controller->get_node()->get_name() == name)
             {
                 secondary_controllers_box_.set([=](auto &value)
-                                           { 
+                                               { 
                                             if(std::find(value.begin(), value.end(), controller) == value.end())
                                                 value.push_back(controller); 
-                                            controller->get_node()->activate();
-                                        });
+                                            controller->get_node()->activate(); });
                 return true;
             }
         }
-        
+
         return false;
     }
     bool ControlManager::load_controller(const std::string &controller_name)
@@ -263,6 +268,10 @@ namespace control_node
             response->result = activate_controller(request->cmd_params);
         else if (cmd == "load")
             response->result = load_controller(request->cmd_params);
+        else if (cmd == "add")
+            response->result = add_secondary_controller(request->cmd_params);
+        else if (cmd == "remove")
+            response->result = remove_secondary_controller(request->cmd_params);
     }
 
     int ControlManager::get_update_rate()
@@ -319,7 +328,7 @@ namespace control_node
 
         active_controller_->update(t, period);
         secondary_controllers_box_.try_get([&t, &period](const auto &value)
-                                        {
+                                           {
             for (auto &&controller : value)
             {
                 if (controller->get_node_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
@@ -488,17 +497,24 @@ namespace control_node
         robot_->get_node()->activate();
         RCLCPP_INFO(get_logger(), "waiting for controller to be activated...");
         std::stringstream ss;
-        for (auto &controller : controllers_)
+        for (auto &&controller : controllers_)
         {
             ss << controller->get_node()->get_name() << " ";
         }
         RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
-
+        std::stringstream ss2;
+        secondary_controllers_box_.get([this, &ss2](const auto &value) { 
+            for (auto &&controller : value)
+            {
+                ss2 << controller->get_node()->get_name() << " ";
+            } 
+        });
+        RCLCPP_INFO(get_logger(), "secondary controllers are: %s", ss2.str().c_str());
         do
         {
             std::this_thread::sleep_for(1s);
             read(this->now(), rclcpp::Duration::from_seconds(1.0));
-            active_controller_box_.get([=](auto const &value)
+            active_controller_box_.get([=](const auto &value)
                                        { active_controller_ = value; });
             if (!default_controller_.empty())
             {

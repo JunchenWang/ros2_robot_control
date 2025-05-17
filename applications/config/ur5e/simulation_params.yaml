@@ -12,6 +12,7 @@ control_node:
       - controllers::CartesianMotionController
       - controllers::CartesianTrajectoryController
       - controllers::ForwardController
+      - controllers::RealtimeTestController
     default_controller: ""
 
 SimulationRobot:
