@@ -95,6 +95,8 @@ namespace control_node
             running_box_ = false;
         };
         stop_service_ = create_service<std_srvs::srv::Empty>("~/stop", stop_callback);
+        
+        executor_->add_node(this->get_node_base_interface());
     }
 
     ControlManager::~ControlManager()

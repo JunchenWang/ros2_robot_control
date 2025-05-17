@@ -115,7 +115,6 @@ int main(int argc, char **argv)
             cm->shutdown_robot(); 
         });
     
-    executor->add_node(cm);
     executor->spin();
     cm_thread.reset();
     cm.reset();
