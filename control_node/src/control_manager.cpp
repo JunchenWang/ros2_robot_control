@@ -89,19 +89,11 @@ namespace control_node
         service_ = create_service<robot_control_msgs::srv::ControlCommand>("~/control_command",
                                                                            std::bind(&ControlManager::command_callback, this, std::placeholders::_1, std::placeholders::_2));
 
-        auto stop_callback = [=](const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
-                                 std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/)
-        {
-            running_box_ = false;
-        };
-        stop_service_ = create_service<std_srvs::srv::Empty>("~/stop", stop_callback);
-
         executor_->add_node(this->get_node_base_interface());
     }
 
     ControlManager::~ControlManager()
     {
-
     }
     bool ControlManager::remove_secondary_controller(const std::string &controller_name)
     {
@@ -116,19 +108,17 @@ namespace control_node
                                            {
                                                (*it)->get_node()->deactivate();
                                                value.erase(it);
-                                           }
-                                       });
+                                           } });
 
         return true;
     }
-    bool ControlManager::clear_secondary_controller()
+    bool ControlManager::clear_secondary_controllers()
     {
         secondary_controllers_box_.set([this](auto &value)
                                        {
                                            std::for_each(value.begin(), value.end(), [=](auto &&v)
                                                          { v->get_node()->deactivate(); });
-                                           value.clear();
-                                       });
+                                           value.clear(); });
         return true;
     }
     bool ControlManager::add_secondary_controller(const std::string &controller_name)
@@ -142,8 +132,7 @@ namespace control_node
                                        if (value != nullptr && value->get_node()->get_name() == name)
                                            ret = false;
                                        else
-                                           ret = true;
-                                   });
+                                           ret = true; });
         if (!ret)
             return false;
 
@@ -272,6 +261,13 @@ namespace control_node
             response->result = add_secondary_controller(request->cmd_params);
         else if (cmd == "remove")
             response->result = remove_secondary_controller(request->cmd_params);
+        else if (cmd == "clear")
+            response->result = clear_secondary_controllers();
+        else if (cmd == "stop")
+        {
+            running_box_ = false;
+            response->result = true;
+        }
     }
 
     int ControlManager::get_update_rate()
@@ -503,12 +499,12 @@ namespace control_node
         }
         RCLCPP_INFO(get_logger(), "available controllers are: %s", ss.str().c_str());
         std::stringstream ss2;
-        secondary_controllers_box_.get([this, &ss2](const auto &value) { 
+        secondary_controllers_box_.get([this, &ss2](const auto &value)
+                                       { 
             for (auto &&controller : value)
             {
                 ss2 << controller->get_node()->get_name() << " ";
-            } 
-        });
+            } });
         RCLCPP_INFO(get_logger(), "secondary controllers are: %s", ss2.str().c_str());
         do
         {

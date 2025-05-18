@@ -36,7 +36,7 @@ namespace control_node
         bool activate_controller(const std::string &controller_name);
         bool add_secondary_controller(const std::string &controller_name);
         bool remove_secondary_controller(const std::string &controller_name);
-        bool clear_secondary_controller();
+        bool clear_secondary_controllers();
         bool load_controller(const std::string &controller_name);
         void shutdown_robot();
         void read(const rclcpp::Time &t, const rclcpp::Duration &period);
