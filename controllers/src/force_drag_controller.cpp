@@ -67,7 +67,6 @@ namespace controllers
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            RCLCPP_ERROR(node_->get_logger(), "hehe");
             int dof = state_->get<double>("position").size();
             dq_filtered_ = std::vector<double>(dof, 0);
             ddq_filtered_ = std::vector<double>(dof, 0);
