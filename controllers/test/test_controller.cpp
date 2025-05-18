@@ -36,12 +36,10 @@ int main(int argc, char **argv)
   auto parameter = rcl_interfaces::msg::Parameter();
   auto request2 = std::make_shared<rcl_interfaces::srv::SetParametersAtomically::Request>();
 
-  auto client = node->create_client<rcl_interfaces::srv::SetParametersAtomically>("ForwardController2/set_parameters_atomically"); // E.g.: serviceName = "/turtlesim/set_parameters_atomically"
-
-  parameter.name = "test_param";                         // E.g.: parameter_name = "background_b"
-  parameter.value.type = 1;                                 //  bool = 1,    int = 2,        float = 3,     string = 4
-  parameter.value.bool_value = true; // .bool_value, .integer_value, .double_value, .string_value
-
+  auto client = node->create_client<rcl_interfaces::srv::SetParametersAtomically>("ForceDragController/set_parameters_atomically"); // E.g.: serviceName = "/turtlesim/set_parameters_atomically"
+  parameter.name = "offset";                         // E.g.: parameter_name = "background_b"
+  parameter.value.type = 8;
+  parameter.value.set__double_array_value({1, 2, 3, 4, 5, 6});
   request2->parameters.push_back(parameter);
 
   while (!client->wait_for_service(1s))

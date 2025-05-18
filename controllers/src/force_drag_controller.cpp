@@ -31,12 +31,11 @@ namespace controllers
         }
         void on_param_changed(const rcl_interfaces::msg::ParameterEvent &parameter_event) override
         {
-            if(parameter_event.node != std::string("/") + node_->get_name())
-                return;
             for (const auto &p : parameter_event.new_parameters)
             {
                 if(p.name == "offset")
                 {
+                    RCLCPP_INFO(node_->get_logger(), "add offset");
                     offset_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
                 }
                 else if(p.name == "M")
@@ -50,8 +49,10 @@ namespace controllers
             };
             for (const auto &p : parameter_event.changed_parameters)
             {
+
                 if(p.name == "offset")
                 {
+                    RCLCPP_INFO(node_->get_logger(), "change offset");
                     offset_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
                 }
                 else if(p.name == "M")

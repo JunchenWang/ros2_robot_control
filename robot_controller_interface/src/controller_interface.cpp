@@ -1,5 +1,6 @@
 #include "robot_controller_interface/controller_interface.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
+#include <regex>
 namespace controller_interface
 {
     ControllerInterface::ControllerInterface() : command_(nullptr), state_(nullptr), robot_(nullptr)
@@ -7,12 +8,12 @@ namespace controller_interface
     }
     void ControllerInterface::on_param_changed(const rcl_interfaces::msg::ParameterEvent &parameter_event)
     {
-        if(parameter_event.node != std::string("/") + node_->get_name())
-            return;
-        RCLCPP_INFO(
-            node_->get_logger(), "Received parameter event from node \"%s\"",
-            parameter_event.node.c_str());
+        // RCLCPP_INFO(
+        // node_->get_logger(), "Received parameter event from node \"%s\"",
+        // parameter_event.node.c_str());
     }
+
+    
     int ControllerInterface::initialize(const std::string &name,
                                         const std::string &name_space, const rclcpp::NodeOptions &options,
                                         bool lcn_service)
@@ -42,8 +43,14 @@ namespace controller_interface
             std::bind(&ControllerInterface::on_error, this, std::placeholders::_1));
 
         param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node_);
-        param_event_cb_handle_ = param_subscriber_->add_parameter_event_callback(
-            std::bind(&ControllerInterface::on_param_changed, this, std::placeholders::_1));
+        auto cb = [this](const rcl_interfaces::msg::ParameterEvent & parameter_event) {
+            std::regex re(std::string("/?") + node_->get_name()); 
+            if (std::regex_match(parameter_event.node, re))
+            {
+                on_param_changed(parameter_event);
+            }     
+        };
+        param_event_cb_handle_ = param_subscriber_->add_parameter_event_callback(cb);
         auto state = node_->configure();
         if (state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
         {
@@ -77,11 +84,6 @@ namespace controller_interface
 
     CallbackReturn ControllerInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
-        // if (!description_.empty())
-        // {
-        //     robot_ = robot_math::urdf_to_robot(description_, joint_names_);
-        //     return CallbackReturn::SUCCESS;
-        // }
         return CallbackReturn::SUCCESS;
     }
 

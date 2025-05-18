@@ -69,7 +69,7 @@ namespace controllers
                         Eigen::Vector6d V, dV;
                         trajectory->evaluate(dt.seconds(), T, V, dV);
                         cmd = robot_math::tform_to_pose(T);
-                        visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
+                        //visual_tools_->publishMarker(T.block(0, 3, 3, 1), "base", 0.5);
                     }
                 }
             }
@@ -80,7 +80,7 @@ namespace controllers
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
-            visual_tools_ = std::make_shared<ROS2VisualTools>(node_);
+            //visual_tools_ = std::make_shared<ROS2VisualTools>(node_);
             return CallbackReturn::SUCCESS;
         }
         CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override
@@ -132,7 +132,7 @@ namespace controllers
         std::vector<double> q0_;
         std::vector<double> pose0_;
         rclcpp::Time last_time_;
-        std::shared_ptr<ROS2VisualTools> visual_tools_;
+        //std::shared_ptr<ROS2VisualTools> visual_tools_;
         rclcpp::CallbackGroup::SharedPtr call_back_group_;
     };
 
