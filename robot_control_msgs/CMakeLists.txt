@@ -13,7 +13,6 @@ set(msg_files
 )
 
 set(srv_files
-  srv/ActivateController.srv
   srv/ControlCommand.srv
 )
 
