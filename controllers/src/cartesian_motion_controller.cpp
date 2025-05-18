@@ -18,7 +18,7 @@ namespace controllers
         using ACTION = robot_control_msgs::action::RobotMotion;
         using GoalHandle = rclcpp_action::ServerGoalHandle<ACTION>;
 
-        CartesianMotionController() :  speed_(1), planner(0.02)
+        CartesianMotionController() :  speed_(0.5), planner(0.02)
         {
         }
         void update(const rclcpp::Time & t, const rclcpp::Duration & period) override
@@ -97,6 +97,7 @@ namespace controllers
         {
             real_time_buffer_.reset();
             planner.reset();
+            node_->get_parameter_or<double>("speed", speed_, 0.5);
             auto handle_goal = [this](const rclcpp_action::GoalUUID &uuid,
                                       std::shared_ptr<const ACTION::Goal> goal)
             {

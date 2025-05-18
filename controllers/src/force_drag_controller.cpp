@@ -29,7 +29,25 @@ namespace controllers
 
             return CallbackReturn::SUCCESS;
         }
+        void on_param_changed(const rcl_interfaces::msg::ParameterEvent &parameter_event) override
+        {
 
+            for (const auto &p : parameter_event.changed_parameters)
+            {
+                if(p.name == "offset")
+                {
+                    offset_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
+                }
+                else if(p.name == "M")
+                {
+                    M_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
+                }
+                else if(p.name == "B")
+                {
+                    B_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
+                }
+            };
+        }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
             int dof = state_->get<double>("position").size();
@@ -44,22 +62,7 @@ namespace controllers
             node_->get_parameter_or<std::vector<double>>("sensor_pose", sensor_pose, {0, 0, 0, 0, 0, 0});
             node_->get_parameter_or<std::vector<double>>("tcp_pose", tcp_pose, {0, 0, 0, 0, 0, 0});
             node_->get_parameter_or<double>("mass", mass_, 0.0);
-            param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node_);
-            cb_handles_.clear();
-            // Set a callback for this node's integer parameter, "an_int_param"
-            cb_handles_.push_back(param_subscriber_->add_parameter_callback("offset", [this](const rclcpp::Parameter &p)
-                                                                            {
-                offset_in_box_ = p.as_double_array();
-                RCLCPP_INFO(node_->get_logger(), "change offset"); }));
-            cb_handles_.push_back(param_subscriber_->add_parameter_callback("M", [this](const rclcpp::Parameter &p)
-                                                                            {
-                M_in_box_ = p.as_double_array();
-                RCLCPP_INFO(node_->get_logger(), "change M"); }));
-            cb_handles_.push_back(param_subscriber_->add_parameter_callback("B", [this](const rclcpp::Parameter &p)
-                                                                            {
-                B_in_box_ = p.as_double_array();
-                RCLCPP_INFO(node_->get_logger(), "change B"); }));
-
+            
             offset_in_box_ = offset_;
             M_in_box_ = M_;
             B_in_box_ = B_;
@@ -95,7 +98,7 @@ namespace controllers
             auto &dq = state_->get<double>("velocity");
             auto &cmd = command_->get<double>("velocity");
             auto &mode = command_->get<int>("mode");
-            mode[0] = 2;// speed control;
+            mode[0] = 2; // speed control;
             offset_in_box_.try_get([=](auto const &value)
                                    { offset_ = value; });
             M_in_box_.try_get([=](auto const &value)
@@ -153,9 +156,6 @@ namespace controllers
         std::shared_ptr<MovingFilter<double>> f_filter_, dq_filter_, ddq_filter_;
         std::vector<double> dq_filtered_, ddq_filtered_;
         std::vector<double> f_tol_;
-
-        std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
-        std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> cb_handles_;
         rclcpp::Service<std_srvs::srv::Empty>::SharedPtr offsetting_service_;
     };
 

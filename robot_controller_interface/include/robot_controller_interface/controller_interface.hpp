@@ -12,11 +12,9 @@ namespace controller_interface
     {
     public:
         using SharedPtr = std::shared_ptr<ControllerInterface>;
-
-        virtual ~ControllerInterface() {}
-
         ControllerInterface();
-
+        virtual ~ControllerInterface() {}
+        virtual void on_param_changed(const rcl_interfaces::msg::ParameterEvent & parameter_event);
         const std::vector<double> &get_internal_state() { return internal_state_; }
 
         // for simulation only
@@ -65,6 +63,8 @@ namespace controller_interface
         const std::map<std::string, const hardware_interface::StateInterface*>* com_state_; // compoents' state
         std::vector<double> internal_state_; // e.g. integration of state
         int update_rate_;
+        std::shared_ptr<rclcpp::ParameterEventCallbackHandle> param_event_cb_handle_;
+        std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
     };
 
 } // namespace controller_interface

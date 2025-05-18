@@ -5,6 +5,20 @@ namespace controller_interface
     ControllerInterface::ControllerInterface() : command_(nullptr), state_(nullptr), robot_(nullptr)
     {
     }
+    void ControllerInterface::on_param_changed(const rcl_interfaces::msg::ParameterEvent &parameter_event)
+    {
+        RCLCPP_INFO(
+            node_->get_logger(), "Received parameter event from node \"%s\"",
+            parameter_event.node.c_str());
+
+        for (const auto &p : parameter_event.changed_parameters)
+        {
+            RCLCPP_INFO(
+                node_->get_logger(), "Inside event: \"%s\" changed to %s",
+                p.name.c_str(),
+                rclcpp::Parameter::from_parameter_msg(p).value_to_string().c_str());
+        };
+    }
     int ControllerInterface::initialize(const std::string &name,
                                         const std::string &name_space, const rclcpp::NodeOptions &options,
                                         bool lcn_service)
@@ -32,7 +46,10 @@ namespace controller_interface
 
         node_->register_on_error(
             std::bind(&ControllerInterface::on_error, this, std::placeholders::_1));
-
+            
+        param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node_);
+        param_event_cb_handle_ = param_subscriber_->add_parameter_event_callback(
+            std::bind(&ControllerInterface::on_param_changed, this, std::placeholders::_1));
         auto state = node_->configure();
         if (state.id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
         {
@@ -43,12 +60,12 @@ namespace controller_interface
         return 0;
     }
 
-    void ControllerInterface::loan_interface( int update_rate,
-                                              const robot_math::Robot *robot,
-                                              hardware_interface::CommandInterface *command,
-                                              const hardware_interface::StateInterface *state,
-                                              std::map<std::string, hardware_interface::CommandInterface*>* com_command,
-                                              const std::map<std::string, const hardware_interface::StateInterface*>* com_state)
+    void ControllerInterface::loan_interface(int update_rate,
+                                             const robot_math::Robot *robot,
+                                             hardware_interface::CommandInterface *command,
+                                             const hardware_interface::StateInterface *state,
+                                             std::map<std::string, hardware_interface::CommandInterface *> *com_command,
+                                             const std::map<std::string, const hardware_interface::StateInterface *> *com_state)
     {
         update_rate_ = update_rate;
         command_ = command;
