@@ -31,7 +31,23 @@ namespace controllers
         }
         void on_param_changed(const rcl_interfaces::msg::ParameterEvent &parameter_event) override
         {
-
+            if(parameter_event.node != std::string("/") + node_->get_name())
+                return;
+            for (const auto &p : parameter_event.new_parameters)
+            {
+                if(p.name == "offset")
+                {
+                    offset_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
+                }
+                else if(p.name == "M")
+                {
+                    M_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
+                }
+                else if(p.name == "B")
+                {
+                    B_in_box_ = rclcpp::Parameter::from_parameter_msg(p).as_double_array();
+                }
+            };
             for (const auto &p : parameter_event.changed_parameters)
             {
                 if(p.name == "offset")
@@ -50,6 +66,7 @@ namespace controllers
         }
         CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override
         {
+            RCLCPP_ERROR(node_->get_logger(), "hehe");
             int dof = state_->get<double>("position").size();
             dq_filtered_ = std::vector<double>(dof, 0);
             ddq_filtered_ = std::vector<double>(dof, 0);

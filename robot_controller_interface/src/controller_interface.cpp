@@ -7,17 +7,11 @@ namespace controller_interface
     }
     void ControllerInterface::on_param_changed(const rcl_interfaces::msg::ParameterEvent &parameter_event)
     {
+        if(parameter_event.node != std::string("/") + node_->get_name())
+            return;
         RCLCPP_INFO(
             node_->get_logger(), "Received parameter event from node \"%s\"",
             parameter_event.node.c_str());
-
-        for (const auto &p : parameter_event.changed_parameters)
-        {
-            RCLCPP_INFO(
-                node_->get_logger(), "Inside event: \"%s\" changed to %s",
-                p.name.c_str(),
-                rclcpp::Parameter::from_parameter_msg(p).value_to_string().c_str());
-        };
     }
     int ControllerInterface::initialize(const std::string &name,
                                         const std::string &name_space, const rclcpp::NodeOptions &options,
@@ -46,7 +40,7 @@ namespace controller_interface
 
         node_->register_on_error(
             std::bind(&ControllerInterface::on_error, this, std::placeholders::_1));
-            
+
         param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(node_);
         param_event_cb_handle_ = param_subscriber_->add_parameter_event_callback(
             std::bind(&ControllerInterface::on_param_changed, this, std::placeholders::_1));

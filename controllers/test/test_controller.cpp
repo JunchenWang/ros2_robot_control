@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("test_controller");
   auto controller_client = node->create_client<robot_control_msgs::srv::ControlCommand>("control_node/control_command");
-  if(!controller_client->wait_for_service(1s))
+  if (!controller_client->wait_for_service(1s))
   {
     RCLCPP_ERROR(node->get_logger(), "Service not available after waiting");
     rclcpp::shutdown();
@@ -32,6 +32,29 @@ int main(int argc, char **argv)
     rclcpp::shutdown();
     return 1;
   }
+
+  auto parameter = rcl_interfaces::msg::Parameter();
+  auto request2 = std::make_shared<rcl_interfaces::srv::SetParametersAtomically::Request>();
+
+  auto client = node->create_client<rcl_interfaces::srv::SetParametersAtomically>("ForwardController2/set_parameters_atomically"); // E.g.: serviceName = "/turtlesim/set_parameters_atomically"
+
+  parameter.name = "test_param";                         // E.g.: parameter_name = "background_b"
+  parameter.value.type = 1;                                 //  bool = 1,    int = 2,        float = 3,     string = 4
+  parameter.value.bool_value = true; // .bool_value, .integer_value, .double_value, .string_value
+
+  request2->parameters.push_back(parameter);
+
+  while (!client->wait_for_service(1s))
+  {
+    if (!rclcpp::ok())
+    {
+      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+      rclcpp::shutdown();
+      return 1;
+    }
+    RCLCPP_INFO_STREAM(node->get_logger(), "service "  << " not available, waiting again...");
+  }
+  result = rclcpp::spin_until_future_complete(node, client->async_send_request(request2));
 
   // auto publisher = node->create_publisher<std_msgs::msg::Float64MultiArray>("ForwardController/commands", 10);
   // auto start = node->now();
