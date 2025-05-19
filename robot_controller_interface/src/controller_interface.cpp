@@ -57,7 +57,6 @@ namespace controller_interface
             RCLCPP_INFO(node_->get_logger(), "%s initilized!", name.c_str());
             return 1;
         }
-
         return 0;
     }
 

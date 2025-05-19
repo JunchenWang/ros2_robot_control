@@ -11,40 +11,40 @@
 #include <fstream>
 #include "rclcpp/time.hpp"
 
-Subscriber::Subscriber(MainWindow *wnd) : Node("robot_monitor"), mainWnd(wnd), start_time(std::chrono::nanoseconds(this->now().nanoseconds()))
-{
-    auto topic_callback =
-        [this](sensor_msgs::msg::JointState::SharedPtr msg) -> void
-    {
-        // RCLCPP_INFO(this->get_logger(), "I heard: '%f'", 1);
-        rclcpp::Time time = msg->header.stamp;
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> msg_time(std::chrono::nanoseconds(time.nanoseconds()));
-        if(msg_time < start_time)
-            mainWnd->pushMessage(time.seconds(), msg);
-        else
-            mainWnd->pushMessage(std::chrono::duration<double>(msg_time - start_time).count(), msg);
-    };
-    subscription_ =
-        this->create_subscription<sensor_msgs::msg::JointState>("joint_states", rclcpp::SensorDataQoS(), topic_callback);
+// Subscriber::Subscriber(MainWindow *wnd) : Node("robot_monitor"), mainWnd(wnd), start_time(std::chrono::nanoseconds(this->now().nanoseconds()))
+// {
+//     auto topic_callback =
+//         [this](sensor_msgs::msg::JointState::SharedPtr msg) -> void
+//     {
+//         // RCLCPP_INFO(this->get_logger(), "I heard: '%f'", 1);
+//         rclcpp::Time time = msg->header.stamp;
+//         std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> msg_time(std::chrono::nanoseconds(time.nanoseconds()));
+//         if(msg_time < start_time)
+//             mainWnd->pushMessage(time.seconds(), msg);
+//         else
+//             mainWnd->pushMessage(std::chrono::duration<double>(msg_time - start_time).count(), msg);
+//     };
+//     subscription_ =
+//         this->create_subscription<sensor_msgs::msg::JointState>("joint_states", rclcpp::SensorDataQoS(), topic_callback);
 
 
-    auto service_callback =
-        [this](const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
-                                             std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/) -> void
-    {
-        start_time = std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>(std::chrono::nanoseconds(this->now().nanoseconds()));
-        mainWnd->clear();
-    };
+//     auto service_callback =
+//         [this](const std::shared_ptr<std_srvs::srv::Empty::Request> /*request*/,
+//                                              std::shared_ptr<std_srvs::srv::Empty::Response> /*response*/) -> void
+//     {
+//         start_time = std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>(std::chrono::nanoseconds(this->now().nanoseconds()));
+//         mainWnd->clear();
+//     };
 
-    service_ =
-        this->create_service<std_srvs::srv::Empty>("~/clear", service_callback);
-}
+//     service_ =
+//         this->create_service<std_srvs::srv::Empty>("~/clear", service_callback);
+// }
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), node(new Subscriber(this))
+    : QMainWindow(parent), ui(new Ui::MainWindow), first_time_(true)
 {
     ui->setupUi(this);
-    QString titles[] = {"position", "velocity", "effort", "acc"};
+    QString titles[] = {"1", "2", "3", "4"};
     ui->gridLayout->setContentsMargins(0, 0, 0, 0);
     for (int i = 0; i < 4; i++)
     {
@@ -77,10 +77,31 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionSave_Data, &QAction::triggered, this, &MainWindow::log2file);
     connect(&timer, &QTimer::timeout, this, &MainWindow::onTimer);
 
+    rclcpp::NodeOptions node_options;
+    node_options.allow_undeclared_parameters(true);
+    node_options.automatically_declare_parameters_from_overrides(true);
+    node_ = std::make_shared<rclcpp::Node>("robot_monitor", "", node_options);
+    start_time_ = node_->now();
+    auto topic_callback =
+        [this](robot_control_msgs::msg::RobotState::SharedPtr msg) -> void
+    {
+        // RCLCPP_INFO(this->get_logger(), "I heard: '%f'", 1);
+        rclcpp::Time time = msg->header.stamp;
+        if(first_time_)
+        {
+            start_time_ = time;
+            first_time_ = false;
+        }
+        pushMessage((time - start_time_).seconds(), msg);
+    };
+    subscription_ = node_->create_subscription<robot_control_msgs::msg::RobotState>("robot_states", rclcpp::SensorDataQoS(), topic_callback);
+
+
+
     tt = std::make_shared<std::thread>([this]()
                                        { 
                                         auto executor = std::make_shared<rclcpp::executors::StaticSingleThreadedExecutor>();
-                                        executor->add_node(node);
+                                        executor->add_node(node_);
                                         executor->spin(); 
                                         this->close();
                                         });
@@ -95,10 +116,10 @@ void MainWindow::log2file()
     std::lock_guard<std::mutex> gard(mtx);
     for (std::size_t k = 0; k < frames.size(); k++)
     {
-        fout << frames[k].t << "\n";
+        fout << frames_time[k] << "\n";
         for (int i = 0; i < 4; i++)
             for (int j = 0; j < 7; j++)
-                fout << frames[k].q[7 * i + j] << (j == 6 ? "\n" : " ");
+                fout << frames[k][7 * i + j] << (j == 6 ? "\n" : " ");
 
         fout << "\n";
     }
@@ -227,34 +248,10 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::pushMessage(double t, sensor_msgs::msg::JointState::SharedPtr msg)
+void MainWindow::pushMessage(double t, robot_control_msgs::msg::RobotState::SharedPtr msg)
 {
-    static Msg last_pack;
-    static bool flag = 0;
-    static double last_t = 0;
     // update joint state message and dynamic joint state message
-    int n = msg->name.size();
-    Msg pack;
-    pack.t = t;
-    // double q[28] = {0};
-    for (int i = 0; i < 7; i++)
-        i < n && !std::isnan(msg->position[i]) ? pack.q[i] = msg->position[i] : pack.q[i];
-    for (int i = 0; i < 7 && msg->velocity.size() > 0; i++)
-        i < n && !std::isnan(msg->velocity[i]) ? pack.q[i + 7] = msg->velocity[i] : pack.q[i];
-    for (int i = 0; i < 7 && msg->effort.size() > 0; i++)
-        i < n && !std::isnan(msg->effort[i]) ? pack.q[i + 14] = msg->effort[i] : pack.q[i];
-
-    if (flag)
-    {
-        for (int i = 0; i < 7; i++)
-            pack.q[21 + i] = (pack.q[7 + i] - last_pack.q[7 + i]) / (t - last_t);
-    }
-    else
-    {
-        flag = 1;
-    }
-    last_t = t;
-    last_pack = pack;
+    double *q = &(msg->robot_state[0]);
 
     while (!mtx.try_lock())
     {
@@ -267,7 +264,7 @@ void MainWindow::pushMessage(double t, sensor_msgs::msg::JointState::SharedPtr m
         {
             for (int i = 0; i < 7; i++)
             {
-                m_buffer[m][i].append(QPointF(t, pack.q[m * 7 + i]));
+                m_buffer[m][i].append(QPointF(t, q[m * 7 + i]));
             }
         }
     }
@@ -276,11 +273,11 @@ void MainWindow::pushMessage(double t, sensor_msgs::msg::JointState::SharedPtr m
         for (int m = 0; m < 4; m++)
         {
             for (int i = 0; i < 7; i++)
-                m_buffer[m][i].removeFirst(), m_buffer[m][i].append(QPointF(t, pack.q[m * 7 + i]));
+                m_buffer[m][i].removeFirst(), m_buffer[m][i].append(QPointF(t, q[m * 7 + i]));
         }
     }
     if (isLogging)
-        frames.push_back(pack);
+        frames.push_back(msg->robot_state), frames_time.push_back(t);
 
     mtx.unlock();
 }

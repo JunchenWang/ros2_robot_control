@@ -32,8 +32,10 @@
   <class type="controllers::CartesianMotionController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a Cartesian motion controller plugin.</description>
   </class>
-    <class type="controllers::CartesianTrajectoryController" base_class_type="controller_interface::ControllerInterface">
+  <class type="controllers::CartesianTrajectoryController" base_class_type="controller_interface::ControllerInterface">
     <description>This is a CartesianTrajectoryController plugin.</description>
   </class>
-  
+  <class type="controllers::RobotStateBroadcaster" base_class_type="controller_interface::ControllerInterface">
+    <description>This is a RobotStateBroadcaster plugin.</description>
+  </class>
 </library>

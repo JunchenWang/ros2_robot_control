@@ -10,7 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
-find_package(sensor_msgs REQUIRED)
+find_package(robot_control_msgs REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Charts)
 
 qt_standard_project_setup()
@@ -24,7 +24,7 @@ add_executable(robot_monitor
                   src/mainwindow.ui)
 
 
-ament_target_dependencies(robot_monitor rclcpp std_msgs sensor_msgs std_srvs)
+ament_target_dependencies(robot_monitor rclcpp std_msgs robot_control_msgs std_srvs)
 
 target_link_libraries(robot_monitor Qt6::Core Qt6::Widgets Qt6::Charts)
 

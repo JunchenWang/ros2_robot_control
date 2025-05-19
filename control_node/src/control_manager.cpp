@@ -45,7 +45,7 @@ namespace control_node
         robot_description_ = this->get_parameter_or<std::string>("robot_description", "");
         if (robot_description_.empty())
             throw std::runtime_error("robot description file is empty!");
-
+        
         std::string robot_class = this->get_parameter_or<std::string>("robot", "");
         std::vector<std::string> controller_class = this->get_parameter_or<std::vector<std::string>>("controllers", std::vector<std::string>());
         default_controller_ = this->get_parameter_or<std::string>("default_controller", "");

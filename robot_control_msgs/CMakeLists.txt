@@ -9,6 +9,7 @@ find_package(std_msgs REQUIRED)
 
 
 set(msg_files
+  msg/RobotState.msg
   msg/VectorData.msg
 )
 

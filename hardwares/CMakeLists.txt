@@ -31,7 +31,7 @@ pluginlib_export_plugin_description_file(robot_hardware_interface plugins.xml)
 
 file(GLOB_RECURSE srcs src/*.cpp src/sr/*.cpp)
 
-add_library(hardwares 
+add_library(hardwares SHARED
             ${srcs})
 
 # add_library(hardwares::hardwares ALIAS hardwares)
