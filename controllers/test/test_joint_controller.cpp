@@ -33,6 +33,18 @@ int main(int argc, char **argv)
     rclcpp::shutdown();
     return 1;
   }
+
+  request->cmd_name = "add";
+  request->cmd_params = "RobotStateBroadcaster";
+  auto future2 = controller_client->async_send_request(request);
+  result = rclcpp::spin_until_future_complete(node, future2);
+  if (result != rclcpp::FutureReturnCode::SUCCESS || future2.get()->result != true)
+  {
+    RCLCPP_ERROR(node->get_logger(), "Failed to active controller");
+    rclcpp::shutdown();
+    return 1;
+  }
+
   if (!client->wait_for_action_server(1s))
   {
     RCLCPP_ERROR(node->get_logger(), "Action server not available after waiting");
