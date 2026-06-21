@@ -32,14 +32,7 @@ namespace hardware_interface
                             std::function<std::vector<double>(double, const std::vector<double> &, const Eigen::MatrixXd &)> controller);
         void write(const rclcpp::Time &t, const rclcpp::Duration &period) override;
         void read(const rclcpp::Time &t, const rclcpp::Duration &period) override;
-        // for simulation only
-        void write_state(const std::vector<double> &state, const std::vector<double> &/*force*/)
-        {
-            std::copy(state.begin(), state.begin() + dof_, state_.get<double>("position").begin());
-            std::copy(state.begin() + dof_, state.begin() + 2 * dof_, state_.get<double>("velocity").begin());
-            //components_["ft_sensor"]->write_state("force", force);
-            //state_["force"] = force;
-        }
+   
         std::map<std::string, hardware_interface::CommandInterface*> &
         get_com_command_interface() 
         { 

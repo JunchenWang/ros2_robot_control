@@ -101,10 +101,7 @@ int main(int argc, char **argv)
                 while (cm->is_keep_running())
                 {
                     cm->prepare_loop();
-                    if (cm->is_simulation())
-                        cm->start_simulation(10);
-                    else
-                        cm->control_loop();
+                    cm->control_loop();
                     cm->end_loop();
                 }
             }

@@ -1,19 +1,15 @@
 #include "control_node/control_manager.h"
 #include "lifecycle_msgs/msg/state.hpp"
-#include <boost/numeric/odeint.hpp>
 #include "rclcpp/rclcpp.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 using namespace std::chrono_literals;
-using namespace boost::numeric::odeint;
+
 namespace control_node
 {
     ControlManager::ControlManager(std::shared_ptr<rclcpp::Executor> executor,
                                    const std::string &node_name, const std::string &name_space, const rclcpp::NodeOptions &option)
         : rclcpp::Node(node_name, name_space, option),
-          executor_(executor),
-          running_(false),
-          running_box_(false),
-          keep_running_(true)
+          executor_(executor)
     {
         auto parameter_file = this->get_parameter_or<std::string>("parameters", "");
         if (!parameter_file.empty())
@@ -34,10 +30,8 @@ namespace control_node
             }
         }
         update_rate_ = this->get_parameter_or<int>("update_rate", 500);
-        is_simulation_ = this->get_parameter_or<bool>("simulation", true);
-        is_sim_real_time_ = this->get_parameter_or<bool>("sim_real_time", true);
         is_publish_joint_state_ = this->get_parameter_or<bool>("publish_joint_state", true);
-        if (is_publish_joint_state_ || is_simulation_)
+        if (is_publish_joint_state_)
         {
             joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::SensorDataQoS());
             real_time_publisher_ = std::make_shared<realtime_tools::RealtimePublisher<sensor_msgs::msg::JointState>>(joint_state_publisher_);
@@ -188,12 +182,12 @@ namespace control_node
     }
     void ControlManager::interrupt()
     {
-        keep_running_ = false;
-        running_box_ = false;
+        keep_running_.store(false);
+        running_.store(false, std::memory_order_relaxed);
     }
     bool ControlManager::is_keep_running()
     {
-        return keep_running_;
+        return keep_running_.load();
     }
     bool ControlManager::activate_controller(const std::string &controller_name)
     {
@@ -207,7 +201,7 @@ namespace control_node
 
             do
             {
-                running_box_.set(false);
+                running_.store(false, std::memory_order_relaxed);
                 std::this_thread::sleep_for(5ms);
                 active_controller_box_.get([=, &running](const auto &value)
                                            {
@@ -265,7 +259,7 @@ namespace control_node
             response->result = clear_secondary_controllers();
         else if (cmd == "stop")
         {
-            running_box_ = false;
+            running_.store(false, std::memory_order_relaxed);
             response->result = true;
         }
     }
@@ -346,114 +340,16 @@ namespace control_node
         robot_->write(t, period);
     }
 
-    Eigen::MatrixXd ControlManager::simulation_external_force(double /*t*/)
-    {
-        return Eigen::MatrixXd::Zero(6, robot_->get_dof());
-    }
-    void ControlManager::simulation_observer(const std::vector<double> &x, double t)
-    {
-        // std::cerr << t << " : ";
-        // for (int i = 0; i < dof_; i++)
-        //     std::cerr << x[i] << " ";
-        // std::cerr << "\n";
-        // std::copy(x.begin(), x.begin() + dof_, joint_position_.begin());
-        // std::copy(x.begin() + dof_, x.begin() + 2 * dof_, joint_velocity_.begin());
-        int n = robot_->get_dof();
-        if (t == 0)
-        {
-            Eigen::MatrixXd f_ext = simulation_external_force(t);
-            simulation_controller(t, x, f_ext);
-        }
-        auto states = std::make_shared<sensor_msgs::msg::JointState>();
-        states->name = robot_->get_joint_names();
-        std::copy(x.begin(), x.begin() + n, std::back_inserter(states->position));
-        std::copy(x.begin() + n, x.begin() + 2 * n, std::back_inserter(states->velocity));
-        states->effort = robot_->get_command_interface().get<double>("torque");
-        auto time = sim_start_time_ + rclcpp::Duration::from_seconds(t); //(std::chrono::duration<double>(t));
-        // auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(t));
-        states->header.stamp = time; // rclcpp::Time(nano_time.count());//this->now(); // ;
-        // joint_state_publisher_->publish(*states);
-        if (real_time_publisher_->trylock())
-        {
-            real_time_publisher_->msg_ = *states;
-            real_time_publisher_->unlockAndPublish();
-        }
-        // wait for real time elapse
-        if (is_sim_real_time_)
-        {
-            auto const nano_time = std::chrono::nanoseconds(time.nanoseconds());
-            std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> until_time{nano_time};
-            std::this_thread::sleep_until(until_time);
-        }
-    }
-
-    bool ControlManager::is_simulation()
-    {
-        return is_simulation_;
-    }
-
-    void ControlManager::start_simulation(double time)
-    {
-        if (!running_)
-            return;
-
-        typedef std::vector<double> state_type;
-
-        auto f_external = std::bind(&ControlManager::simulation_external_force, this,
-                                    std::placeholders::_1);
-
-        auto controller = std::bind(&ControlManager::simulation_controller, this,
-                                    std::placeholders::_1,
-                                    std::placeholders::_2,
-                                    std::placeholders::_3);
-
-        auto dynamics = std::bind(&hardware_interface::RobotInterface::robot_dynamics, robot_.get(),
-                                  std::placeholders::_1,
-                                  std::placeholders::_2,
-                                  std::placeholders::_3,
-                                  std::cref(f_external), std::cref(controller));
-
-        auto observer = std::bind(&ControlManager::simulation_observer, this,
-                                  std::placeholders::_1,
-                                  std::placeholders::_2);
-
-        // Error stepper, used to create the controlled stepper
-        typedef runge_kutta_cash_karp54<state_type> error_stepper_type;
-        // typedef controlled_runge_kutta<error_stepper_type> controlled_stepper_type;
-        state_type x0(2 * robot_->get_dof(), 0);
-        sim_start_time_ = this->now();
-        integrate_adaptive(make_controlled(1.0e-10, 1.0e-6, error_stepper_type()), dynamics, x0, 0.0, time, 0.001, observer);
-        // size_t steps = integrate_adaptive(runge_kutta4<std::vector<double>>(), dynamics, x0, 0.0, time, 0.01, observer);
-    }
-
-    std::vector<double> ControlManager::simulation_controller(double t, const std::vector<double> &x, const Eigen::MatrixXd &fext)
-    {
-        int n = robot_->get_dof();
-        std::vector<double> f{fext(0, n - 1), fext(1, n - 1), fext(2, n - 1),
-                              fext(3, n - 1), fext(4, n - 1), fext(5, n - 1)};
-        robot_->write_state(x, f);
-        auto std_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(t));
-        auto time = rclcpp::Time(std_time.count());
-        auto period = rclcpp::Duration(std::chrono::duration<double>(0.0));
-        active_controller_->write_state(x.begin() + 2 * n, x.end());
-        active_controller_->update(time, period);
-        auto cmd = robot_->get_command_interface().get<double>("torque");
-        cmd.insert(cmd.end(), active_controller_->get_internal_state().begin(), active_controller_->get_internal_state().end());
-        return cmd;
-    }
     void ControlManager::control_loop()
     {
         // for calculating sleep time
-        // double dt = 1.0 / update_rate_;
-        auto const period = std::chrono::nanoseconds(1'000'000'000 / update_rate_);
-        auto const cm_now = std::chrono::nanoseconds(this->now().nanoseconds());
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>
-            next_iteration_time{cm_now};
-
-        rclcpp::Time previous_time = this->now();
-        rclcpp::Duration measured_period(0, 0);
+        // double dt = 1.0 / update_rate_;   
         bool flag = false;
-        while (running_ && !robot_->is_stop()) // give robot a change to stop running
+        auto const period = std::chrono::nanoseconds(1'000'000'000 / update_rate_);
+        rclcpp::Time previous_time;
+        rclcpp::Duration measured_period(0, 0);
+        auto next_iteration_time = std::chrono::steady_clock::now();
+        while (running_.load(std::memory_order_relaxed)) // give robot a change to stop running
         {
             // calculate measured period
             auto current_time = this->now();
@@ -467,13 +363,16 @@ namespace control_node
             read(current_time, measured_period);
             update(current_time, measured_period);
             write(current_time, measured_period);
-            // get running state from box
-            running_box_.try_get([this](const auto &value)
-                                 { running_ = value; });
 
             // wait until we hit the end of the period
             next_iteration_time += period;
-            std::this_thread::sleep_until(next_iteration_time);
+            const auto steady_now = std::chrono::steady_clock::now();
+            if (steady_now < next_iteration_time) {
+                std::this_thread::sleep_until(next_iteration_time);
+            } else {
+                // The loop is late. Reset the schedule to avoid accumulating delay.
+                next_iteration_time = steady_now;
+            }
         }
     }
 
@@ -487,7 +386,7 @@ namespace control_node
         }
         if (!keep_running_)
         {
-            running_ = false;
+            running_.store(false, std::memory_order_relaxed);
             return;
         }
         robot_->get_node()->activate();
@@ -518,13 +417,12 @@ namespace control_node
                 default_controller_.clear();
             }
         } while (keep_running_ && !active_controller_);
-        if (!keep_running_)
+        if (!keep_running_.load())
         {
-            running_ = false;
+            running_.store(false, std::memory_order_relaxed);
             return;
         }
-        running_box_ = true;
-        running_ = true;
+        running_.store(true, std::memory_order_relaxed);
     }
 
     void ControlManager::end_loop()

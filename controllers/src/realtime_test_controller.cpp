@@ -10,6 +10,7 @@ namespace controllers
         void update(const rclcpp::Time & /*t*/, const rclcpp::Duration & period) override
         {
             RCLCPP_INFO(node_->get_logger(), "%ld micro sec.", period.nanoseconds() / 1000);
+             command_->get<int>("mode")[0] = 1;
         }
     };
 
