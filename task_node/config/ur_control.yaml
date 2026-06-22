@@ -1,0 +1,5 @@
+ur_bph:
+  ros__parameters:
+    update_rate: 500
+    lock_memory: true
+    publish_joint_state: true
