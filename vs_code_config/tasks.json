@@ -17,6 +17,27 @@
                 "isDefault": true
             }
         },
+         {
+            "label": "colcon build current package",
+            "type": "shell",
+            "command": "pkg_dir=$(dirname \"$(realpath '${file}')\"); while [ \"$pkg_dir\" != \"/\" ] && [ ! -f \"$pkg_dir/package.xml\" ]; do pkg_dir=$(dirname \"$pkg_dir\"); done; if [ ! -f \"$pkg_dir/package.xml\" ]; then echo \"No package.xml found for current file\"; exit 1; fi; pkg_name=$(grep -oPm1 '(?<=<name>)[^<]+' \"$pkg_dir/package.xml\"); echo \"Building ROS2 package: $pkg_name\"; source /opt/ros/jazzy/setup.bash && colcon build --symlink-install --packages-select \"$pkg_name\" --cmake-args -DCMAKE_BUILD_TYPE=Release",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": [
+                        "-lc"
+                    ]
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
         {
             "label": "colcon: clean",
             "type": "shell",

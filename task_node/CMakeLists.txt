@@ -3,19 +3,19 @@ project(task_node)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(MUJOCO_ROOT "~/mujoco-3.9.0")
+# set(MUJOCO_ROOT "~/mujoco-3.9.0")
 
-find_path(MUJOCO_INCLUDE_DIR
-    NAMES mujoco/mujoco.h
-    PATHS ${MUJOCO_ROOT}/include
-    REQUIRED
-)
+# find_path(MUJOCO_INCLUDE_DIR
+#     NAMES mujoco/mujoco.h
+#     PATHS ${MUJOCO_ROOT}/include
+#     REQUIRED
+# )
 
-find_library(MUJOCO_LIBRARY
-    NAMES mujoco
-    PATHS ${MUJOCO_ROOT}/lib
-    REQUIRED
-)
+# find_library(MUJOCO_LIBRARY
+#     NAMES mujoco
+#     PATHS ${MUJOCO_ROOT}/lib
+#     REQUIRED
+# )
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -92,7 +92,6 @@ ament_target_dependencies(ur_bph PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 target_link_libraries(ur_bph PUBLIC
                       ur_rtde::rtde
-                      ${MUJOCO_LIBRARY}
                      )
 # install(
 #   DIRECTORY include/
