@@ -1,6 +1,22 @@
 cmake_minimum_required(VERSION 3.8)
 project(task_node)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(MUJOCO_ROOT "~/mujoco-3.9.0")
+
+find_path(MUJOCO_INCLUDE_DIR
+    NAMES mujoco/mujoco.h
+    PATHS ${MUJOCO_ROOT}/include
+    REQUIRED
+)
+
+find_library(MUJOCO_LIBRARY
+    NAMES mujoco
+    PATHS ${MUJOCO_ROOT}/lib
+    REQUIRED
+)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -47,7 +63,7 @@ add_executable(ur_bph
 target_include_directories(task_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(task_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+# target_compile_features(task_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
 ament_target_dependencies(task_node PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
@@ -58,7 +74,7 @@ target_link_libraries(task_node PUBLIC
 target_include_directories(franka_rcm PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(franka_rcm PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+# target_compile_features(franka_rcm PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
 ament_target_dependencies(franka_rcm PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
@@ -69,12 +85,14 @@ target_link_libraries(franka_rcm PUBLIC
 
 target_include_directories(ur_bph PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(ur_bph PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+  ${MUJOCO_INCLUDE_DIR})
+# target_compile_features(ur_bph PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(ur_bph PUBLIC ${THIS_PACKAGE_INCLUDE_DEPENDS})
 
 target_link_libraries(ur_bph PUBLIC
                       ur_rtde::rtde
+                      ${MUJOCO_LIBRARY}
                      )
 # install(
 #   DIRECTORY include/
